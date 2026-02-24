@@ -5,6 +5,7 @@ interface TreeNodeProps {
   data: unknown
   depth: number
   defaultExpanded?: boolean
+  forceOpen?: boolean
 }
 
 const MAX_AUTO_EXPAND_DEPTH = 2
@@ -15,8 +16,8 @@ function getType(val: unknown): string {
   return typeof val
 }
 
-function CollapsibleNode({ nodeKey, data, depth }: TreeNodeProps) {
-  const [open, setOpen] = useState(depth < MAX_AUTO_EXPAND_DEPTH)
+function CollapsibleNode({ nodeKey, data, depth, forceOpen }: TreeNodeProps) {
+  const [open, setOpen] = useState(forceOpen !== undefined ? forceOpen : depth < MAX_AUTO_EXPAND_DEPTH)
 
   const isArray = Array.isArray(data)
   const entries = isArray
@@ -50,7 +51,7 @@ function CollapsibleNode({ nodeKey, data, depth }: TreeNodeProps) {
         <>
           <div className="tree-node__children">
             {entries.map(([k, v]) => (
-              <TreeNodeComponent key={k} nodeKey={isArray ? null : k} data={v} depth={depth + 1} />
+              <TreeNodeComponent key={k} nodeKey={isArray ? null : k} data={v} depth={depth + 1} forceOpen={forceOpen} />
             ))}
           </div>
           <span className="tree-node__bracket">{closeBracket}</span>
@@ -100,7 +101,7 @@ function LeafNode({ nodeKey, data }: { nodeKey: string | null; data: unknown }) 
   )
 }
 
-function TreeNodeComponent({ nodeKey, data, depth }: TreeNodeProps) {
+function TreeNodeComponent({ nodeKey, data, depth, forceOpen }: TreeNodeProps) {
   const type = getType(data)
 
   if (type === 'object' || type === 'array') {
@@ -119,7 +120,7 @@ function TreeNodeComponent({ nodeKey, data, depth }: TreeNodeProps) {
         </div>
       )
     }
-    return <CollapsibleNode nodeKey={nodeKey} data={data} depth={depth} />
+    return <CollapsibleNode nodeKey={nodeKey} data={data} depth={depth} forceOpen={forceOpen} />
   }
 
   return <LeafNode nodeKey={nodeKey} data={data} />
@@ -127,12 +128,13 @@ function TreeNodeComponent({ nodeKey, data, depth }: TreeNodeProps) {
 
 interface TreeViewProps {
   data: unknown
+  forceOpen?: boolean
 }
 
-export function TreeView({ data }: TreeViewProps) {
+export function TreeView({ data, forceOpen }: TreeViewProps) {
   return (
     <div className="tree-view">
-      <TreeNodeComponent nodeKey={null} data={data} depth={0} />
+      <TreeNodeComponent nodeKey={null} data={data} depth={0} forceOpen={forceOpen} />
     </div>
   )
 }

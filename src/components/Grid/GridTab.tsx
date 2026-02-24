@@ -40,16 +40,23 @@ export function GridTab() {
     }
 
     if (!Array.isArray(extracted)) {
-      return { rows: [], columns: [], parseError: 'Selected value is not an array. Use a path pointing to an array of objects.' }
+      // Wrap a plain object as a single-row array
+      if (extracted && typeof extracted === 'object') {
+        extracted = [extracted]
+      } else {
+        return { rows: [], columns: [], parseError: 'Selected value is not an object or array.' }
+      }
     }
 
-    if (extracted.length === 0) {
+    const arr = extracted as unknown[]
+
+    if (arr.length === 0) {
       return { rows: [], columns: [], parseError: 'Array is empty.' }
     }
 
     // Collect all column keys from all objects
     const colSet = new Set<string>()
-    for (const item of extracted) {
+    for (const item of arr) {
       if (item && typeof item === 'object' && !Array.isArray(item)) {
         for (const k of Object.keys(item as Record<string, unknown>)) colSet.add(k)
       }
@@ -60,7 +67,7 @@ export function GridTab() {
     }
 
     return {
-      rows: extracted as RowData[],
+      rows: arr as RowData[],
       columns: Array.from(colSet),
       parseError: null,
     }
@@ -226,8 +233,8 @@ export function GridTab() {
           ) : !hasData && !state.gridRaw.trim() ? (
             <div className="empty-state">
               <div className="empty-state__icon">▦</div>
-              <div className="empty-state__title">Paste an array of objects</div>
-              <div>Each object becomes a row. Keys become columns.</div>
+              <div className="empty-state__title">Paste JSON to view as a grid</div>
+              <div>An array of objects or a single object. Keys become columns.</div>
             </div>
           ) : !hasData ? (
             <div className="empty-state">

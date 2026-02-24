@@ -10,6 +10,18 @@ export function EditorTab() {
   const [view, setView] = useState<ViewMode>('code')
   const [copyLabel, setCopyLabel] = useState('Copy')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [treeKey, setTreeKey] = useState(0)
+  const [treeForceOpen, setTreeForceOpen] = useState<boolean | undefined>(undefined)
+
+  function handleExpandAll() {
+    setTreeForceOpen(true)
+    setTreeKey((k) => k + 1)
+  }
+
+  function handleCollapseAll() {
+    setTreeForceOpen(false)
+    setTreeKey((k) => k + 1)
+  }
 
   const hasContent = state.editorRaw.trim().length > 0
 
@@ -108,6 +120,16 @@ export function EditorTab() {
 
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
           {statusBadge}
+          {view === 'tree' && (
+            <>
+              <button className="btn btn-ghost" onClick={handleExpandAll} disabled={!hasContent} title="Expand all nodes">
+                Expand All
+              </button>
+              <button className="btn btn-ghost" onClick={handleCollapseAll} disabled={!hasContent} title="Collapse all nodes">
+                Collapse All
+              </button>
+            </>
+          )}
           <div className="view-toggle">
             <button
               className={`view-toggle__btn${view === 'code' ? ' view-toggle__btn--active' : ''}`}
@@ -151,7 +173,7 @@ export function EditorTab() {
                 </div>
               </div>
             ) : editorParsed !== null ? (
-              <TreeView data={editorParsed} />
+              <TreeView key={treeKey} data={editorParsed} forceOpen={treeForceOpen} />
             ) : !hasContent ? (
               <div className="empty-state">
                 <div className="empty-state__icon">{ '{ }' }</div>
