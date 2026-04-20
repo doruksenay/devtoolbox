@@ -504,6 +504,13 @@ body {
   margin-left: 6px;
 }
 
+.tree-node__load-more {
+  font-size: 11px;
+  padding: 2px 8px;
+  margin-top: 2px;
+  color: var(--accent);
+}
+
 .tree-leaf {
   padding-left: 16px;
 }
@@ -521,6 +528,25 @@ body {
 [data-theme='light'] .tree-value--number  { color: #1d4ed8; }
 [data-theme='light'] .tree-value--boolean { color: #dc2626; }
 [data-theme='light'] .tree-value--null    { color: var(--text-muted); }
+
+/* Tree diff highlighting */
+.tree-node--added,
+.tree-leaf.tree-node--added {
+  background: var(--diff-added-bg);
+  border-radius: var(--radius-sm);
+}
+
+.tree-node--removed,
+.tree-leaf.tree-node--removed {
+  background: var(--diff-removed-bg);
+  border-radius: var(--radius-sm);
+}
+
+.tree-node--changed,
+.tree-leaf.tree-node--changed {
+  background: var(--warning-bg);
+  border-radius: var(--radius-sm);
+}
 
 /* ─────────────────────────────────────────────
    Compare Tab

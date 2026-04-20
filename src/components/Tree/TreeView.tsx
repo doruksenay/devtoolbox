@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import type { DiffType } from '../../utils/jsonDiff'
+import { pathHasDiff } from '../../utils/jsonDiff'
 
 interface TreeNodeProps {
   nodeKey: string | null
@@ -6,6 +8,8 @@ interface TreeNodeProps {
   depth: number
   defaultExpanded?: boolean
   forceOpen?: boolean
+  path?: string
+  diffs?: Map<string, DiffType> | null
 }
 
 const MAX_AUTO_EXPAND_DEPTH = 2
@@ -16,19 +20,38 @@ function getType(val: unknown): string {
   return typeof val
 }
 
-function CollapsibleNode({ nodeKey, data, depth, forceOpen }: TreeNodeProps) {
+function getDiffClass(diffs: Map<string, DiffType> | null | undefined, path: string): string {
+  if (!diffs) return ''
+  const diff = pathHasDiff(diffs, path)
+  if (!diff) return ''
+  switch (diff) {
+    case 'added': return ' tree-node--added'
+    case 'removed': return ' tree-node--removed'
+    case 'changed': return ' tree-node--changed'
+    default: return ''
+  }
+}
+
+const CHUNK_SIZE = 100
+
+function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs }: TreeNodeProps) {
   const [open, setOpen] = useState(forceOpen !== undefined ? forceOpen : depth < MAX_AUTO_EXPAND_DEPTH)
+  const [visibleCount, setVisibleCount] = useState(CHUNK_SIZE)
 
   const isArray = Array.isArray(data)
-  const entries = isArray
+  const entries = useMemo(() => isArray
     ? (data as unknown[]).map((v, i) => [String(i), v] as [string, unknown])
-    : Object.entries(data as Record<string, unknown>)
+    : Object.entries(data as Record<string, unknown>), [data, isArray])
   const count = entries.length
   const openBracket  = isArray ? '[' : '{'
   const closeBracket = isArray ? ']' : '}'
+  const diffClass = getDiffClass(diffs, path)
+
+  const visibleEntries = count > CHUNK_SIZE ? entries.slice(0, visibleCount) : entries
+  const hasMore = visibleCount < count
 
   return (
-    <div className="tree-node">
+    <div className={`tree-node${diffClass}`}>
       <button className="tree-node__toggle" onClick={() => setOpen(!open)} type="button">
         <span className={`tree-node__caret tree-node__caret--${open ? 'open' : 'closed'}`}>▾</span>
         {nodeKey !== null && (
@@ -50,9 +73,29 @@ function CollapsibleNode({ nodeKey, data, depth, forceOpen }: TreeNodeProps) {
       {open && (
         <>
           <div className="tree-node__children">
-            {entries.map(([k, v]) => (
-              <TreeNodeComponent key={k} nodeKey={isArray ? null : k} data={v} depth={depth + 1} forceOpen={forceOpen} />
-            ))}
+            {visibleEntries.map(([k, v]) => {
+              const childPath = isArray ? `${path}[${k}]` : `${path}.${k}`
+              return (
+                <TreeNodeComponent
+                  key={k}
+                  nodeKey={isArray ? null : k}
+                  data={v}
+                  depth={depth + 1}
+                  forceOpen={forceOpen}
+                  path={childPath}
+                  diffs={diffs}
+                />
+              )
+            })}
+            {hasMore && (
+              <button
+                className="btn btn-ghost tree-node__load-more"
+                onClick={() => setVisibleCount((c) => c + CHUNK_SIZE)}
+                type="button"
+              >
+                Show more ({count - visibleCount} remaining)
+              </button>
+            )}
           </div>
           <span className="tree-node__bracket">{closeBracket}</span>
         </>
@@ -61,7 +104,7 @@ function CollapsibleNode({ nodeKey, data, depth, forceOpen }: TreeNodeProps) {
   )
 }
 
-function LeafNode({ nodeKey, data }: { nodeKey: string | null; data: unknown }) {
+function LeafNode({ nodeKey, data, path = '$', diffs }: { nodeKey: string | null; data: unknown; path?: string; diffs?: Map<string, DiffType> | null }) {
   const type = getType(data)
   let display: string
   let className: string
@@ -88,8 +131,10 @@ function LeafNode({ nodeKey, data }: { nodeKey: string | null; data: unknown }) 
       className = 'tree-value--string'
   }
 
+  const diffClass = getDiffClass(diffs, path)
+
   return (
-    <div className="tree-leaf">
+    <div className={`tree-leaf${diffClass}`}>
       {nodeKey !== null && (
         <>
           <span className="tree-leaf__key">"{nodeKey}"</span>
@@ -101,15 +146,16 @@ function LeafNode({ nodeKey, data }: { nodeKey: string | null; data: unknown }) 
   )
 }
 
-function TreeNodeComponent({ nodeKey, data, depth, forceOpen }: TreeNodeProps) {
+function TreeNodeComponent({ nodeKey, data, depth, forceOpen, path = '$', diffs }: TreeNodeProps) {
   const type = getType(data)
 
   if (type === 'object' || type === 'array') {
     const obj = data as Record<string, unknown> | unknown[]
     const isEmpty = Array.isArray(obj) ? obj.length === 0 : Object.keys(obj).length === 0
     if (isEmpty) {
+      const diffClass = getDiffClass(diffs, path)
       return (
-        <div className="tree-leaf">
+        <div className={`tree-leaf${diffClass}`}>
           {nodeKey !== null && (
             <>
               <span className="tree-leaf__key">"{nodeKey}"</span>
@@ -120,21 +166,22 @@ function TreeNodeComponent({ nodeKey, data, depth, forceOpen }: TreeNodeProps) {
         </div>
       )
     }
-    return <CollapsibleNode nodeKey={nodeKey} data={data} depth={depth} forceOpen={forceOpen} />
+    return <CollapsibleNode nodeKey={nodeKey} data={data} depth={depth} forceOpen={forceOpen} path={path} diffs={diffs} />
   }
 
-  return <LeafNode nodeKey={nodeKey} data={data} />
+  return <LeafNode nodeKey={nodeKey} data={data} path={path} diffs={diffs} />
 }
 
 interface TreeViewProps {
   data: unknown
   forceOpen?: boolean
+  diffs?: Map<string, DiffType> | null
 }
 
-export function TreeView({ data, forceOpen }: TreeViewProps) {
+export function TreeView({ data, forceOpen, diffs }: TreeViewProps) {
   return (
     <div className="tree-view">
-      <TreeNodeComponent nodeKey={null} data={data} depth={0} forceOpen={forceOpen} />
+      <TreeNodeComponent nodeKey={null} data={data} depth={0} forceOpen={forceOpen} path="$" diffs={diffs} />
     </div>
   )
 }

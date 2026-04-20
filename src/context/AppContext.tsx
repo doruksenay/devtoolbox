@@ -10,6 +10,7 @@ import {
 import { JSONPath } from 'jsonpath-plus'
 import * as Diff from 'diff'
 import type { AppState, AppAction, TabId, DiffLine, ParseResult } from '../types'
+import { rootReducer } from './reducers'
 
 // ─────────────────────────────────────────────
 //  Helpers
@@ -27,7 +28,7 @@ export function parseJson(raw: string): ParseResult {
   }
 }
 
-function parseXml(raw: string): { valid: boolean; error: string | null } {
+export function parseXml(raw: string): { valid: boolean; error: string | null } {
   if (!raw.trim()) return { valid: false, error: 'Input is empty' }
   try {
     const parser = new DOMParser()
@@ -40,6 +41,33 @@ function parseXml(raw: string): { valid: boolean; error: string | null } {
   } catch (e) {
     return { valid: false, error: (e as Error).message }
   }
+}
+
+export function formatXml(raw: string): string {
+  const PADDING = '  '
+  let formatted = ''
+  let indent = 0
+  const lines = raw
+    .replace(/(>)(<)(\/*)/g, '$1\n$2$3')
+    .replace(/\r\n|\r/g, '\n')
+    .split('\n')
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim()
+    if (!line) continue
+
+    if (line.startsWith('</')) {
+      indent = Math.max(indent - 1, 0)
+    }
+
+    formatted += PADDING.repeat(indent) + line + '\n'
+
+    if (line.startsWith('<') && !line.startsWith('</') && !line.startsWith('<?') && !line.endsWith('/>') && !line.includes('</')) {
+      indent++
+    }
+  }
+
+  return formatted.trim()
 }
 
 function beautify(raw: string): string {
@@ -94,188 +122,6 @@ const initialState: AppState = {
 }
 
 // ─────────────────────────────────────────────
-//  Reducer
-// ─────────────────────────────────────────────
-function reducer(state: AppState, action: AppAction): AppState {
-  switch (action.type) {
-    case 'SET_TAB':
-      return { ...state, activeTab: action.tab }
-
-    case 'SET_EDITOR_RAW':
-      return {
-        ...state,
-        editorRaw: action.raw,
-        editorValid: null,
-        editorError: null,
-        editorParsed: null,
-      }
-
-    case 'SET_EDITOR_PARSED':
-      return {
-        ...state,
-        editorParsed: action.parsed,
-        editorValid: true,
-        editorError: null,
-      }
-
-    case 'SET_EDITOR_ERROR':
-      return {
-        ...state,
-        editorValid: false,
-        editorError: action.error,
-        editorParsed: null,
-      }
-
-    case 'CLEAR_EDITOR':
-      return {
-        ...state,
-        editorRaw: '',
-        editorParsed: null,
-        editorValid: null,
-        editorError: null,
-      }
-
-    case 'SET_COMPARE_LEFT':
-      return {
-        ...state,
-        compareLeft: action.raw,
-        compareLeftParsed: null,
-        compareLeftError: null,
-        compareLines: null,
-        compareEqual: null,
-        compareError: null,
-      }
-
-    case 'SET_COMPARE_RIGHT':
-      return {
-        ...state,
-        compareRight: action.raw,
-        compareRightParsed: null,
-        compareRightError: null,
-        compareLines: null,
-        compareEqual: null,
-        compareError: null,
-      }
-
-    case 'SET_COMPARE_RESULT':
-      return {
-        ...state,
-        compareLines: action.lines,
-        compareEqual: action.equal,
-        compareError: null,
-      }
-
-    case 'SET_COMPARE_PARSED':
-      return {
-        ...state,
-        compareLeftParsed: action.compareLeftParsed,
-        compareRightParsed: action.compareRightParsed,
-        compareError: null,
-      }
-
-    case 'SET_COMPARE_ERROR':
-      return { ...state, compareError: action.error }
-
-    case 'CLEAR_COMPARE':
-      return {
-        ...state,
-        compareLeft: '',
-        compareRight: '',
-        compareLeftParsed: null,
-        compareRightParsed: null,
-        compareLeftError: null,
-        compareRightError: null,
-        compareLines: null,
-        compareEqual: null,
-        compareError: null,
-      }
-
-    case 'SET_XML_RAW':
-      return {
-        ...state,
-        xmlRaw: action.raw,
-        xmlValid: null,
-        xmlError: null,
-      }
-
-    case 'SET_XML_VALID':
-      return {
-        ...state,
-        xmlValid: true,
-        xmlError: null,
-      }
-
-    case 'SET_XML_ERROR':
-      return {
-        ...state,
-        xmlValid: false,
-        xmlError: action.error,
-      }
-
-    case 'CLEAR_XML':
-      return {
-        ...state,
-        xmlRaw: '',
-        xmlValid: null,
-        xmlError: null,
-      }
-
-    case 'SET_GRID_RAW':
-      return {
-        ...state,
-        gridRaw: action.raw,
-        gridParsed: null,
-        gridError: null,
-      }
-
-    case 'SET_GRID_PATH':
-      return { ...state, gridPath: action.path }
-
-    case 'SET_QUERY_RAW':
-      return {
-        ...state,
-        queryRaw: action.raw,
-        queryParsed: null,
-        queryError: null,
-        queryResults: null,
-        queryPaths: null,
-        queryRunError: null,
-      }
-
-    case 'SET_QUERY_EXPRESSION':
-      return {
-        ...state,
-        queryExpression: action.expr,
-        queryResults: null,
-        queryPaths: null,
-        queryRunError: null,
-      }
-
-    case 'SET_QUERY_RESULTS':
-      return {
-        ...state,
-        queryResults: action.results,
-        queryPaths: action.paths,
-        queryRunError: null,
-      }
-
-    case 'SET_QUERY_RUN_ERROR':
-      return {
-        ...state,
-        queryResults: null,
-        queryPaths: null,
-        queryRunError: action.error,
-      }
-
-    case 'TOGGLE_THEME':
-      return { ...state, theme: state.theme === 'dark' ? 'light' : 'dark' }
-
-    default:
-      return state
-  }
-}
-
-// ─────────────────────────────────────────────
 //  Context
 // ─────────────────────────────────────────────
 interface AppContextValue {
@@ -287,6 +133,7 @@ interface AppContextValue {
   minifyEditor: () => void
   runCompare: () => void
   validateXml: () => void
+  formatXmlAction: () => void
   runQuery: () => void
 }
 
@@ -313,7 +160,7 @@ function persistState(state: AppState) {
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, initialState)
+  const [state, dispatch] = useReducer(rootReducer, initialState)
 
   // Persist on every state change
   useEffect(() => {
@@ -407,6 +254,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SET_XML_VALID' })
   }, [state.xmlRaw])
 
+  const formatXmlAction = useCallback(() => {
+    const result = parseXml(state.xmlRaw)
+    if (!result.valid || result.error) {
+      dispatch({ type: 'SET_XML_ERROR', error: result.error ?? 'Invalid XML' })
+      return
+    }
+    const formatted = formatXml(state.xmlRaw)
+    dispatch({ type: 'SET_XML_RAW', raw: formatted })
+    dispatch({ type: 'SET_XML_VALID' })
+  }, [state.xmlRaw])
+
   const runQuery = useCallback(() => {
     const result = parseJson(state.queryRaw)
     if (!result.valid) {
@@ -438,7 +296,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider
-      value={{ state, dispatch, validateEditor, beautifyEditor, minifyEditor, runCompare, validateXml, runQuery }}
+      value={{ state, dispatch, validateEditor, beautifyEditor, minifyEditor, runCompare, validateXml, formatXmlAction, runQuery }}
     >
       {children}
     </AppContext.Provider>

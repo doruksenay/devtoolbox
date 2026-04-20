@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp } from '../../context/AppContext'
 import { JsonTextarea } from '../shared/JsonTextarea'
 import { TreeView } from '../Tree/TreeView'
+import { computeJsonDiff } from '../../utils/jsonDiff'
 
 export function CompareTab() {
   const { state, dispatch, runCompare } = useApp()
@@ -11,6 +12,14 @@ export function CompareTab() {
     state.compareEqual !== null &&
     state.compareLeftParsed !== null &&
     state.compareRightParsed !== null
+
+  // Compute diffs for highlighting
+  const { leftDiffs, rightDiffs } = useMemo(() => {
+    if (!hasResults) return { leftDiffs: null, rightDiffs: null }
+    const leftDiffs = computeJsonDiff(state.compareLeftParsed, state.compareRightParsed, '$')
+    const rightDiffs = computeJsonDiff(state.compareRightParsed, state.compareLeftParsed, '$')
+    return { leftDiffs, rightDiffs }
+  }, [hasResults, state.compareLeftParsed, state.compareRightParsed])
 
   function handleExpandAll() {
     setTreeForceOpen(true)
@@ -116,7 +125,7 @@ export function CompareTab() {
           </div>
           <div className="panel__body">
             {hasResults ? (
-              <TreeView key={`left-${treeKey}`} data={state.compareLeftParsed} forceOpen={treeForceOpen} />
+              <TreeView key={`left-${treeKey}`} data={state.compareLeftParsed} forceOpen={treeForceOpen} diffs={leftDiffs} />
             ) : (
               <div className="empty-state">
                 <div className="empty-state__icon">{ '{ }' }</div>
@@ -133,7 +142,7 @@ export function CompareTab() {
           </div>
           <div className="panel__body">
             {hasResults ? (
-              <TreeView key={`right-${treeKey}`} data={state.compareRightParsed} forceOpen={treeForceOpen} />
+              <TreeView key={`right-${treeKey}`} data={state.compareRightParsed} forceOpen={treeForceOpen} diffs={rightDiffs} />
             ) : state.compareError ? (
               <div className="empty-state">
                 <div className="empty-state__icon text-error">✗</div>

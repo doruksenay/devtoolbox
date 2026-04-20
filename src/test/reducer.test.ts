@@ -1,0 +1,138 @@
+import { describe, it, expect } from 'vitest'
+import { rootReducer } from '../context/reducers'
+import type { AppState } from '../types'
+
+const emptyState: AppState = {
+  activeTab: 'editor',
+  editorRaw: '',
+  editorParsed: null,
+  editorValid: null,
+  editorError: null,
+  compareLeft: '',
+  compareLeftParsed: null,
+  compareLeftError: null,
+  compareRight: '',
+  compareRightParsed: null,
+  compareRightError: null,
+  compareLines: null,
+  compareEqual: null,
+  compareError: null,
+  xmlRaw: '',
+  xmlValid: null,
+  xmlError: null,
+  gridRaw: '',
+  gridParsed: null,
+  gridError: null,
+  gridPath: '$',
+  queryRaw: '',
+  queryParsed: null,
+  queryError: null,
+  queryExpression: '',
+  queryResults: null,
+  queryPaths: null,
+  queryRunError: null,
+  theme: 'dark',
+}
+
+describe('rootReducer', () => {
+  describe('global actions', () => {
+    it('SET_TAB changes active tab', () => {
+      const result = rootReducer(emptyState, { type: 'SET_TAB', tab: 'compare' })
+      expect(result.activeTab).toBe('compare')
+    })
+
+    it('TOGGLE_THEME switches dark to light', () => {
+      const result = rootReducer(emptyState, { type: 'TOGGLE_THEME' })
+      expect(result.theme).toBe('light')
+    })
+
+    it('TOGGLE_THEME switches light to dark', () => {
+      const state = { ...emptyState, theme: 'light' as const }
+      const result = rootReducer(state, { type: 'TOGGLE_THEME' })
+      expect(result.theme).toBe('dark')
+    })
+  })
+
+  describe('editor actions', () => {
+    it('SET_EDITOR_RAW updates raw and resets validation', () => {
+      const state = { ...emptyState, editorValid: true as const, editorError: null }
+      const result = rootReducer(state, { type: 'SET_EDITOR_RAW', raw: '{"a":1}' })
+      expect(result.editorRaw).toBe('{"a":1}')
+      expect(result.editorValid).toBeNull()
+    })
+
+    it('SET_EDITOR_PARSED sets parsed data', () => {
+      const result = rootReducer(emptyState, { type: 'SET_EDITOR_PARSED', parsed: { a: 1 }, error: null })
+      expect(result.editorParsed).toEqual({ a: 1 })
+      expect(result.editorValid).toBe(true)
+    })
+
+    it('SET_EDITOR_ERROR sets error state', () => {
+      const result = rootReducer(emptyState, { type: 'SET_EDITOR_ERROR', error: 'bad json' })
+      expect(result.editorError).toBe('bad json')
+      expect(result.editorValid).toBe(false)
+    })
+
+    it('CLEAR_EDITOR resets all editor state', () => {
+      const state = { ...emptyState, editorRaw: 'data', editorValid: true as const }
+      const result = rootReducer(state, { type: 'CLEAR_EDITOR' })
+      expect(result.editorRaw).toBe('')
+      expect(result.editorValid).toBeNull()
+    })
+  })
+
+  describe('compare actions', () => {
+    it('SET_COMPARE_LEFT updates left and resets results', () => {
+      const state = { ...emptyState, compareEqual: true as const }
+      const result = rootReducer(state, { type: 'SET_COMPARE_LEFT', raw: '{"a":1}' })
+      expect(result.compareLeft).toBe('{"a":1}')
+      expect(result.compareEqual).toBeNull()
+    })
+
+    it('CLEAR_COMPARE resets all compare state', () => {
+      const state = { ...emptyState, compareLeft: 'x', compareRight: 'y' }
+      const result = rootReducer(state, { type: 'CLEAR_COMPARE' })
+      expect(result.compareLeft).toBe('')
+      expect(result.compareRight).toBe('')
+    })
+  })
+
+  describe('xml actions', () => {
+    it('SET_XML_RAW updates raw and resets validation', () => {
+      const result = rootReducer(emptyState, { type: 'SET_XML_RAW', raw: '<root/>' })
+      expect(result.xmlRaw).toBe('<root/>')
+      expect(result.xmlValid).toBeNull()
+    })
+
+    it('SET_XML_VALID marks xml as valid', () => {
+      const result = rootReducer(emptyState, { type: 'SET_XML_VALID' })
+      expect(result.xmlValid).toBe(true)
+      expect(result.xmlError).toBeNull()
+    })
+
+    it('SET_XML_ERROR marks xml as invalid', () => {
+      const result = rootReducer(emptyState, { type: 'SET_XML_ERROR', error: 'parse error' })
+      expect(result.xmlValid).toBe(false)
+      expect(result.xmlError).toBe('parse error')
+    })
+  })
+
+  describe('query actions', () => {
+    it('SET_QUERY_RESULTS stores results', () => {
+      const result = rootReducer(emptyState, {
+        type: 'SET_QUERY_RESULTS',
+        results: [1, 2, 3],
+        paths: ['$[0]', '$[1]', '$[2]'],
+      })
+      expect(result.queryResults).toEqual([1, 2, 3])
+      expect(result.queryPaths).toEqual(['$[0]', '$[1]', '$[2]'])
+    })
+
+    it('SET_QUERY_RUN_ERROR clears results', () => {
+      const state = { ...emptyState, queryResults: [1] as unknown[], queryPaths: ['$[0]'] }
+      const result = rootReducer(state, { type: 'SET_QUERY_RUN_ERROR', error: 'fail' })
+      expect(result.queryResults).toBeNull()
+      expect(result.queryRunError).toBe('fail')
+    })
+  })
+})
