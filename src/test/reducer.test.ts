@@ -145,4 +145,69 @@ describe('rootReducer', () => {
       expect(result.queryRunError).toBe('fail')
     })
   })
+
+  describe('convert actions', () => {
+    it('SET_CONVERT_INPUT updates input', () => {
+      const result = rootReducer(emptyState, { type: 'SET_CONVERT_INPUT', raw: '<root/>' })
+      expect(result.convertInput).toBe('<root/>')
+      expect(result.convertError).toBeNull()
+    })
+
+    it('SET_CONVERT_MODE changes mode and clears output', () => {
+      const state = { ...emptyState, convertOutput: 'something' }
+      const result = rootReducer(state, { type: 'SET_CONVERT_MODE', mode: 'json-to-xml' })
+      expect(result.convertMode).toBe('json-to-xml')
+      expect(result.convertOutput).toBe('')
+    })
+
+    it('SET_CONVERT_OUTPUT stores output', () => {
+      const result = rootReducer(emptyState, { type: 'SET_CONVERT_OUTPUT', output: '{"a":1}', error: null })
+      expect(result.convertOutput).toBe('{"a":1}')
+    })
+
+    it('SET_CONVERT_ERROR stores error', () => {
+      const result = rootReducer(emptyState, { type: 'SET_CONVERT_ERROR', error: 'invalid XML' })
+      expect(result.convertError).toBe('invalid XML')
+      expect(result.convertOutput).toBe('')
+    })
+
+    it('CLEAR_CONVERT resets convert state', () => {
+      const state = { ...emptyState, convertInput: 'xml', convertOutput: 'json' }
+      const result = rootReducer(state, { type: 'CLEAR_CONVERT' })
+      expect(result.convertInput).toBe('')
+      expect(result.convertOutput).toBe('')
+    })
+  })
+
+  describe('schema actions', () => {
+    it('SET_SCHEMA_INPUT updates schema input', () => {
+      const result = rootReducer(emptyState, { type: 'SET_SCHEMA_INPUT', raw: '{"type":"object"}' })
+      expect(result.schemaInput).toBe('{"type":"object"}')
+    })
+
+    it('SET_SCHEMA_RESULT stores validation result', () => {
+      const result = rootReducer(emptyState, { type: 'SET_SCHEMA_RESULT', valid: true, error: null })
+      expect(result.schemaValid).toBe(true)
+      expect(result.schemaError).toBeNull()
+    })
+  })
+
+  describe('fetch actions', () => {
+    it('SET_FETCH_URL updates URL', () => {
+      const result = rootReducer(emptyState, { type: 'SET_FETCH_URL', url: 'http://example.com' })
+      expect(result.fetchUrl).toBe('http://example.com')
+    })
+
+    it('SET_FETCH_LOADING updates loading state', () => {
+      const result = rootReducer(emptyState, { type: 'SET_FETCH_LOADING', loading: true })
+      expect(result.fetchLoading).toBe(true)
+    })
+
+    it('SET_FETCH_ERROR stores error and resets loading', () => {
+      const state = { ...emptyState, fetchLoading: true }
+      const result = rootReducer(state, { type: 'SET_FETCH_ERROR', error: 'Network error' })
+      expect(result.fetchError).toBe('Network error')
+      expect(result.fetchLoading).toBe(false)
+    })
+  })
 })

@@ -1076,3 +1076,20 @@ body {
   border-radius: 3px;
   font-family: var(--font-mono);
 }
+
+/* ─────────────────────────────────────────────
+   CodeMirror Editor Wrapper
+───────────────────────────────────────────── */
+.code-editor-wrap {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.code-editor-wrap .cm-editor {
+  height: 100%;
+}
+
+.code-editor-wrap .cm-scroller {
+  overflow: auto;
+}

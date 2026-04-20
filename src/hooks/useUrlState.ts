@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useApp } from '../context/AppContext'
 import type { TabId } from '../types'
 
-const VALID_TABS: TabId[] = ['editor', 'compare', 'xml', 'grid', 'query']
+const VALID_TABS: TabId[] = ['editor', 'compare', 'xml', 'grid', 'query', 'convert']
 
 /**
  * Syncs active tab to URL hash for permalink/shareability.
