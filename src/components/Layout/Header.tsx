@@ -20,7 +20,7 @@ export function Header() {
         </button>
 
         <a
-          href="https://github.com/doruksenay/jsonViewer"
+          href="https://github.com/doruksenay/devtoolbox"
           target="_blank"
           rel="noreferrer"
           className="btn btn-ghost"
