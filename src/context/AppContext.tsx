@@ -168,8 +168,8 @@ function reducer(state: AppState, action: AppAction): AppState {
     case 'SET_COMPARE_PARSED':
       return {
         ...state,
-        compareLeftParsed: action.leftParsed,
-        compareRightParsed: action.rightParsed,
+        compareLeftParsed: action.compareLeftParsed,
+        compareRightParsed: action.compareRightParsed,
         compareError: null,
       }
 
@@ -297,11 +297,11 @@ function persistState(state: AppState) {
     const toSave: Partial<AppState> = {
       activeTab: state.activeTab,
       editorRaw: state.editorRaw,
-        compareLeft: state.compareLeft,
-        compareRight: state.compareRight,
-        xmlRaw: state.xmlRaw,
-        gridRaw: state.gridRaw,
-        gridPath: state.gridPath,
+      compareLeft: state.compareLeft,
+      compareRight: state.compareRight,
+      xmlRaw: state.xmlRaw,
+      gridRaw: state.gridRaw,
+      gridPath: state.gridPath,
       queryRaw: state.queryRaw,
       queryExpression: state.queryExpression,
       theme: state.theme,
@@ -374,8 +374,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     dispatch({
       type: 'SET_COMPARE_PARSED',
-      leftParsed: leftResult.parsed,
-      rightParsed: rightResult.parsed,
+      compareLeftParsed: leftResult.parsed,
+      compareRightParsed: rightResult.parsed,
     })
 
     const leftPretty = JSON.stringify(leftResult.parsed, null, 2)

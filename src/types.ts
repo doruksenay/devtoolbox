@@ -70,7 +70,7 @@ export type AppAction =
   | { type: 'CLEAR_EDITOR' }
   | { type: 'SET_COMPARE_LEFT'; raw: string }
   | { type: 'SET_COMPARE_RIGHT'; raw: string }
-  | { type: 'SET_COMPARE_PARSED'; leftParsed: unknown; rightParsed: unknown }
+  | { type: 'SET_COMPARE_PARSED'; compareLeftParsed: unknown; compareRightParsed: unknown }
   | { type: 'SET_COMPARE_RESULT'; lines: DiffLine[]; equal: boolean }
   | { type: 'SET_COMPARE_ERROR'; error: string }
   | { type: 'CLEAR_COMPARE' }
