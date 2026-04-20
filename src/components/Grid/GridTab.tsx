@@ -128,6 +128,23 @@ export function GridTab() {
     })
   }
 
+  function downloadCsv() {
+    const esc = (v: unknown) => {
+      const s = v === null || v === undefined ? '' : String(v)
+      return `"${s.replace(/"/g, '""')}"`
+    }
+    const header = columns.map(esc).join(',')
+    const body = sortedRows.map((r) => columns.map((c) => esc(r[c])).join(',')).join('\n')
+    const csv = `${header}\n${body}`
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'data.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   function renderCell(val: unknown) {
     if (val === null || val === undefined) return <span className="json-table--null">null</span>
     if (typeof val === 'boolean') return <span className="json-table--bool">{String(val)}</span>
@@ -207,6 +224,14 @@ export function GridTab() {
               disabled={!hasData}
             >
               {copiedCsv ? 'Copied!' : 'Copy CSV'}
+            </button>
+            <button
+              className="btn btn-ghost"
+              style={{ fontSize: 11, flex: 1 }}
+              onClick={downloadCsv}
+              disabled={!hasData}
+            >
+              Download CSV
             </button>
           </div>
 

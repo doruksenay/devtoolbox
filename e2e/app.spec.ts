@@ -1,0 +1,82 @@
+import { test, expect } from '@playwright/test'
+
+test.describe('Editor Tab', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/')
+  })
+
+  test('loads with Editor tab active', async ({ page }) => {
+    await expect(page.locator('.tab-bar__item--active')).toContainText('Editor')
+  })
+
+  test('beautify formats JSON', async ({ page }) => {
+    // Type JSON into the CodeMirror editor
+    const editor = page.locator('.code-editor-wrap .cm-content')
+    await editor.click()
+    await page.keyboard.type('{"name":"test","value":123}')
+
+    // Click Beautify
+    await page.click('button:has-text("Beautify")')
+
+    // Wait for formatted output
+    await expect(editor).toContainText('"name": "test"')
+  })
+
+  test('switching tabs works', async ({ page }) => {
+    await page.click('.tab-bar__item:has-text("Compare")')
+    await expect(page.locator('.tab-bar__item--active')).toContainText('Compare')
+
+    await page.click('.tab-bar__item:has-text("XML")')
+    await expect(page.locator('.tab-bar__item--active')).toContainText('XML')
+
+    await page.click('.tab-bar__item:has-text("Grid")')
+    await expect(page.locator('.tab-bar__item--active')).toContainText('Grid')
+
+    await page.click('.tab-bar__item:has-text("Query")')
+    await expect(page.locator('.tab-bar__item--active')).toContainText('Query')
+
+    await page.click('.tab-bar__item:has-text("Convert")')
+    await expect(page.locator('.tab-bar__item--active')).toContainText('Convert')
+  })
+
+  test('theme toggle works', async ({ page }) => {
+    // Default is dark
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+
+    // Click theme toggle
+    await page.click('button:has-text("Light")')
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+
+    // Toggle back
+    await page.click('button:has-text("Dark")')
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  })
+
+  test('tree view renders after beautify', async ({ page }) => {
+    const editor = page.locator('.code-editor-wrap .cm-content')
+    await editor.click()
+    await page.keyboard.type('{"items":[1,2,3]}')
+
+    await page.click('button:has-text("Beautify")')
+    await page.click('.view-toggle__btn:has-text("Tree")')
+
+    // Should show tree nodes
+    await expect(page.locator('.tree-view')).toBeVisible()
+  })
+})
+
+test.describe('Convert Tab', () => {
+  test('converts XML to JSON', async ({ page }) => {
+    await page.goto('/')
+    await page.click('.tab-bar__item:has-text("Convert")')
+
+    const input = page.locator('.convert-tab__panels .panel:first-child textarea')
+    await input.fill('<root><item>hello</item></root>')
+
+    await page.click('button:has-text("Convert")')
+
+    const output = page.locator('.convert-tab__panels .panel:last-child textarea')
+    await expect(output).toHaveValue(/root/)
+    await expect(output).toHaveValue(/hello/)
+  })
+})

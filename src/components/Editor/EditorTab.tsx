@@ -1,9 +1,14 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useCallback } from 'react'
 import { useApp } from '../../context/AppContext'
 import { JsonTextarea } from '../shared/JsonTextarea'
 import { TreeView } from '../Tree/TreeView'
+import Ajv from 'ajv'
+import addFormats from 'ajv-formats'
 
 type ViewMode = 'code' | 'tree'
+
+const ajv = new Ajv({ allErrors: true })
+addFormats(ajv)
 
 export function EditorTab() {
   const { state, dispatch, validateEditor, beautifyEditor, minifyEditor } = useApp()
@@ -12,6 +17,8 @@ export function EditorTab() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [treeKey, setTreeKey] = useState(0)
   const [treeForceOpen, setTreeForceOpen] = useState<boolean | undefined>(undefined)
+  const [showSchema, setShowSchema] = useState(false)
+  const [showUrlInput, setShowUrlInput] = useState(false)
 
   function handleExpandAll() {
     setTreeForceOpen(true)
@@ -66,6 +73,40 @@ export function EditorTab() {
     setView(next)
   }
 
+  // ── JSON Schema Validation ────────────────────
+  const handleSchemaValidate = useCallback(() => {
+    if (!state.schemaInput.trim() || !state.editorRaw.trim()) return
+    try {
+      const schema = JSON.parse(state.schemaInput)
+      const data = JSON.parse(state.editorRaw)
+      const validate = ajv.compile(schema)
+      const valid = validate(data)
+      if (valid) {
+        dispatch({ type: 'SET_SCHEMA_RESULT', valid: true, error: null })
+      } else {
+        const errors = validate.errors?.map((e) => `${e.instancePath || '/'}: ${e.message}`).join('\n') ?? 'Invalid'
+        dispatch({ type: 'SET_SCHEMA_RESULT', valid: false, error: errors })
+      }
+    } catch (e) {
+      dispatch({ type: 'SET_SCHEMA_RESULT', valid: false, error: (e as Error).message })
+    }
+  }, [state.schemaInput, state.editorRaw, dispatch])
+
+  // ── URL Fetch ─────────────────────────────────
+  const handleFetchUrl = useCallback(async () => {
+    if (!state.fetchUrl.trim()) return
+    dispatch({ type: 'SET_FETCH_LOADING', loading: true })
+    try {
+      const res = await fetch(state.fetchUrl)
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+      const text = await res.text()
+      dispatch({ type: 'SET_EDITOR_RAW', raw: text })
+      dispatch({ type: 'SET_FETCH_LOADING', loading: false })
+    } catch (e) {
+      dispatch({ type: 'SET_FETCH_ERROR', error: (e as Error).message })
+    }
+  }, [state.fetchUrl, dispatch])
+
   // ── Render ────────────────────────────────────
   const { editorValid, editorError, editorParsed } = state
 
@@ -114,6 +155,14 @@ export function EditorTab() {
         </button>
 
         <div className="toolbar-sep" />
+        <button className="btn btn-ghost" onClick={() => setShowUrlInput(!showUrlInput)} title="Load JSON from URL">
+          URL
+        </button>
+        <button className="btn btn-ghost" onClick={() => setShowSchema(!showSchema)} title="Validate against JSON Schema">
+          Schema
+        </button>
+
+        <div className="toolbar-sep" />
         <button className="btn btn-danger" onClick={handleClear} disabled={!hasContent}>
           Clear
         </button>
@@ -146,6 +195,50 @@ export function EditorTab() {
           </div>
         </div>
       </div>
+
+      {/* URL Fetch Bar */}
+      {showUrlInput && (
+        <div className="editor-tab__url-bar">
+          <input
+            className="filter-input"
+            style={{ flex: 1 }}
+            value={state.fetchUrl}
+            onChange={(e) => dispatch({ type: 'SET_FETCH_URL', url: e.target.value })}
+            placeholder="https://api.example.com/data.json"
+            onKeyDown={(e) => { if (e.key === 'Enter') handleFetchUrl() }}
+          />
+          <button className="btn btn-primary" onClick={handleFetchUrl} disabled={!state.fetchUrl.trim() || state.fetchLoading}>
+            {state.fetchLoading ? 'Loading...' : 'Fetch'}
+          </button>
+          {state.fetchError && <span className="text-error text-xs">{state.fetchError}</span>}
+        </div>
+      )}
+
+      {/* JSON Schema Validation Panel */}
+      {showSchema && (
+        <div className="editor-tab__schema-bar">
+          <textarea
+            className="json-textarea"
+            style={{ height: 100, flex: 1 }}
+            value={state.schemaInput}
+            onChange={(e) => dispatch({ type: 'SET_SCHEMA_INPUT', raw: e.target.value })}
+            placeholder='Paste JSON Schema here...\n{"type":"object","properties":{...}}'
+            spellCheck={false}
+          />
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <button className="btn btn-primary" onClick={handleSchemaValidate} disabled={!state.schemaInput.trim() || !hasContent}>
+              Validate Schema
+            </button>
+            {state.schemaValid === true && <span className="status-badge status-badge--valid">✓ Schema Valid</span>}
+            {state.schemaValid === false && <span className="status-badge status-badge--invalid">✗ Schema Invalid</span>}
+          </div>
+          {state.schemaError && (
+            <div className="text-error text-xs mono" style={{ whiteSpace: 'pre-wrap', maxHeight: 80, overflow: 'auto' }}>
+              {state.schemaError}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Main area */}
       <div className="editor-tab__split">
