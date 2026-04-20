@@ -555,6 +555,13 @@ body {
   flex-direction: column;
 }
 
+.compare-tab__trees {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 10px;
+}
+
 /* Diff output */
 .diff-view {
   font-family: var(--font-mono);
@@ -590,6 +597,33 @@ body {
   user-select: none;
   margin-right: 8px;
   font-size: 11px;
+}
+
+/* ─────────────────────────────────────────────
+   XML Tab
+───────────────────────────────────────────── */
+.xml-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 14px;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.xml-tab__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.xml-tab__pane {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ─────────────────────────────────────────────
@@ -837,3 +871,18 @@ body {
 .text-success { color: var(--success); }
 .text-error { color: var(--error); }
 .mono { font-family: var(--font-mono); }
+
+@media (max-width: 980px) {
+  .compare-tab__inputs,
+  .compare-tab__trees,
+  .query-tab__top,
+  .grid-tab__top {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .query-tab__expr-pane,
+  .grid-tab__controls {
+    width: 100%;
+  }
+}

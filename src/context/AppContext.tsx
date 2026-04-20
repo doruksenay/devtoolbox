@@ -27,6 +27,21 @@ export function parseJson(raw: string): ParseResult {
   }
 }
 
+function parseXml(raw: string): { valid: boolean; error: string | null } {
+  if (!raw.trim()) return { valid: false, error: 'Input is empty' }
+  try {
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(raw, 'application/xml')
+    const parseError = doc.querySelector('parsererror')
+    if (parseError) {
+      return { valid: false, error: parseError.textContent?.trim() ?? 'Invalid XML' }
+    }
+    return { valid: true, error: null }
+  } catch (e) {
+    return { valid: false, error: (e as Error).message }
+  }
+}
+
 function beautify(raw: string): string {
   return JSON.stringify(JSON.parse(raw), null, 2)
 }
@@ -61,6 +76,9 @@ const initialState: AppState = {
   compareLines: null,
   compareEqual: null,
   compareError: null,
+  xmlRaw: persisted.xmlRaw ?? '',
+  xmlValid: null,
+  xmlError: null,
   gridRaw: persisted.gridRaw ?? '',
   gridParsed: null,
   gridError: null,
@@ -147,6 +165,14 @@ function reducer(state: AppState, action: AppAction): AppState {
         compareError: null,
       }
 
+    case 'SET_COMPARE_PARSED':
+      return {
+        ...state,
+        compareLeftParsed: action.leftParsed,
+        compareRightParsed: action.rightParsed,
+        compareError: null,
+      }
+
     case 'SET_COMPARE_ERROR':
       return { ...state, compareError: action.error }
 
@@ -162,6 +188,36 @@ function reducer(state: AppState, action: AppAction): AppState {
         compareLines: null,
         compareEqual: null,
         compareError: null,
+      }
+
+    case 'SET_XML_RAW':
+      return {
+        ...state,
+        xmlRaw: action.raw,
+        xmlValid: null,
+        xmlError: null,
+      }
+
+    case 'SET_XML_VALID':
+      return {
+        ...state,
+        xmlValid: true,
+        xmlError: null,
+      }
+
+    case 'SET_XML_ERROR':
+      return {
+        ...state,
+        xmlValid: false,
+        xmlError: action.error,
+      }
+
+    case 'CLEAR_XML':
+      return {
+        ...state,
+        xmlRaw: '',
+        xmlValid: null,
+        xmlError: null,
       }
 
     case 'SET_GRID_RAW':
@@ -230,6 +286,7 @@ interface AppContextValue {
   beautifyEditor: () => void
   minifyEditor: () => void
   runCompare: () => void
+  validateXml: () => void
   runQuery: () => void
 }
 
@@ -240,10 +297,11 @@ function persistState(state: AppState) {
     const toSave: Partial<AppState> = {
       activeTab: state.activeTab,
       editorRaw: state.editorRaw,
-      compareLeft: state.compareLeft,
-      compareRight: state.compareRight,
-      gridRaw: state.gridRaw,
-      gridPath: state.gridPath,
+        compareLeft: state.compareLeft,
+        compareRight: state.compareRight,
+        xmlRaw: state.xmlRaw,
+        gridRaw: state.gridRaw,
+        gridPath: state.gridPath,
       queryRaw: state.queryRaw,
       queryExpression: state.queryExpression,
       theme: state.theme,
@@ -314,6 +372,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    dispatch({
+      type: 'SET_COMPARE_PARSED',
+      leftParsed: leftResult.parsed,
+      rightParsed: rightResult.parsed,
+    })
+
     const leftPretty = JSON.stringify(leftResult.parsed, null, 2)
     const rightPretty = JSON.stringify(rightResult.parsed, null, 2)
 
@@ -333,6 +397,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const equal = leftPretty === rightPretty
     dispatch({ type: 'SET_COMPARE_RESULT', lines, equal })
   }, [state.compareLeft, state.compareRight])
+
+  const validateXml = useCallback(() => {
+    const result = parseXml(state.xmlRaw)
+    if (!result.valid || result.error) {
+      dispatch({ type: 'SET_XML_ERROR', error: result.error ?? 'Invalid XML' })
+      return
+    }
+    dispatch({ type: 'SET_XML_VALID' })
+  }, [state.xmlRaw])
 
   const runQuery = useCallback(() => {
     const result = parseJson(state.queryRaw)
@@ -365,7 +438,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider
-      value={{ state, dispatch, validateEditor, beautifyEditor, minifyEditor, runCompare, runQuery }}
+      value={{ state, dispatch, validateEditor, beautifyEditor, minifyEditor, runCompare, validateXml, runQuery }}
     >
       {children}
     </AppContext.Provider>

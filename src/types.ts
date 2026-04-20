@@ -2,7 +2,7 @@
 //  Shared type definitions across the app
 // ─────────────────────────────────────────────
 
-export type TabId = 'editor' | 'compare' | 'grid' | 'query'
+export type TabId = 'editor' | 'compare' | 'xml' | 'grid' | 'query'
 
 export interface ParseResult {
   valid: boolean
@@ -38,6 +38,11 @@ export interface AppState {
   compareEqual: boolean | null
   compareError: string | null  // general compare error
 
+  // ── XML tab ─────────────────────────────────
+  xmlRaw: string
+  xmlValid: boolean | null
+  xmlError: string | null
+
   // ── Grid tab ────────────────────────────────
   gridRaw: string
   gridParsed: unknown | null
@@ -65,9 +70,14 @@ export type AppAction =
   | { type: 'CLEAR_EDITOR' }
   | { type: 'SET_COMPARE_LEFT'; raw: string }
   | { type: 'SET_COMPARE_RIGHT'; raw: string }
+  | { type: 'SET_COMPARE_PARSED'; leftParsed: unknown; rightParsed: unknown }
   | { type: 'SET_COMPARE_RESULT'; lines: DiffLine[]; equal: boolean }
   | { type: 'SET_COMPARE_ERROR'; error: string }
   | { type: 'CLEAR_COMPARE' }
+  | { type: 'SET_XML_RAW'; raw: string }
+  | { type: 'SET_XML_VALID' }
+  | { type: 'SET_XML_ERROR'; error: string }
+  | { type: 'CLEAR_XML' }
   | { type: 'SET_GRID_RAW'; raw: string }
   | { type: 'SET_GRID_PATH'; path: string }
   | { type: 'SET_QUERY_RAW'; raw: string }

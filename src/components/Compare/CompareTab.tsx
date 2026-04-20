@@ -1,23 +1,26 @@
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { JsonTextarea } from '../shared/JsonTextarea'
+import { TreeView } from '../Tree/TreeView'
 
 export function CompareTab() {
   const { state, dispatch, runCompare } = useApp()
-  const [copiedLabel, setCopiedLabel] = useState('Export diff')
+  const [treeKey, setTreeKey] = useState(0)
+  const [treeForceOpen, setTreeForceOpen] = useState<boolean | undefined>(undefined)
+  const hasResults =
+    state.compareEqual !== null &&
+    state.compareLeftParsed !== null &&
+    state.compareRightParsed !== null
 
-  function handleExport() {
-    if (!state.compareLines) return
-    const text = state.compareLines
-      .map((l) => `${l.type === 'added' ? '+' : l.type === 'removed' ? '-' : ' '} ${l.value}`)
-      .join('\n')
-    navigator.clipboard.writeText(text).then(() => {
-      setCopiedLabel('Copied!')
-      setTimeout(() => setCopiedLabel('Export diff'), 1500)
-    })
+  function handleExpandAll() {
+    setTreeForceOpen(true)
+    setTreeKey((k) => k + 1)
   }
 
-  const hasResults = state.compareLines !== null
+  function handleCollapseAll() {
+    setTreeForceOpen(false)
+    setTreeKey((k) => k + 1)
+  }
 
   return (
     <div className="compare-tab">
@@ -92,8 +95,11 @@ export function CompareTab() {
             >
               {state.compareEqual ? '✓ Equal' : '⇄ Differences found'}
             </span>
-            <button className="btn btn-ghost" onClick={handleExport}>
-              {copiedLabel}
+            <button className="btn btn-ghost" onClick={handleExpandAll}>
+              Expand All
+            </button>
+            <button className="btn btn-ghost" onClick={handleCollapseAll}>
+              Collapse All
             </button>
           </>
         )}
@@ -102,43 +108,46 @@ export function CompareTab() {
         )}
       </div>
 
-      {/* Diff result */}
-      <div className="compare-tab__result panel">
-        <div className="panel__header">
-          <span className="panel__label">Diff</span>
-          {hasResults && (
-            <span className="text-xs text-muted">
-              {state.compareLines!.filter((l) => l.type !== 'unchanged').length} changed lines
-            </span>
-          )}
+      {/* Side-by-side tree compare */}
+      <div className="compare-tab__trees">
+        <div className="compare-tab__pane panel">
+          <div className="panel__header">
+            <span className="panel__label">Left Tree</span>
+          </div>
+          <div className="panel__body">
+            {hasResults ? (
+              <TreeView key={`left-${treeKey}`} data={state.compareLeftParsed} forceOpen={treeForceOpen} />
+            ) : (
+              <div className="empty-state">
+                <div className="empty-state__icon">{ '{ }' }</div>
+                <div className="empty-state__title">Left tree is not ready</div>
+                <div>Run Compare to render tree view</div>
+              </div>
+            )}
+          </div>
         </div>
-        <div className="panel__body">
-          {!hasResults && !state.compareError && (
-            <div className="empty-state">
-              <div className="empty-state__icon">⇄</div>
-              <div className="empty-state__title">Nothing to compare yet</div>
-              <div>Paste JSON in both panels and click Compare</div>
-            </div>
-          )}
-          {state.compareError && !hasResults && (
-            <div className="empty-state">
-              <div className="empty-state__icon text-error">✗</div>
-              <div className="empty-state__title text-error">Compare failed</div>
-              <div className="text-error mono" style={{ fontSize: 12 }}>{state.compareError}</div>
-            </div>
-          )}
-          {hasResults && (
-            <div className="diff-view">
-              {state.compareLines!.map((line, i) => (
-                <div key={i} className={`diff-line diff-line--${line.type}`}>
-                  <span className="diff-line__gutter">
-                    {line.type === 'added' ? '+' : line.type === 'removed' ? '-' : ' '}
-                  </span>
-                  {line.value}
-                </div>
-              ))}
-            </div>
-          )}
+
+        <div className="compare-tab__pane panel">
+          <div className="panel__header">
+            <span className="panel__label">Right Tree</span>
+          </div>
+          <div className="panel__body">
+            {hasResults ? (
+              <TreeView key={`right-${treeKey}`} data={state.compareRightParsed} forceOpen={treeForceOpen} />
+            ) : state.compareError ? (
+              <div className="empty-state">
+                <div className="empty-state__icon text-error">✗</div>
+                <div className="empty-state__title text-error">Compare failed</div>
+                <div className="text-error mono" style={{ fontSize: 12 }}>{state.compareError}</div>
+              </div>
+            ) : (
+              <div className="empty-state">
+                <div className="empty-state__icon">{ '{ }' }</div>
+                <div className="empty-state__title">Right tree is not ready</div>
+                <div>Run Compare to render side-by-side tree view</div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
