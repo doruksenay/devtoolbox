@@ -42,6 +42,20 @@ const emptyState: AppState = {
   fetchUrl: '',
   fetchLoading: false,
   fetchError: null,
+  harRaw: '',
+  harError: null,
+  harSelectedEntry: null,
+  harFilter: '',
+  harMethodFilter: '',
+  cronExpression: '',
+  cronError: null,
+  jwtInput: '',
+  jwtError: null,
+  drawShapes: [],
+  drawConnections: [],
+  drawTool: 'select',
+  drawSelectedIds: [],
+  drawSelectedColor: '#4f8ef7',
 }
 
 describe('rootReducer', () => {

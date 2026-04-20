@@ -7,6 +7,10 @@ import { XmlTab } from './components/Xml/XmlTab'
 import { GridTab } from './components/Grid/GridTab'
 import { QueryTab } from './components/Query/QueryTab'
 import { ConvertTab } from './components/Convert/ConvertTab'
+import { HarTab } from './components/Har/HarTab'
+import { CronTab } from './components/Cron/CronTab'
+import { JwtTab } from './components/Jwt/JwtTab'
+import { DrawTab } from './components/Draw/DrawTab'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useLiveValidation } from './hooks/useLiveValidation'
 import { useUrlState } from './hooks/useUrlState'
@@ -31,6 +35,10 @@ export default function App() {
         {state.activeTab === 'grid'    && <GridTab />}
         {state.activeTab === 'query'   && <QueryTab />}
         {state.activeTab === 'convert' && <ConvertTab />}
+        {state.activeTab === 'har'     && <HarTab />}
+        {state.activeTab === 'cron'    && <CronTab />}
+        {state.activeTab === 'jwt'     && <JwtTab />}
+        {state.activeTab === 'draw'    && <DrawTab />}
       </div>
     </div>
   )

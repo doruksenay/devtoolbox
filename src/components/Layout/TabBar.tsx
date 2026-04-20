@@ -2,12 +2,16 @@ import { useApp } from '../../context/AppContext'
 import type { TabId } from '../../types'
 
 const TABS: { id: TabId; label: string; icon: string }[] = [
-  { id: 'editor',  label: 'Editor',  icon: '✎' },
-  { id: 'compare', label: 'Compare', icon: '⇄' },
-  { id: 'xml',     label: 'XML',     icon: '⟠' },
-  { id: 'grid',    label: 'Grid',    icon: '▦' },
-  { id: 'query',   label: 'Query',   icon: '⌕' },
-  { id: 'convert', label: 'Convert', icon: '↹' },
+  { id: 'editor',  label: 'Editor',   icon: '✎' },
+  { id: 'compare', label: 'Compare',  icon: '⇄' },
+  { id: 'xml',     label: 'XML',      icon: '⟠' },
+  { id: 'grid',    label: 'Grid',     icon: '▦' },
+  { id: 'query',   label: 'Query',    icon: '⌕' },
+  { id: 'convert', label: 'Convert',  icon: '↹' },
+  { id: 'har',     label: 'HAR',      icon: '🌐' },
+  { id: 'cron',    label: 'Cron',     icon: '⏱' },
+  { id: 'jwt',     label: 'JWT',      icon: '🔑' },
+  { id: 'draw',    label: 'Diagram',  icon: '✏' },
 ]
 
 export function TabBar() {
