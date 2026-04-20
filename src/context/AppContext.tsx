@@ -119,6 +119,16 @@ const initialState: AppState = {
   queryPaths: null,
   queryRunError: null,
   theme: (persisted.theme as 'dark' | 'light') ?? 'dark',
+  convertInput: '',
+  convertOutput: '',
+  convertMode: 'xml-to-json',
+  convertError: null,
+  schemaInput: '',
+  schemaError: null,
+  schemaValid: null,
+  fetchUrl: '',
+  fetchLoading: false,
+  fetchError: null,
 }
 
 // ─────────────────────────────────────────────

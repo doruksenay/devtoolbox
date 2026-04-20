@@ -104,6 +104,11 @@ export function CompareTab() {
             >
               {state.compareEqual ? '✓ Equal' : '⇄ Differences found'}
             </span>
+            {state.compareLines && !state.compareEqual && (
+              <span className="text-xs text-muted mono">
+                +{state.compareLines.filter(l => l.type === 'added').length} / -{state.compareLines.filter(l => l.type === 'removed').length} lines
+              </span>
+            )}
             <button className="btn btn-ghost" onClick={handleExpandAll}>
               Expand All
             </button>

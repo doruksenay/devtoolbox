@@ -7,6 +7,7 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: 'xml',     label: 'XML',     icon: '⟠' },
   { id: 'grid',    label: 'Grid',    icon: '▦' },
   { id: 'query',   label: 'Query',   icon: '⌕' },
+  { id: 'convert', label: 'Convert', icon: '↹' },
 ]
 
 export function TabBar() {

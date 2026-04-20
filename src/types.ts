@@ -2,7 +2,7 @@
 //  Shared type definitions across the app
 // ─────────────────────────────────────────────
 
-export type TabId = 'editor' | 'compare' | 'xml' | 'grid' | 'query'
+export type TabId = 'editor' | 'compare' | 'xml' | 'grid' | 'query' | 'convert'
 
 export interface ParseResult {
   valid: boolean
@@ -60,6 +60,22 @@ export interface AppState {
 
   // ── Global preferences ──────────────────────
   theme: 'dark' | 'light'
+
+  // ── Convert tab ─────────────────────────────
+  convertInput: string
+  convertOutput: string
+  convertMode: 'xml-to-json' | 'json-to-xml'
+  convertError: string | null
+
+  // ── JSON Schema validation ──────────────────
+  schemaInput: string
+  schemaError: string | null
+  schemaValid: boolean | null
+
+  // ── URL fetch ───────────────────────────────
+  fetchUrl: string
+  fetchLoading: boolean
+  fetchError: string | null
 }
 
 export type AppAction =
@@ -85,3 +101,16 @@ export type AppAction =
   | { type: 'SET_QUERY_RESULTS'; results: unknown[]; paths: string[] }
   | { type: 'SET_QUERY_RUN_ERROR'; error: string }
   | { type: 'TOGGLE_THEME' }
+  // Convert tab
+  | { type: 'SET_CONVERT_INPUT'; raw: string }
+  | { type: 'SET_CONVERT_OUTPUT'; output: string; error: null }
+  | { type: 'SET_CONVERT_MODE'; mode: 'xml-to-json' | 'json-to-xml' }
+  | { type: 'SET_CONVERT_ERROR'; error: string }
+  | { type: 'CLEAR_CONVERT' }
+  // JSON Schema
+  | { type: 'SET_SCHEMA_INPUT'; raw: string }
+  | { type: 'SET_SCHEMA_RESULT'; valid: boolean; error: string | null }
+  // URL fetch
+  | { type: 'SET_FETCH_URL'; url: string }
+  | { type: 'SET_FETCH_LOADING'; loading: boolean }
+  | { type: 'SET_FETCH_ERROR'; error: string }

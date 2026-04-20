@@ -32,6 +32,16 @@ const emptyState: AppState = {
   queryPaths: null,
   queryRunError: null,
   theme: 'dark',
+  convertInput: '',
+  convertOutput: '',
+  convertMode: 'xml-to-json',
+  convertError: null,
+  schemaInput: '',
+  schemaError: null,
+  schemaValid: null,
+  fetchUrl: '',
+  fetchLoading: false,
+  fetchError: null,
 }
 
 describe('rootReducer', () => {

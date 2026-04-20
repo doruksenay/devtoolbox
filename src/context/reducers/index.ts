@@ -4,6 +4,7 @@ import { compareReducer } from './compareReducer'
 import { xmlReducer } from './xmlReducer'
 import { gridReducer } from './gridReducer'
 import { queryReducer } from './queryReducer'
+import { convertReducer } from './convertReducer'
 
 const featureReducers = [
   editorReducer,
@@ -11,6 +12,7 @@ const featureReducers = [
   xmlReducer,
   gridReducer,
   queryReducer,
+  convertReducer,
 ]
 
 export function rootReducer(state: AppState, action: AppAction): AppState {
