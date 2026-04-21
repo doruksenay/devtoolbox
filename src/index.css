@@ -847,82 +847,162 @@ body {
 ───────────────────────────────────────────── */
 .grid-tab {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   height: 100%;
   padding: 16px;
   gap: 12px;
   overflow: hidden;
 }
 
-.grid-tab__top {
-  display: flex;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.grid-tab__json-input {
+.grid-tab__left {
   flex: 1;
   display: flex;
   flex-direction: column;
-  height: 220px;
+  min-width: 0;
 }
 
-.grid-tab__controls {
+.grid-tab__right {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  flex-shrink: 0;
-  width: 220px;
+  min-width: 0;
 }
 
-.grid-tab__table-area {
-  flex: 1;
-  overflow: auto;
-  min-height: 0;
-}
-
-/* Table */
-.json-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12.5px;
+/* ── JSON Tree Grid ───────────────────────────────────────────────────── */
+.jtg-root {
+  padding: 8px;
   font-family: var(--font-mono);
+  font-size: 13px;
 }
 
-.json-table th {
+.jtg-block {
+  margin-bottom: 1px;
+}
+
+.jtg-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 180px) 1fr;
+  min-height: 28px;
+  align-items: start;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.jtg-row--parent {
+  align-items: center;
+}
+
+.jtg-key {
+  padding: 5px 10px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  border-right: 1px solid var(--border-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+}
+
+.jtg-val {
+  padding: 5px 10px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  word-break: break-all;
+}
+
+.jtg-val--type {
+  color: var(--text-muted);
+}
+
+.jtg-children {
+  margin-left: 20px;
+  border-left: 2px solid var(--border);
+}
+
+.jtg-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  transition: color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease);
+}
+
+.jtg-toggle:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.jtg-type-tag {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* Value syntax colours */
+.jtg-string  { color: var(--success); }
+.jtg-number  { color: var(--accent); }
+.jtg-bool    { color: #fca5a5; }
+.jtg-null    { color: var(--text-muted); font-style: italic; }
+
+[data-theme='light'] .jtg-bool { color: #dc2626; }
+
+/* Mini table for arrays of objects */
+.jtg-table {
+  border-collapse: collapse;
+  font-size: 12px;
+  width: auto;
+  min-width: 300px;
+  margin: 4px 0 4px 4px;
+}
+
+.jtg-th {
   background: var(--bg-elevated);
   color: var(--text-secondary);
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
-  padding: 8px 12px;
+  letter-spacing: 0.5px;
+  padding: 5px 10px;
   border: 1px solid var(--border);
   text-align: left;
   white-space: nowrap;
-  cursor: pointer;
-  user-select: none;
 }
 
-.json-table th:hover { color: var(--accent); }
+.jtg-th--index {
+  width: 32px;
+  text-align: center;
+}
 
-.json-table td {
-  padding: 6px 12px;
+.jtg-td {
+  padding: 4px 10px;
   border: 1px solid var(--border-subtle);
   color: var(--text-code);
-  max-width: 300px;
+  max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.json-table tr:hover td {
-  background: var(--bg-hover);
+.jtg-td--index {
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 11px;
 }
 
-.json-table--null { color: var(--text-muted); font-style: italic; }
-.json-table--bool { color: #fca5a5; }
-[data-theme='light'] .json-table--bool { color: #dc2626; }
+.jtg-tr:hover .jtg-td { background: var(--bg-hover); }
 
 /* Filter bar */
 .filter-input {
@@ -1107,14 +1187,13 @@ body {
   .compare-tab__inputs,
   .compare-tab__trees,
   .query-tab__top,
-  .grid-tab__top,
+  .grid-tab,
   .convert-tab__panels {
     flex-direction: column;
     height: auto;
   }
 
-  .query-tab__expr-pane,
-  .grid-tab__controls {
+  .query-tab__expr-pane {
     width: 100%;
   }
 }
@@ -1188,16 +1267,8 @@ body {
     width: 100%;
   }
 
-  .grid-tab__top {
+  .grid-tab {
     flex-direction: column;
-  }
-
-  .grid-tab__controls {
-    width: 100%;
-  }
-
-  .grid-tab__json-input {
-    height: 150px;
   }
 
   .toolbar-sep {
@@ -2450,14 +2521,13 @@ body {
   .compare-tab__inputs,
   .compare-tab__trees,
   .query-tab__top,
-  .grid-tab__top,
+  .grid-tab,
   .convert-tab__panels {
     flex-direction: column;
     height: auto;
   }
 
-  .query-tab__expr-pane,
-  .grid-tab__controls {
+  .query-tab__expr-pane {
     width: 100%;
   }
 }
