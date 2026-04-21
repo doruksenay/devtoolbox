@@ -3,7 +3,7 @@ import type { TabId } from '../../types'
 import {
   IconEditor, IconCompare, IconXml, IconGrid, IconQuery,
   IconConvert, IconHar, IconCron, IconJwt, IconDraw,
-  IconYaml, IconBase64, IconUrlEnc, IconChevronLeft, IconChevronRight,
+  IconBase64, IconUrlEnc, IconChevronLeft, IconChevronRight,
 } from '../icons/Icons'
 
 interface TabDef {
@@ -31,7 +31,6 @@ const GROUPS: TabGroup[] = [
     tabs: [
       { id: 'compare', label: 'Compare',     icon: <IconCompare /> },
       { id: 'xml',     label: 'XML',         icon: <IconXml /> },
-      { id: 'yaml',    label: 'YAML ↔ JSON', icon: <IconYaml /> },
       { id: 'convert', label: 'Convert',     icon: <IconConvert /> },
     ],
   },

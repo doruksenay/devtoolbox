@@ -1,294 +1,231 @@
 import { useState, useMemo } from 'react'
-import { JSONPath } from 'jsonpath-plus'
 import { useApp } from '../../context/AppContext'
 import { JsonTextarea } from '../shared/JsonTextarea'
 import { parseJson } from '../../context/AppContext'
 
-type RowData = Record<string, unknown>
-type SortDir = 'asc' | 'desc' | null
+// ── Primitive value renderer ──────────────────────────────────────────────────
+function PrimitiveSpan({ val }: { val: unknown }) {
+  if (val === null) return <span className="jtg-null">null</span>
+  if (typeof val === 'boolean') return <span className="jtg-bool">{String(val)}</span>
+  if (typeof val === 'number') return <span className="jtg-number">{String(val)}</span>
+  return <span className="jtg-string">&quot;{String(val)}&quot;</span>
+}
 
-export function GridTab() {
-  const { state, dispatch } = useApp()
-  const [filterText, setFilterText] = useState('')
-  const [sortCol, setSortCol] = useState<string | null>(null)
-  const [sortDir, setSortDir] = useState<SortDir>(null)
-  const [copiedCsv, setCopiedCsv] = useState(false)
+function CellValue({ val }: { val: unknown }) {
+  if (val !== null && typeof val === 'object') {
+    const label = Array.isArray(val) ? `[${(val as unknown[]).length}]` : '{…}'
+    return <span className="jtg-type-tag">{label}</span>
+  }
+  return <PrimitiveSpan val={val} />
+}
 
-  // ── Parse & extract array via JSONPath ───────
-  const { rows, columns, parseError } = useMemo((): {
-    rows: RowData[]
-    columns: string[]
-    parseError: string | null
-  } => {
-    const raw = state.gridRaw
-    if (!raw.trim()) return { rows: [], columns: [], parseError: null }
+// ── Tree grid node ─────────────────────────────────────────────────────────────
+interface NodeProps {
+  nodeKey: string | null
+  data: unknown
+  depth: number
+}
 
-    const result = parseJson(raw)
-    if (!result.valid) return { rows: [], columns: [], parseError: result.error }
+function TreeGridNode({ nodeKey, data, depth }: NodeProps) {
+  const [open, setOpen] = useState(depth < 2)
 
-    let extracted: unknown = result.parsed
-    const path = state.gridPath.trim() || '$'
-
-    if (path !== '$') {
-      try {
-        const found = JSONPath({ path, json: result.parsed as object, resultType: 'value' }) as unknown[]
-        if (found.length === 0) return { rows: [], columns: [], parseError: `No match for path: ${path}` }
-        extracted = found[0]
-      } catch (e) {
-        return { rows: [], columns: [], parseError: (e as Error).message }
-      }
-    }
-
-    if (!Array.isArray(extracted)) {
-      // Wrap a plain object as a single-row array
-      if (extracted && typeof extracted === 'object') {
-        extracted = [extracted]
-      } else {
-        return { rows: [], columns: [], parseError: 'Selected value is not an object or array.' }
-      }
-    }
-
-    const arr = extracted as unknown[]
-
-    if (arr.length === 0) {
-      return { rows: [], columns: [], parseError: 'Array is empty.' }
-    }
-
-    // Collect all column keys from all objects
-    const colSet = new Set<string>()
-    for (const item of arr) {
-      if (item && typeof item === 'object' && !Array.isArray(item)) {
-        for (const k of Object.keys(item as Record<string, unknown>)) colSet.add(k)
-      }
-    }
-
-    if (colSet.size === 0) {
-      return { rows: [], columns: [], parseError: 'Array items are not objects (no columns to show).' }
-    }
-
-    return {
-      rows: arr as RowData[],
-      columns: Array.from(colSet),
-      parseError: null,
-    }
-  }, [state.gridRaw, state.gridPath])
-
-  // ── Filter ────────────────────────────────────
-  const filteredRows = useMemo(() => {
-    if (!filterText.trim()) return rows
-    const q = filterText.toLowerCase()
-    return rows.filter((row) =>
-      columns.some((col) => {
-        const v = row[col]
-        return v !== null && v !== undefined && String(v).toLowerCase().includes(q)
-      })
+  // Primitive leaf
+  if (data === null || typeof data !== 'object') {
+    return (
+      <div className="jtg-row">
+        {nodeKey !== null && <div className="jtg-key">{nodeKey}</div>}
+        <div className="jtg-val"><PrimitiveSpan val={data} /></div>
+      </div>
     )
-  }, [rows, columns, filterText])
-
-  // ── Sort ──────────────────────────────────────
-  const sortedRows = useMemo(() => {
-    if (!sortCol || !sortDir) return filteredRows
-    return [...filteredRows].sort((a, b) => {
-      const av = a[sortCol]
-      const bv = b[sortCol]
-      const as = av === null || av === undefined ? '' : String(av)
-      const bs = bv === null || bv === undefined ? '' : String(bv)
-      const cmp = as.localeCompare(bs, undefined, { numeric: true, sensitivity: 'base' })
-      return sortDir === 'asc' ? cmp : -cmp
-    })
-  }, [filteredRows, sortCol, sortDir])
-
-  function toggleSort(col: string) {
-    if (sortCol === col) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : d === 'desc' ? null : 'asc'))
-      if (sortDir === 'desc') setSortCol(null)
-    } else {
-      setSortCol(col)
-      setSortDir('asc')
-    }
   }
 
-  function sortIcon(col: string) {
-    if (sortCol !== col) return ' ↕'
-    return sortDir === 'asc' ? ' ↑' : ' ↓'
+  const isArr = Array.isArray(data)
+
+  // Empty object / array
+  if (isArr ? (data as unknown[]).length === 0 : Object.keys(data as object).length === 0) {
+    return (
+      <div className="jtg-row">
+        {nodeKey !== null && <div className="jtg-key">{nodeKey}</div>}
+        <div className="jtg-val jtg-val--type">{isArr ? '[ ]' : '{ }'}</div>
+      </div>
+    )
   }
 
-  // ── CSV Export ────────────────────────────────
-  function exportCsv() {
-    const esc = (v: unknown) => {
-      const s = v === null || v === undefined ? '' : String(v)
-      return `"${s.replace(/"/g, '""')}"`
-    }
-    const header = columns.map(esc).join(',')
-    const body = sortedRows.map((r) => columns.map((c) => esc(r[c])).join(',')).join('\n')
-    const csv = `${header}\n${body}`
-    navigator.clipboard.writeText(csv).then(() => {
-      setCopiedCsv(true)
-      setTimeout(() => setCopiedCsv(false), 1500)
-    })
-  }
+  if (isArr) {
+    const arr = data as unknown[]
+    // Detect array-of-objects → render as mini-table
+    const objectItems = arr.filter(
+      (item) => item && typeof item === 'object' && !Array.isArray(item),
+    ) as Record<string, unknown>[]
+    const isObjectArr = objectItems.length === arr.length
 
-  function downloadCsv() {
-    const esc = (v: unknown) => {
-      const s = v === null || v === undefined ? '' : String(v)
-      return `"${s.replace(/"/g, '""')}"`
-    }
-    const header = columns.map(esc).join(',')
-    const body = sortedRows.map((r) => columns.map((c) => esc(r[c])).join(',')).join('\n')
-    const csv = `${header}\n${body}`
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'data.csv'
-    a.click()
-    URL.revokeObjectURL(url)
-  }
+    if (isObjectArr) {
+      const columns = Array.from(
+        objectItems.reduce((set, item) => {
+          Object.keys(item).forEach((k) => set.add(k))
+          return set
+        }, new Set<string>()),
+      )
 
-  function renderCell(val: unknown) {
-    if (val === null || val === undefined) return <span className="json-table--null">null</span>
-    if (typeof val === 'boolean') return <span className="json-table--bool">{String(val)}</span>
-    if (typeof val === 'object') return JSON.stringify(val)
-    return String(val)
-  }
-
-  const hasData = sortedRows.length > 0
-
-  return (
-    <div className="grid-tab">
-      {/* Top: JSON input + controls */}
-      <div className="grid-tab__top">
-        <div className="grid-tab__json-input">
-          <div className="panel" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div className="panel__header">
-              <span className="panel__label">JSON Input</span>
-              <div className="flex-row">
-                <button
-                  className="btn btn-ghost"
-                  style={{ fontSize: 11 }}
-                  onClick={() => {
-                    if (state.editorRaw.trim()) {
-                      dispatch({ type: 'SET_GRID_RAW', raw: state.editorRaw })
-                    }
-                  }}
-                  title="Copy JSON from Editor tab"
-                >
-                  From Editor
-                </button>
-                <button
-                  className="btn btn-ghost"
-                  style={{ fontSize: 11 }}
-                  onClick={() => dispatch({ type: 'SET_GRID_RAW', raw: '' })}
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
-            <div className="panel__body">
-              <JsonTextarea
-                value={state.gridRaw}
-                onChange={(val) => dispatch({ type: 'SET_GRID_RAW', raw: val })}
-                placeholder={'[\n  { "id": 1, "name": "Alice" },\n  { "id": 2, "name": "Bob" }\n]'}
-              />
+      return (
+        <div className="jtg-block">
+          <div className="jtg-row jtg-row--parent">
+            {nodeKey !== null && <div className="jtg-key">{nodeKey}</div>}
+            <div className="jtg-val">
+              <button className="jtg-toggle" onClick={() => setOpen((o) => !o)} type="button">
+                {open ? '−' : '+'}
+              </button>
+              <span className="jtg-type-tag">[{arr.length}]</span>
             </div>
           </div>
-        </div>
-
-        <div className="grid-tab__controls">
-          <div className="panel__label" style={{ marginTop: 2 }}>Array path</div>
-          <input
-            className="filter-input"
-            value={state.gridPath}
-            onChange={(e) => dispatch({ type: 'SET_GRID_PATH', path: e.target.value })}
-            placeholder="$ (root) or $.items"
-            spellCheck={false}
-          />
-          <div className="text-xs text-muted">JSONPath to select array source. Use <code>$</code> for root.</div>
-
-          <div style={{ marginTop: 8 }}>
-            <div className="panel__label">Filter rows</div>
-            <input
-              className="filter-input"
-              style={{ marginTop: 4 }}
-              value={filterText}
-              onChange={(e) => setFilterText(e.target.value)}
-              placeholder="Search any value..."
-            />
-          </div>
-
-          <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-            <button
-              className="btn btn-ghost"
-              style={{ fontSize: 11, flex: 1 }}
-              onClick={exportCsv}
-              disabled={!hasData}
-            >
-              {copiedCsv ? 'Copied!' : 'Copy CSV'}
-            </button>
-            <button
-              className="btn btn-ghost"
-              style={{ fontSize: 11, flex: 1 }}
-              onClick={downloadCsv}
-              disabled={!hasData}
-            >
-              Download CSV
-            </button>
-          </div>
-
-          {hasData && (
-            <div className="text-xs text-muted">
-              Showing {sortedRows.length}/{rows.length} rows · {columns.length} cols
+          {open && (
+            <div className="jtg-children">
+              <table className="jtg-table">
+                <thead>
+                  <tr>
+                    <th className="jtg-th jtg-th--index">#</th>
+                    {columns.map((c) => (
+                      <th key={c} className="jtg-th">{c}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {objectItems.map((row, i) => (
+                    <tr key={i} className="jtg-tr">
+                      <td className="jtg-td jtg-td--index">{i + 1}</td>
+                      {columns.map((c) => (
+                        <td key={c} className="jtg-td">
+                          <CellValue val={row[c]} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
+      )
+    }
+
+    // Mixed / primitive array
+    return (
+      <div className="jtg-block">
+        <div className="jtg-row jtg-row--parent">
+          {nodeKey !== null && <div className="jtg-key">{nodeKey}</div>}
+          <div className="jtg-val">
+            <button className="jtg-toggle" onClick={() => setOpen((o) => !o)} type="button">
+              {open ? '−' : '+'}
+            </button>
+            <span className="jtg-type-tag">[{arr.length}]</span>
+          </div>
+        </div>
+        {open && (
+          <div className="jtg-children">
+            {arr.map((item, i) => (
+              <TreeGridNode key={i} nodeKey={String(i)} data={item} depth={depth + 1} />
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Object
+  const entries = Object.entries(data as Record<string, unknown>)
+
+  return (
+    <div className="jtg-block">
+      <div className="jtg-row jtg-row--parent">
+        {nodeKey !== null && <div className="jtg-key">{nodeKey}</div>}
+        <div className="jtg-val">
+          <button className="jtg-toggle" onClick={() => setOpen((o) => !o)} type="button">
+            {open ? '−' : '+'}
+          </button>
+          <span className="jtg-type-tag">{`{${entries.length}}`}</span>
+        </div>
+      </div>
+      {open && (
+        <div className="jtg-children">
+          {entries.map(([k, v]) => (
+            <TreeGridNode key={k} nodeKey={k} data={v} depth={depth + 1} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
+export function GridTab() {
+  const { state, dispatch } = useApp()
+
+  const parsed = useMemo(() => {
+    if (!state.gridRaw.trim()) return { data: null, error: null }
+    const result = parseJson(state.gridRaw)
+    if (!result.valid) return { data: null, error: result.error }
+    return { data: result.parsed, error: null }
+  }, [state.gridRaw])
+
+  return (
+    <div className="grid-tab">
+      {/* Left: JSON editor */}
+      <div className="grid-tab__left panel">
+        <div className="panel__header">
+          <span className="panel__label">JSON Input</span>
+          <div className="flex-row">
+            <button
+              className="btn btn-ghost"
+              style={{ fontSize: 11 }}
+              onClick={() => {
+                if (state.editorRaw.trim()) {
+                  dispatch({ type: 'SET_GRID_RAW', raw: state.editorRaw })
+                }
+              }}
+              title="Copy JSON from Editor tab"
+            >
+              From Editor
+            </button>
+            <button
+              className="btn btn-ghost"
+              style={{ fontSize: 11 }}
+              onClick={() => dispatch({ type: 'SET_GRID_RAW', raw: '' })}
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+        <div className="panel__body">
+          <JsonTextarea
+            value={state.gridRaw}
+            onChange={(val) => dispatch({ type: 'SET_GRID_RAW', raw: val })}
+            placeholder={'{\n  "menu": {\n    "id": "file",\n    "value": "File"\n  }\n}'}
+          />
+        </div>
       </div>
 
-      {/* Table area */}
-      <div className="grid-tab__table-area panel">
+      {/* Right: Tree grid */}
+      <div className="grid-tab__right panel">
         <div className="panel__header">
           <span className="panel__label">Grid</span>
         </div>
         <div className="panel__body">
-          {parseError ? (
+          {parsed.error ? (
             <div className="empty-state">
               <div className="empty-state__icon text-error">✗</div>
-              <div className="empty-state__title text-error">Cannot render grid</div>
-              <div className="text-error mono" style={{ fontSize: 12 }}>{parseError}</div>
+              <div className="empty-state__title text-error">Invalid JSON</div>
+              <div className="text-error mono" style={{ fontSize: 12 }}>{parsed.error}</div>
             </div>
-          ) : !hasData && !state.gridRaw.trim() ? (
+          ) : parsed.data === null ? (
             <div className="empty-state">
               <div className="empty-state__icon">▦</div>
-              <div className="empty-state__title">Paste JSON to view as a grid</div>
-              <div>An array of objects or a single object. Keys become columns.</div>
-            </div>
-          ) : !hasData ? (
-            <div className="empty-state">
-              <div className="empty-state__title">No rows to display</div>
-              <div>Check filter, or ensure your path points to an array of objects.</div>
+              <div className="empty-state__title">Paste JSON to explore</div>
+              <div>Objects and arrays are shown as an interactive tree.</div>
             </div>
           ) : (
-            <table className="json-table">
-              <thead>
-                <tr>
-                  <th style={{ width: 40 }}>#</th>
-                  {columns.map((col) => (
-                    <th key={col} onClick={() => toggleSort(col)} title="Click to sort">
-                      {col}{sortIcon(col)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {sortedRows.map((row, i) => (
-                  <tr key={i}>
-                    <td style={{ color: 'var(--text-muted)', textAlign: 'right' }}>{i + 1}</td>
-                    {columns.map((col) => (
-                      <td key={col}>{renderCell(row[col])}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="jtg-root">
+              <TreeGridNode nodeKey={null} data={parsed.data} depth={0} />
+            </div>
           )}
         </div>
       </div>
