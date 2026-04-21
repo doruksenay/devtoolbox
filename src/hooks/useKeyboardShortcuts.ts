@@ -6,13 +6,20 @@ import { useApp } from '../context/AppContext'
  * - Ctrl+B → Beautify (editor tab)
  * - Ctrl+M → Minify (editor tab)
  * - Ctrl+S → Copy to clipboard (active tab content)
+ * - Ctrl+K → Open command palette
  */
 export function useKeyboardShortcuts() {
-  const { state, beautifyEditor, minifyEditor } = useApp()
+  const { state, dispatch, beautifyEditor, minifyEditor } = useApp()
 
   useEffect(() => {
     function handler(e: KeyboardEvent) {
       const ctrl = e.ctrlKey || e.metaKey
+
+      if (ctrl && e.key === 'k') {
+        e.preventDefault()
+        dispatch({ type: 'TOGGLE_COMMAND_PALETTE' })
+        return
+      }
 
       if (ctrl && e.key === 'b') {
         e.preventDefault()
@@ -56,5 +63,5 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [state.activeTab, state.editorRaw, state.xmlRaw, state.compareLeft, state.compareRight, state.gridRaw, state.queryRaw, beautifyEditor, minifyEditor])
+  }, [state.activeTab, state.editorRaw, state.xmlRaw, state.compareLeft, state.compareRight, state.gridRaw, state.queryRaw, dispatch, beautifyEditor, minifyEditor])
 }

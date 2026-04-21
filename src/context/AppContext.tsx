@@ -16,7 +16,7 @@ import { rootReducer } from './reducers'
 //  Helpers
 // ─────────────────────────────────────────────
 
-const STORAGE_KEY = 'json_workbench_state_v1'
+const STORAGE_KEY = 'devtoolbox_state_v1'
 
 export function parseJson(raw: string): ParseResult {
   if (!raw.trim()) return { valid: false, parsed: null, error: 'Input is empty' }
@@ -143,6 +143,20 @@ const initialState: AppState = {
   drawTool: 'select',
   drawSelectedIds: [],
   drawSelectedColor: '#4f8ef7',
+  yamlInput: '',
+  yamlOutput: '',
+  yamlMode: 'yaml-to-json',
+  yamlError: null,
+  base64Input: '',
+  base64Output: '',
+  base64Mode: 'encode',
+  base64Error: null,
+  urlInput: '',
+  urlOutput: '',
+  urlMode: 'encode',
+  urlError: null,
+  sidebarCollapsed: (persisted as Record<string, unknown>).sidebarCollapsed === true,
+  commandPaletteOpen: false,
 }
 
 // ─────────────────────────────────────────────
@@ -176,6 +190,7 @@ function persistState(state: AppState) {
       queryRaw: state.queryRaw,
       queryExpression: state.queryExpression,
       theme: state.theme,
+      sidebarCollapsed: state.sidebarCollapsed,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
   } catch {
