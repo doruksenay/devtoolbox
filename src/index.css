@@ -567,8 +567,44 @@ body {
 .view-toggle__btn--active { background: var(--bg-hover); color: var(--accent); font-weight: 600; }
 
 /* ─────────────────────────────────────────────
-   Tree View
+   Editor Theme Picker
 ───────────────────────────────────────────── */
+.editor-theme-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 3px 8px 3px 6px;
+  height: 28px;
+}
+
+.editor-theme-picker__icon {
+  font-size: 13px;
+  line-height: 1;
+  user-select: none;
+}
+
+.editor-theme-picker__select {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  padding: 0;
+}
+
+.editor-theme-picker__select:hover { color: var(--text-primary); }
+
+[data-theme='dark'] .editor-theme-picker__select option {
+  background: var(--bg-panel);
+  color: var(--text-primary);
+}
+
+
 .tree-view {
   padding: 10px 12px;
   font-family: var(--font-mono);
@@ -609,7 +645,7 @@ body {
 .tree-node__caret--closed { transform: rotate(-90deg); }
 
 .tree-node__key {
-  color: var(--accent);
+  color: var(--tree-key-color, var(--accent));
 }
 
 .tree-node__bracket {
@@ -640,18 +676,13 @@ body {
 }
 
 .tree-leaf__key {
-  color: var(--accent);
+  color: var(--tree-key-color, var(--accent));
 }
 
-.tree-value--string  { color: #86efac; }
-.tree-value--number  { color: #93c5fd; }
-.tree-value--boolean { color: #fca5a5; }
-.tree-value--null    { color: var(--text-muted); font-style: italic; }
-
-[data-theme='light'] .tree-value--string  { color: #16a34a; }
-[data-theme='light'] .tree-value--number  { color: #1d4ed8; }
-[data-theme='light'] .tree-value--boolean { color: #dc2626; }
-[data-theme='light'] .tree-value--null    { color: var(--text-muted); }
+.tree-value--string  { color: var(--tree-string-color,  #86efac); }
+.tree-value--number  { color: var(--tree-number-color,  #93c5fd); }
+.tree-value--boolean { color: var(--tree-boolean-color, #fca5a5); }
+.tree-value--null    { color: var(--tree-null-color,    var(--text-muted)); font-style: italic; }
 
 /* Tree diff highlighting */
 .tree-node--added,

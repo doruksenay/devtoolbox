@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext'
 import { JsonTextarea } from '../shared/JsonTextarea'
 import { TreeView } from '../Tree/TreeView'
 import { useToast } from '../Toast/ToastProvider'
+import { EDITOR_THEMES, EDITOR_THEME_ORDER } from '../../utils/editorThemes'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 
@@ -168,6 +169,19 @@ export function EditorTab() {
         </button>
 
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="editor-theme-picker">
+            <span className="editor-theme-picker__icon">🎨</span>
+            <select
+              className="editor-theme-picker__select"
+              value={state.editorSyntaxTheme}
+              onChange={(e) => dispatch({ type: 'SET_EDITOR_SYNTAX_THEME', theme: e.target.value as import('../../utils/editorThemes').EditorSyntaxTheme })}
+              title="Editor syntax theme"
+            >
+              {EDITOR_THEME_ORDER.map((id) => (
+                <option key={id} value={id}>{EDITOR_THEMES[id].label}</option>
+              ))}
+            </select>
+          </div>
           {statusBadge}
           {view === 'tree' && (
             <>

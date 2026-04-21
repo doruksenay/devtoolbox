@@ -1,18 +1,22 @@
 import { useEffect, useRef } from 'react'
-import { EditorState } from '@codemirror/state'
+import { EditorState, Prec } from '@codemirror/state'
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view'
 import { json } from '@codemirror/lang-json'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
-import { bracketMatching, foldGutter, indentOnInput } from '@codemirror/language'
+import { bracketMatching, foldGutter, indentOnInput, HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete'
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search'
 import { oneDark } from '@codemirror/theme-one-dark'
+import { tags } from '@lezer/highlight'
+import type { EditorSyntaxTheme } from '../../utils/editorThemes'
+import { EDITOR_THEMES } from '../../utils/editorThemes'
 
 interface Props {
   value: string
   onChange: (val: string) => void
   readOnly?: boolean
   theme?: 'dark' | 'light'
+  syntaxTheme?: EditorSyntaxTheme
 }
 
 const lightTheme = EditorView.theme({
@@ -54,7 +58,7 @@ const darkThemeOverride = EditorView.theme({
   },
 })
 
-export function CodeEditor({ value, onChange, readOnly = false, theme = 'dark' }: Props) {
+export function CodeEditor({ value, onChange, readOnly = false, theme = 'dark', syntaxTheme = 'default' }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const onChangeRef = useRef(onChange)
@@ -62,6 +66,19 @@ export function CodeEditor({ value, onChange, readOnly = false, theme = 'dark' }
 
   useEffect(() => {
     if (!containerRef.current) return
+
+    const colors = EDITOR_THEMES[syntaxTheme][theme === 'dark' ? 'dark' : 'light']
+    const customHighlight = Prec.highest(
+      syntaxHighlighting(
+        HighlightStyle.define([
+          { tag: tags.string,       color: colors.string },
+          { tag: tags.number,       color: colors.number },
+          { tag: tags.bool,         color: colors.boolean },
+          { tag: tags.null,         color: colors.null },
+          { tag: tags.propertyName, color: colors.key },
+        ])
+      )
+    )
 
     const extensions = [
       lineNumbers(),
@@ -88,6 +105,7 @@ export function CodeEditor({ value, onChange, readOnly = false, theme = 'dark' }
       EditorState.readOnly.of(readOnly),
       theme === 'dark' ? oneDark : lightTheme,
       theme === 'dark' ? darkThemeOverride : [],
+      customHighlight,
     ].flat()
 
     const state = EditorState.create({
@@ -107,7 +125,7 @@ export function CodeEditor({ value, onChange, readOnly = false, theme = 'dark' }
       viewRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [readOnly, theme])
+  }, [readOnly, theme, syntaxTheme])
 
   // Sync external value changes
   useEffect(() => {
