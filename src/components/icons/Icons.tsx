@@ -172,6 +172,16 @@ export function IconMoon(p: IconProps) {
   )
 }
 
+export function IconPalette(p: IconProps) {
+  return (
+    <Icon {...p}>
+      <rect x="2" y="5" width="4" height="11" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <rect x="7" y="2" width="4" height="14" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <rect x="12" y="5" width="4" height="11" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    </Icon>
+  )
+}
+
 export function IconSearch(p: IconProps) {
   return (
     <Icon {...p}>

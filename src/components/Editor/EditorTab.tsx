@@ -4,6 +4,7 @@ import { JsonTextarea } from '../shared/JsonTextarea'
 import { TreeView } from '../Tree/TreeView'
 import { useToast } from '../Toast/ToastProvider'
 import { EDITOR_THEMES, EDITOR_THEME_ORDER } from '../../utils/editorThemes'
+import { IconPalette } from '../icons/Icons'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 
@@ -170,7 +171,7 @@ export function EditorTab() {
 
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
           <div className="editor-theme-picker">
-            <span className="editor-theme-picker__icon">🎨</span>
+            <IconPalette size={13} className="editor-theme-picker__icon" />
             <select
               className="editor-theme-picker__select"
               value={state.editorSyntaxTheme}
@@ -248,21 +249,23 @@ export function EditorTab() {
       <div className="editor-tab__split">
         <div className="editor-tab__pane panel">
           <div className="panel__header">
-            <span className="panel__label">{view === 'code' ? 'JSON' : 'Tree View'}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span className="panel__label">{view === 'code' ? 'JSON' : 'Tree View'}</span>
+              {view === 'tree' && (
+                <>
+                  <button className="btn btn-ghost" style={{ padding: '2px 10px', fontSize: 12, height: 24 }} onClick={handleExpandAll} disabled={!hasContent} title="Expand all nodes">
+                    Expand All
+                  </button>
+                  <button className="btn btn-ghost" style={{ padding: '2px 10px', fontSize: 12, height: 24 }} onClick={handleCollapseAll} disabled={!hasContent} title="Collapse all nodes">
+                    Collapse All
+                  </button>
+                </>
+              )}
+            </div>
             {view === 'code' && (
               <span className="text-xs text-muted" style={{ fontFamily: 'var(--font-mono)' }}>
                 {state.editorRaw.length} chars · {state.editorRaw.split('\n').length} lines
               </span>
-            )}
-            {view === 'tree' && (
-              <div style={{ display: 'flex', gap: 6, marginLeft: 8 }}>
-                <button className="btn btn-ghost" style={{ padding: '2px 10px', fontSize: 12, height: 24 }} onClick={handleExpandAll} disabled={!hasContent} title="Expand all nodes">
-                  Expand All
-                </button>
-                <button className="btn btn-ghost" style={{ padding: '2px 10px', fontSize: 12, height: 24 }} onClick={handleCollapseAll} disabled={!hasContent} title="Collapse all nodes">
-                  Collapse All
-                </button>
-              </div>
             )}
           </div>
           <div className="panel__body">
