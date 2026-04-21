@@ -597,9 +597,9 @@ body {
 .tree-node__toggle:hover { color: var(--accent); }
 
 .tree-node__caret {
-  font-size: 9px;
-  color: var(--text-muted);
-  width: 12px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  width: 16px;
   display: inline-block;
   text-align: center;
   transition: transform 0.15s;
