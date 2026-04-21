@@ -4,14 +4,16 @@ import {
   useReducer,
   useCallback,
   useEffect,
+  useRef,
   type ReactNode,
   type Dispatch,
 } from 'react'
 import { JSONPath } from 'jsonpath-plus'
 import * as Diff from 'diff'
-import type { AppState, AppAction, TabId, DiffLine, ParseResult } from '../types'
+import type { AppState, AppAction, DiffLine, ParseResult } from '../types'
 import type { EditorSyntaxTheme } from '../utils/editorThemes'
 import { rootReducer } from './reducers'
+import { supabase } from '../lib/supabase'
 
 // ─────────────────────────────────────────────
 //  Helpers
@@ -88,39 +90,38 @@ function loadPersistedState(): Partial<AppState> {
   }
 }
 
-const persisted = loadPersistedState()
-
+// For anonymous users we start with an empty slate (no localStorage restore)
 const initialState: AppState = {
-  activeTab: (persisted.activeTab as TabId) ?? 'editor',
-  editorRaw: persisted.editorRaw ?? '',
+  activeTab: 'editor',
+  editorRaw: '',
   editorParsed: null,
   editorValid: null,
   editorError: null,
-  compareLeft: persisted.compareLeft ?? '',
+  compareLeft: '',
   compareLeftParsed: null,
   compareLeftError: null,
-  compareRight: persisted.compareRight ?? '',
+  compareRight: '',
   compareRightParsed: null,
   compareRightError: null,
   compareLines: null,
   compareEqual: null,
   compareError: null,
-  xmlRaw: persisted.xmlRaw ?? '',
+  xmlRaw: '',
   xmlValid: null,
   xmlError: null,
-  gridRaw: persisted.gridRaw ?? '',
+  gridRaw: '',
   gridParsed: null,
   gridError: null,
-  gridPath: persisted.gridPath ?? '$',
-  queryRaw: persisted.queryRaw ?? '',
+  gridPath: '$',
+  queryRaw: '',
   queryParsed: null,
   queryError: null,
-  queryExpression: persisted.queryExpression ?? '',
+  queryExpression: '',
   queryResults: null,
   queryPaths: null,
   queryRunError: null,
-  theme: (persisted.theme as 'dark' | 'light') ?? 'dark',
-  editorSyntaxTheme: (persisted.editorSyntaxTheme as EditorSyntaxTheme) ?? 'default',
+  theme: 'dark',
+  editorSyntaxTheme: 'default' as EditorSyntaxTheme,
   convertInput: '',
   convertOutput: '',
   convertMode: 'xml-to-json',
@@ -157,8 +158,28 @@ const initialState: AppState = {
   urlOutput: '',
   urlMode: 'encode',
   urlError: null,
-  sidebarCollapsed: (persisted as Record<string, unknown>).sidebarCollapsed === true,
+  sidebarCollapsed: false,
   commandPaletteOpen: false,
+}
+
+// ─────────────────────────────────────────────
+//  Helpers: what fields we persist
+// ─────────────────────────────────────────────
+function buildSavePayload(state: AppState): Partial<AppState> {
+  return {
+    activeTab: state.activeTab,
+    editorRaw: state.editorRaw,
+    compareLeft: state.compareLeft,
+    compareRight: state.compareRight,
+    xmlRaw: state.xmlRaw,
+    gridRaw: state.gridRaw,
+    gridPath: state.gridPath,
+    queryRaw: state.queryRaw,
+    queryExpression: state.queryExpression,
+    theme: state.theme,
+    editorSyntaxTheme: state.editorSyntaxTheme,
+    sidebarCollapsed: state.sidebarCollapsed,
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -179,34 +200,73 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | null>(null)
 
-function persistState(state: AppState) {
-  try {
-    const toSave: Partial<AppState> = {
-      activeTab: state.activeTab,
-      editorRaw: state.editorRaw,
-      compareLeft: state.compareLeft,
-      compareRight: state.compareRight,
-      xmlRaw: state.xmlRaw,
-      gridRaw: state.gridRaw,
-      gridPath: state.gridPath,
-      queryRaw: state.queryRaw,
-      queryExpression: state.queryExpression,
-      theme: state.theme,
-      editorSyntaxTheme: state.editorSyntaxTheme,
-      sidebarCollapsed: state.sidebarCollapsed,
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
-  } catch {
-    // ignore quota errors
-  }
-}
-
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(rootReducer, initialState)
+  // Track current Supabase user id so we know whether to persist to DB
+  const userIdRef = useRef<string | null>(null)
+  // Prevent writing back state that we just loaded from Supabase
+  const suppressNextPersistRef = useRef(false)
 
-  // Persist on every state change
+  // ── Load state for logged-in user on mount / auth change ──────────────
   useEffect(() => {
-    persistState(state)
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const uid = session?.user?.id ?? null
+      userIdRef.current = uid
+
+      if (uid) {
+        // Load persisted state from Supabase
+        const { data } = await supabase
+          .from('user_states')
+          .select('state')
+          .eq('user_id', uid)
+          .maybeSingle()
+
+        if (data?.state) {
+          suppressNextPersistRef.current = true
+          dispatch({ type: 'LOAD_PERSISTED_STATE', payload: data.state as Partial<AppState> })
+        }
+      } else {
+        // Anonymous — restore from localStorage (preferences like theme)
+        const saved = loadPersistedState()
+        if (Object.keys(saved).length > 0) {
+          suppressNextPersistRef.current = true
+          dispatch({ type: 'LOAD_PERSISTED_STATE', payload: saved })
+        }
+      }
+    })
+
+    return () => { listener.subscription.unsubscribe() }
+  }, [])
+
+  // ── Persist on every state change ────────────────────────────────────
+  useEffect(() => {
+    if (suppressNextPersistRef.current) {
+      suppressNextPersistRef.current = false
+      return
+    }
+
+    const payload = buildSavePayload(state)
+    const uid = userIdRef.current
+
+    if (uid) {
+      // Logged-in: upsert into Supabase (fire-and-forget)
+      supabase
+        .from('user_states')
+        .upsert({ user_id: uid, state: payload, updated_at: new Date().toISOString() })
+        .then(() => undefined)
+    } else {
+      // Anonymous: only persist preferences (theme, sidebar), NOT content
+      try {
+        const prefsOnly: Partial<AppState> = {
+          theme: state.theme,
+          editorSyntaxTheme: state.editorSyntaxTheme,
+          sidebarCollapsed: state.sidebarCollapsed,
+        }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(prefsOnly))
+      } catch {
+        // ignore quota errors
+      }
+    }
   }, [state])
 
   // Apply theme class to <html>

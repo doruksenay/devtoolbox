@@ -1,11 +1,16 @@
+import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
+import { useAuth } from '../../context/AuthContext'
 import { IconSun, IconMoon, IconGithub, IconSearch } from '../icons/Icons'
+import { AuthModal } from '../Auth/AuthModal'
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 const cmdLabel = isMac ? '⌘K' : 'Ctrl+K'
 
 export function Header() {
   const { state, dispatch } = useApp()
+  const { user, signOut } = useAuth()
+  const [showAuth, setShowAuth] = useState(false)
 
   return (
     <header className="app-header">
@@ -38,6 +43,26 @@ export function Header() {
           {state.theme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
         </button>
 
+        {user ? (
+          <button
+            className="btn btn-ghost app-header__user-btn"
+            title={`Signed in as ${user.email} — click to sign out`}
+            onClick={signOut}
+          >
+            <span className="app-header__user-avatar">
+              {(user.email ?? '?')[0].toUpperCase()}
+            </span>
+          </button>
+        ) : (
+          <button
+            className="btn btn-ghost"
+            title="Sign in to save your work"
+            onClick={() => setShowAuth(true)}
+          >
+            Sign in
+          </button>
+        )}
+
         <a
           href="https://github.com/doruksenay/devtoolbox"
           target="_blank"
@@ -49,6 +74,8 @@ export function Header() {
           <IconGithub size={15} />
         </a>
       </div>
+
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
     </header>
   )
 }

@@ -204,6 +204,8 @@ export type AppAction =
   | { type: 'TOGGLE_SIDEBAR' }
   | { type: 'TOGGLE_COMMAND_PALETTE' }
   | { type: 'SET_COMMAND_PALETTE_OPEN'; open: boolean }
+  // Internal
+  | { type: 'LOAD_PERSISTED_STATE'; payload: Partial<AppState> }
 
 // ── Draw types ───────────────────────────────────
 export type DrawTool = 'select' | 'rect' | 'ellipse' | 'diamond' | 'cylinder' | 'hexagon' | 'parallelogram' | 'text' | 'connect'
