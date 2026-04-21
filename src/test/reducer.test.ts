@@ -56,6 +56,20 @@ const emptyState: AppState = {
   drawTool: 'select',
   drawSelectedIds: [],
   drawSelectedColor: '#4f8ef7',
+  yamlInput: '',
+  yamlOutput: '',
+  yamlMode: 'yaml-to-json',
+  yamlError: null,
+  base64Input: '',
+  base64Output: '',
+  base64Mode: 'encode',
+  base64Error: null,
+  urlInput: '',
+  urlOutput: '',
+  urlMode: 'encode',
+  urlError: null,
+  sidebarCollapsed: false,
+  commandPaletteOpen: false,
 }
 
 describe('rootReducer', () => {

@@ -2,7 +2,7 @@
 //  Shared type definitions across the app
 // ─────────────────────────────────────────────
 
-export type TabId = 'editor' | 'compare' | 'xml' | 'grid' | 'query' | 'convert' | 'har' | 'cron' | 'jwt' | 'draw'
+export type TabId = 'editor' | 'compare' | 'xml' | 'grid' | 'query' | 'convert' | 'har' | 'cron' | 'jwt' | 'draw' | 'yaml' | 'base64' | 'urlenc'
 
 export interface ParseResult {
   valid: boolean
@@ -98,6 +98,28 @@ export interface AppState {
   drawTool: DrawTool
   drawSelectedIds: string[]
   drawSelectedColor: string
+
+  // ── YAML ↔ JSON ───────────────────────────────
+  yamlInput: string
+  yamlOutput: string
+  yamlMode: 'yaml-to-json' | 'json-to-yaml'
+  yamlError: string | null
+
+  // ── Base64 ────────────────────────────────────
+  base64Input: string
+  base64Output: string
+  base64Mode: 'encode' | 'decode'
+  base64Error: string | null
+
+  // ── URL Encoder ───────────────────────────────
+  urlInput: string
+  urlOutput: string
+  urlMode: 'encode' | 'decode'
+  urlError: string | null
+
+  // ── UI state ──────────────────────────────────
+  sidebarCollapsed: boolean
+  commandPaletteOpen: boolean
 }
 
 export type AppAction =
@@ -155,6 +177,28 @@ export type AppAction =
   | { type: 'SET_DRAW_SELECTED_IDS'; ids: string[] }
   | { type: 'SET_DRAW_SELECTED_COLOR'; color: string }
   | { type: 'CLEAR_DRAW' }
+  // YAML
+  | { type: 'SET_YAML_INPUT'; input: string }
+  | { type: 'SET_YAML_OUTPUT'; output: string; error: null }
+  | { type: 'SET_YAML_ERROR'; error: string }
+  | { type: 'SET_YAML_MODE'; mode: 'yaml-to-json' | 'json-to-yaml' }
+  | { type: 'CLEAR_YAML' }
+  // Base64
+  | { type: 'SET_BASE64_INPUT'; input: string }
+  | { type: 'SET_BASE64_OUTPUT'; output: string; error: null }
+  | { type: 'SET_BASE64_ERROR'; error: string }
+  | { type: 'SET_BASE64_MODE'; mode: 'encode' | 'decode' }
+  | { type: 'CLEAR_BASE64' }
+  // URL Encoder
+  | { type: 'SET_URL_INPUT'; input: string }
+  | { type: 'SET_URL_OUTPUT'; output: string; error: null }
+  | { type: 'SET_URL_ERROR'; error: string }
+  | { type: 'SET_URL_MODE'; mode: 'encode' | 'decode' }
+  | { type: 'CLEAR_URL' }
+  // UI
+  | { type: 'TOGGLE_SIDEBAR' }
+  | { type: 'TOGGLE_COMMAND_PALETTE' }
+  | { type: 'SET_COMMAND_PALETTE_OPEN'; open: boolean }
 
 // ── Draw types ───────────────────────────────────
 export type DrawTool = 'select' | 'rect' | 'ellipse' | 'diamond' | 'text' | 'connect'

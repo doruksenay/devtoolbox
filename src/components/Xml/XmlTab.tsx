@@ -1,17 +1,17 @@
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import { useApp } from '../../context/AppContext'
+import { useToast } from '../Toast/ToastProvider'
 
 export function XmlTab() {
   const { state, dispatch, validateXml, formatXmlAction } = useApp()
-  const [copied, setCopied] = useState(false)
+  const { addToast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const hasContent = state.xmlRaw.trim().length > 0
 
   function handleCopy() {
     if (!hasContent) return
     navigator.clipboard.writeText(state.xmlRaw).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1200)
+      addToast('Copied to clipboard')
     })
   }
 
@@ -50,7 +50,7 @@ export function XmlTab() {
         <div className="toolbar-sep" />
 
         <button className="btn btn-ghost" onClick={handleCopy} disabled={!hasContent}>
-          {copied ? 'Copied!' : 'Copy'}
+          Copy
         </button>
         <button
           className="btn btn-ghost"

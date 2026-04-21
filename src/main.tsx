@@ -3,11 +3,14 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App'
 import { AppProvider } from './context/AppContext'
+import { ToastProvider } from './components/Toast/ToastProvider'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AppProvider>
-      <App />
+      <ToastProvider>
+        <App />
+      </ToastProvider>
     </AppProvider>
   </StrictMode>,
 )

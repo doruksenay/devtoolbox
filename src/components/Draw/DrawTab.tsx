@@ -425,7 +425,7 @@ export function DrawTab() {
           className="draw-canvas"
           onMouseDown={onCanvasMouseDown}
           onDoubleClick={e => {
-            const id = (e.target as Element).closest('.draw-shape')?.getAttribute('data-id')
+            const id = (e.target as Element).closest('[data-id]')?.getAttribute('data-id')
             if (id) onShapeDblClick(e, id)
           }}
         >

@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.3.0] - 2026-04-21
+
+### Added
+- **Sidebar Navigation**: Replaced horizontal tab bar with a collapsible vertical sidebar (VS Code-style). Each tool has an SVG icon. Sidebar can be toggled to icon-only mode.
+- **SVG Icons**: Clean 18×18 inline SVG icons for every tool replacing Unicode placeholders.
+- **Command Palette**: `Ctrl+K` opens a searchable command palette to instantly switch between all tools. Supports keyboard navigation (↑↓ arrows, Enter, Esc).
+- **Toast Notifications**: Non-blocking bottom-right toast messages for Copy, Download, and Convert actions.
+- **YAML ↔ JSON Tool**: New tab for bidirectional YAML/JSON conversion using `js-yaml`.
+- **Base64 Encoder/Decoder**: Encode text to Base64 or decode Base64 back to text. Supports file encoding.
+- **URL Encoder/Decoder**: URL-encode or decode strings with auto-parsed query parameter table.
+
+### Fixed
+- **Draw Tab label bug**: Double-clicking a shape to edit its label now correctly finds the element ID using `closest('[data-id]')` instead of the incorrect `closest('.draw-shape')`.
+- **Editor copy feedback**: Replaced flashing "Copied!" button label with toast notification.
+
+### Changed
+- **Project renamed**: "JSON Workbench" → "DevToolbox" (title, meta, localStorage key, header branding).
+- **App shell layout**: Switched from column-only flex to header + sidebar + content layout.
+- **Design tokens**: Added `--surface`, `--surface-2`, `--text` CSS variable aliases for full legacy HAR/Cron/JWT CSS compatibility.
+
 ## [0.2.0] - 2026-04-20
 
 ### Added
