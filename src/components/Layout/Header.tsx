@@ -1,6 +1,9 @@
 import { useApp } from '../../context/AppContext'
 import { IconSun, IconMoon, IconGithub, IconSearch } from '../icons/Icons'
 
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
+const cmdLabel = isMac ? '⌘K' : 'Ctrl+K'
+
 export function Header() {
   const { state, dispatch } = useApp()
 
@@ -18,12 +21,12 @@ export function Header() {
       <div className="app-header__actions">
         <button
           className="btn btn-ghost app-header__cmd-btn"
-          title="Command Palette (Ctrl+K)"
+          title={`Command Palette (${cmdLabel})`}
           onClick={() => dispatch({ type: 'SET_COMMAND_PALETTE_OPEN', open: true })}
         >
           <IconSearch size={14} />
           <span className="app-header__cmd-label">Search tools…</span>
-          <kbd className="shortcut-hint">⌘K</kbd>
+          <kbd className="shortcut-hint">{cmdLabel}</kbd>
         </button>
 
         <button

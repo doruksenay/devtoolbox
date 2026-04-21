@@ -23,7 +23,7 @@
 
   --success:      #34d399;
   --success-bg:   #082419;
-  --error:        #f77;
+  --error:        #ff7777;
   --error-bg:     #2a1212;
   --warning:      #fbbf24;
   --warning-bg:   #251c08;
@@ -31,7 +31,7 @@
   --diff-added-bg:   #082419;
   --diff-added-text: #34d399;
   --diff-removed-bg: #2a1212;
-  --diff-removed-text: #f77;
+  --diff-removed-text: #ff7777;
 
   --tab-active-bg:  #1a1e35;
   --tab-active-border: #3b9eff;
