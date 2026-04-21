@@ -183,16 +183,6 @@ export function EditorTab() {
             </select>
           </div>
           {statusBadge}
-          {view === 'tree' && (
-            <>
-              <button className="btn btn-ghost" onClick={handleExpandAll} disabled={!hasContent} title="Expand all nodes">
-                Expand All
-              </button>
-              <button className="btn btn-ghost" onClick={handleCollapseAll} disabled={!hasContent} title="Collapse all nodes">
-                Collapse All
-              </button>
-            </>
-          )}
           <div className="view-toggle">
             <button
               className={`view-toggle__btn${view === 'code' ? ' view-toggle__btn--active' : ''}`}
@@ -263,6 +253,16 @@ export function EditorTab() {
               <span className="text-xs text-muted" style={{ fontFamily: 'var(--font-mono)' }}>
                 {state.editorRaw.length} chars · {state.editorRaw.split('\n').length} lines
               </span>
+            )}
+            {view === 'tree' && (
+              <div style={{ display: 'flex', gap: 6, marginLeft: 8 }}>
+                <button className="btn btn-ghost" style={{ padding: '2px 10px', fontSize: 12, height: 24 }} onClick={handleExpandAll} disabled={!hasContent} title="Expand all nodes">
+                  Expand All
+                </button>
+                <button className="btn btn-ghost" style={{ padding: '2px 10px', fontSize: 12, height: 24 }} onClick={handleCollapseAll} disabled={!hasContent} title="Collapse all nodes">
+                  Collapse All
+                </button>
+              </div>
             )}
           </div>
           <div className="panel__body">
