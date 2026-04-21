@@ -61,6 +61,9 @@ export function Sidebar() {
           {collapsed ? <IconChevronRight /> : <IconChevronLeft />}
           {!collapsed && <span className="sidebar__collapse-label">Collapse</span>}
         </button>
+        {!collapsed && (
+          <div className="sidebar__credit">by doruksenay</div>
+        )}
       </div>
     </aside>
   )
