@@ -2,6 +2,7 @@ import { useRef, useState, useCallback } from 'react'
 import { useApp } from '../../context/AppContext'
 import { JsonTextarea } from '../shared/JsonTextarea'
 import { TreeView } from '../Tree/TreeView'
+import { useToast } from '../Toast/ToastProvider'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 
@@ -12,8 +13,8 @@ addFormats(ajv)
 
 export function EditorTab() {
   const { state, dispatch, validateEditor, beautifyEditor, minifyEditor } = useApp()
+  const { addToast } = useToast()
   const [view, setView] = useState<ViewMode>('code')
-  const [copyLabel, setCopyLabel] = useState('Copy')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [treeKey, setTreeKey] = useState(0)
   const [treeForceOpen, setTreeForceOpen] = useState<boolean | undefined>(undefined)
@@ -36,8 +37,7 @@ export function EditorTab() {
   function handleCopy() {
     if (!state.editorRaw) return
     navigator.clipboard.writeText(state.editorRaw).then(() => {
-      setCopyLabel('Copied!')
-      setTimeout(() => setCopyLabel('Copy'), 1500)
+      addToast('Copied to clipboard')
     })
   }
 
@@ -134,7 +134,7 @@ export function EditorTab() {
         <div className="toolbar-sep" />
 
         <button className="btn btn-ghost" onClick={handleCopy} disabled={!hasContent}>
-          {copyLabel}
+          Copy
         </button>
         <button
           className="btn btn-ghost"

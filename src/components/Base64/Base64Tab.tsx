@@ -12,10 +12,14 @@ export function Base64Tab() {
     if (!input) return
     try {
       if (state.base64Mode === 'encode') {
-        const output = btoa(unescape(encodeURIComponent(input)))
+        const bytes = new TextEncoder().encode(input)
+        const binStr = Array.from(bytes).map(b => String.fromCharCode(b)).join('')
+        const output = btoa(binStr)
         dispatch({ type: 'SET_BASE64_OUTPUT', output, error: null })
       } else {
-        const output = decodeURIComponent(escape(atob(input.trim())))
+        const binStr = atob(input.trim())
+        const bytes = Uint8Array.from(binStr, c => c.charCodeAt(0))
+        const output = new TextDecoder().decode(bytes)
         dispatch({ type: 'SET_BASE64_OUTPUT', output, error: null })
       }
     } catch (e) {
