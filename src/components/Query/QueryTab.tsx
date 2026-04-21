@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useApp } from '../../context/AppContext'
 import { JsonTextarea } from '../shared/JsonTextarea'
 
@@ -13,6 +13,60 @@ const EXAMPLE_QUERIES = [
 export function QueryTab() {
   const { state, dispatch, runQuery } = useApp()
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null)
+  const [exprWidth, setExprWidth] = useState(320)
+  const [topHeight, setTopHeight] = useState(220)
+
+  const topRef = useRef<HTMLDivElement>(null)
+
+  // Horizontal resize (JSON pane ↔ expr pane)
+  const hResizeDragging = useRef(false)
+  const hResizeStartX = useRef(0)
+  const hResizeStartW = useRef(0)
+
+  const onHResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    hResizeDragging.current = true
+    hResizeStartX.current = e.clientX
+    hResizeStartW.current = exprWidth
+
+    function onMove(ev: MouseEvent) {
+      if (!hResizeDragging.current) return
+      const delta = hResizeStartX.current - ev.clientX
+      setExprWidth(Math.max(240, Math.min(520, hResizeStartW.current + delta)))
+    }
+    function onUp() {
+      hResizeDragging.current = false
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }, [exprWidth])
+
+  // Vertical resize (top pane ↔ results)
+  const vResizeDragging = useRef(false)
+  const vResizeStartY = useRef(0)
+  const vResizeStartH = useRef(0)
+
+  const onVResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    vResizeDragging.current = true
+    vResizeStartY.current = e.clientY
+    vResizeStartH.current = topHeight
+
+    function onMove(ev: MouseEvent) {
+      if (!vResizeDragging.current) return
+      const delta = ev.clientY - vResizeStartY.current
+      setTopHeight(Math.max(120, Math.min(520, vResizeStartH.current + delta)))
+    }
+    function onUp() {
+      vResizeDragging.current = false
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }, [topHeight])
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -34,7 +88,7 @@ export function QueryTab() {
   return (
     <div className="query-tab">
       {/* Top: JSON input + expression pane */}
-      <div className="query-tab__top">
+      <div className="query-tab__top" ref={topRef} style={{ height: topHeight }}>
         <div className="query-tab__json-pane">
           <div className="panel" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <div className="panel__header">
@@ -70,8 +124,11 @@ export function QueryTab() {
           </div>
         </div>
 
-        <div className="query-tab__expr-pane">
-          <div className="panel__label">JSONPath expression</div>
+        {/* Horizontal resize handle */}
+        <div className="query-tab__h-resize-handle" onMouseDown={onHResizeMouseDown} title="Drag to resize" />
+
+        <div className="query-tab__expr-pane" style={{ width: exprWidth }}>
+          <div className="panel__label" style={{ marginBottom: 8 }}>JSONPath Expression</div>
           <div className="expr-input-wrap" onKeyDown={handleKeyDown}>
             <input
               className="expr-input"
@@ -89,29 +146,31 @@ export function QueryTab() {
             </button>
           </div>
 
-          <div className="text-xs text-muted">
-            Press <kbd style={{ background: 'var(--bg-elevated)', padding: '1px 4px', borderRadius: 3 }}>Ctrl+Enter</kbd> to run
+          <div className="text-xs text-muted" style={{ marginTop: 2, marginBottom: 8 }}>
+            Press <kbd style={{ background: 'var(--bg-elevated)', padding: '2px 5px', borderRadius: 3, fontSize: '0.9em' }}>Ctrl+Enter</kbd> to run
           </div>
 
           {/* Example queries */}
           <div>
-            <div className="panel__label" style={{ marginBottom: 4 }}>Examples</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div className="panel__label" style={{ marginBottom: 8 }}>Examples</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {EXAMPLE_QUERIES.map((ex) => (
                 <button
                   key={ex.expr}
-                  className="btn btn-ghost"
-                  style={{ justifyContent: 'flex-start', fontSize: 11.5 }}
+                  className="btn btn-ghost query-example-btn"
                   onClick={() => dispatch({ type: 'SET_QUERY_EXPRESSION', expr: ex.expr })}
                 >
-                  <span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{ex.expr}</span>
-                  <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>{ex.label}</span>
+                  <span className="query-example-btn__expr">{ex.expr}</span>
+                  <span className="query-example-btn__label">{ex.label}</span>
                 </button>
               ))}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Vertical resize handle */}
+      <div className="query-tab__v-resize-handle" onMouseDown={onVResizeMouseDown} title="Drag to resize" />
 
       {/* Results */}
       <div className="query-tab__results panel">
