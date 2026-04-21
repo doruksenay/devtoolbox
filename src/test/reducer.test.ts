@@ -32,6 +32,7 @@ const emptyState: AppState = {
   queryPaths: null,
   queryRunError: null,
   theme: 'dark',
+  editorSyntaxTheme: 'default',
   convertInput: '',
   convertOutput: '',
   convertMode: 'xml-to-json',

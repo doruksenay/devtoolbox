@@ -20,6 +20,7 @@ export function JsonTextarea({ value, onChange, placeholder, readOnly }: Props) 
         onChange={onChange}
         readOnly={readOnly}
         theme={state.theme}
+        syntaxTheme={state.editorSyntaxTheme}
       />
       {!value && placeholder && (
         <div

@@ -10,6 +10,7 @@ import {
 import { JSONPath } from 'jsonpath-plus'
 import * as Diff from 'diff'
 import type { AppState, AppAction, TabId, DiffLine, ParseResult } from '../types'
+import type { EditorSyntaxTheme } from '../utils/editorThemes'
 import { rootReducer } from './reducers'
 
 // ─────────────────────────────────────────────
@@ -119,6 +120,7 @@ const initialState: AppState = {
   queryPaths: null,
   queryRunError: null,
   theme: (persisted.theme as 'dark' | 'light') ?? 'dark',
+  editorSyntaxTheme: (persisted.editorSyntaxTheme as EditorSyntaxTheme) ?? 'default',
   convertInput: '',
   convertOutput: '',
   convertMode: 'xml-to-json',
@@ -190,6 +192,7 @@ function persistState(state: AppState) {
       queryRaw: state.queryRaw,
       queryExpression: state.queryExpression,
       theme: state.theme,
+      editorSyntaxTheme: state.editorSyntaxTheme,
       sidebarCollapsed: state.sidebarCollapsed,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))

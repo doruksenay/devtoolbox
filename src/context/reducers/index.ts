@@ -36,6 +36,8 @@ export function rootReducer(state: AppState, action: AppAction): AppState {
       return { ...state, activeTab: action.tab }
     case 'TOGGLE_THEME':
       return { ...state, theme: state.theme === 'dark' ? 'light' : 'dark' }
+    case 'SET_EDITOR_SYNTAX_THEME':
+      return { ...state, editorSyntaxTheme: action.theme }
     case 'TOGGLE_SIDEBAR':
       return { ...state, sidebarCollapsed: !state.sidebarCollapsed }
     case 'TOGGLE_COMMAND_PALETTE':

@@ -4,6 +4,9 @@
 
 export type TabId = 'editor' | 'compare' | 'xml' | 'grid' | 'query' | 'convert' | 'har' | 'cron' | 'jwt' | 'draw' | 'yaml' | 'base64' | 'urlenc'
 
+export type { EditorSyntaxTheme } from './utils/editorThemes'
+import type { EditorSyntaxTheme } from './utils/editorThemes'
+
 export interface ParseResult {
   valid: boolean
   parsed: unknown | null
@@ -60,6 +63,7 @@ export interface AppState {
 
   // ── Global preferences ──────────────────────
   theme: 'dark' | 'light'
+  editorSyntaxTheme: EditorSyntaxTheme
 
   // ── Convert tab ─────────────────────────────
   convertInput: string
@@ -145,6 +149,7 @@ export type AppAction =
   | { type: 'SET_QUERY_RESULTS'; results: unknown[]; paths: string[] }
   | { type: 'SET_QUERY_RUN_ERROR'; error: string }
   | { type: 'TOGGLE_THEME' }
+  | { type: 'SET_EDITOR_SYNTAX_THEME'; theme: EditorSyntaxTheme }
   // Convert tab
   | { type: 'SET_CONVERT_INPUT'; raw: string }
   | { type: 'SET_CONVERT_OUTPUT'; output: string; error: null }

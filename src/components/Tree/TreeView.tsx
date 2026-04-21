@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react'
 import type { DiffType } from '../../utils/jsonDiff'
 import { pathHasDiff } from '../../utils/jsonDiff'
+import type { EditorSyntaxTheme } from '../../utils/editorThemes'
+import { EDITOR_THEMES } from '../../utils/editorThemes'
+import { useApp } from '../../context/AppContext'
 
 interface TreeNodeProps {
   nodeKey: string | null
@@ -182,11 +185,25 @@ interface TreeViewProps {
   forceOpen?: boolean
   diffs?: Map<string, DiffType> | null
   activeDiffPath?: string
+  syntaxTheme?: EditorSyntaxTheme
 }
 
-export function TreeView({ data, forceOpen, diffs, activeDiffPath }: TreeViewProps) {
+export function TreeView({ data, forceOpen, diffs, activeDiffPath, syntaxTheme }: TreeViewProps) {
+  const { state } = useApp()
+  const theme: EditorSyntaxTheme = (syntaxTheme ?? state.editorSyntaxTheme ?? 'default') as EditorSyntaxTheme
+  const colorMode = state.theme === 'dark' ? 'dark' : 'light'
+  const colors = EDITOR_THEMES[theme][colorMode]
+
+  const cssVars = {
+    '--tree-string-color': colors.string,
+    '--tree-number-color': colors.number,
+    '--tree-boolean-color': colors.boolean,
+    '--tree-null-color': colors.null,
+    '--tree-key-color': colors.key,
+  } as React.CSSProperties
+
   return (
-    <div className="tree-view">
+    <div className="tree-view" style={cssVars}>
       <TreeNodeComponent nodeKey={null} data={data} depth={0} forceOpen={forceOpen} path="$" diffs={diffs} activeDiffPath={activeDiffPath} />
     </div>
   )
