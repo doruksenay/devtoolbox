@@ -1,5 +1,6 @@
-import { useRef } from 'react'
+import { useRef, useState, useCallback } from 'react'
 import { useApp } from '../../context/AppContext'
+import { useToast } from '../Toast/ToastProvider'
 
 interface HarEntry {
   request: {
@@ -24,6 +25,25 @@ interface HarEntry {
     connect?: number
     ssl?: number
   }
+  _resourceType?: string
+}
+
+type DetailTab = 'request' | 'response' | 'timing'
+type TypeFilter = '' | 'fetch' | 'xhr' | 'script' | 'stylesheet' | 'image' | 'font' | 'document' | 'other'
+
+function getResourceType(entry: HarEntry): string {
+  const rt = entry._resourceType?.toLowerCase()
+  if (rt) return rt
+  const url = entry.request.url.toLowerCase().split('?')[0]
+  const mime = (entry.response.content.mimeType ?? '').toLowerCase()
+  if (mime.includes('javascript') || url.endsWith('.js') || url.endsWith('.mjs')) return 'script'
+  if (mime.includes('css') || url.endsWith('.css')) return 'stylesheet'
+  if (mime.includes('image') || /\.(png|jpe?g|gif|svg|webp|ico|avif)$/.test(url)) return 'image'
+  if (mime.includes('font') || /\.(woff2?|ttf|otf|eot)$/.test(url)) return 'font'
+  if (mime.includes('html')) return 'document'
+  const method = entry.request.method.toUpperCase()
+  if (method !== 'GET' || mime.includes('json') || mime.includes('xml')) return 'xhr'
+  return 'other'
 }
 
 function methodColor(m: string) {
@@ -110,9 +130,52 @@ function TimingBar({ timings, total }: { timings: HarEntry['timings']; total: nu
   )
 }
 
+const TYPE_FILTERS: { label: string; value: TypeFilter }[] = [
+  { label: 'All', value: '' },
+  { label: 'Fetch', value: 'fetch' },
+  { label: 'XHR', value: 'xhr' },
+  { label: 'JS', value: 'script' },
+  { label: 'CSS', value: 'stylesheet' },
+  { label: 'Img', value: 'image' },
+  { label: 'Font', value: 'font' },
+  { label: 'Doc', value: 'document' },
+  { label: 'Other', value: 'other' },
+]
+
 export function HarTab() {
   const { state, dispatch } = useApp()
+  const { addToast } = useToast()
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // Local UI state
+  const [detailWidth, setDetailWidth] = useState(420)
+  const [detailTab, setDetailTab] = useState<DetailTab>('response')
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('')
+
+  // Resizable detail panel
+  const resizeDragging = useRef(false)
+  const resizeStartX = useRef(0)
+  const resizeStartWidth = useRef(0)
+
+  const onResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    resizeDragging.current = true
+    resizeStartX.current = e.clientX
+    resizeStartWidth.current = detailWidth
+
+    function onMove(ev: MouseEvent) {
+      if (!resizeDragging.current) return
+      const delta = resizeStartX.current - ev.clientX
+      setDetailWidth(Math.max(280, Math.min(800, resizeStartWidth.current + delta)))
+    }
+    function onUp() {
+      resizeDragging.current = false
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }, [detailWidth])
 
   function loadHar(text: string) {
     try {
@@ -141,6 +204,18 @@ export function HarTab() {
     reader.readAsText(file)
   }
 
+  function openInEditor(text: string | undefined) {
+    if (!text) return
+    const pretty = tryPretty(text)
+    dispatch({ type: 'SET_EDITOR_RAW', raw: pretty })
+    dispatch({ type: 'SET_TAB', tab: 'editor' })
+  }
+
+  function copyText(text: string | undefined) {
+    if (!text) return
+    navigator.clipboard.writeText(tryPretty(text)).then(() => addToast('Copied to clipboard'))
+  }
+
   let entries: HarEntry[] = []
   let stats = { total: 0, size: 0, time: 0 }
 
@@ -162,6 +237,7 @@ export function HarTab() {
     const filter = state.harFilter.toLowerCase()
     const mf = state.harMethodFilter.toUpperCase()
     if (mf && method !== mf) return false
+    if (typeFilter && getResourceType(e) !== typeFilter) return false
     if (filter && !url.includes(filter) && !String(e.response.status).includes(filter)) return false
     return true
   })
@@ -197,6 +273,7 @@ export function HarTab() {
 
   return (
     <div className="har-tab har-tab--loaded">
+      {/* Toolbar row 1: stats + method filter + search */}
       <div className="har-toolbar">
         <div className="har-toolbar__stats">
           <span className="har-stat">{filtered.length} / {stats.total} requests</span>
@@ -222,6 +299,19 @@ export function HarTab() {
           />
           <button className="btn btn--sm" onClick={() => dispatch({ type: 'CLEAR_HAR' })}>Clear</button>
         </div>
+      </div>
+
+      {/* Toolbar row 2: type filter chips */}
+      <div className="har-type-filters">
+        {TYPE_FILTERS.map(f => (
+          <button
+            key={f.value}
+            className={`har-type-chip${typeFilter === f.value ? ' har-type-chip--active' : ''}`}
+            onClick={() => setTypeFilter(f.value)}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
 
       <div className="har-body">
@@ -270,53 +360,93 @@ export function HarTab() {
         </div>
 
         {selectedEntry && (
-          <div className="har-detail">
-            <div className="har-detail__header">
-              <span className="har-method" style={{ color: methodColor(selectedEntry.request.method) }}>
-                {selectedEntry.request.method}
-              </span>
-              <span className="har-detail__url">{selectedEntry.request.url}</span>
-            </div>
-            <div className="har-detail__meta">
-              <span className="har-stat" style={{ color: statusColor(selectedEntry.response.status) }}>
-                {selectedEntry.response.status} {selectedEntry.response.statusText}
-              </span>
-              <span className="har-stat har-stat--muted">{fmtTime(selectedEntry.time)}</span>
-              <span className="har-stat har-stat--muted">{fmtBytes(selectedEntry.response.content.size)}</span>
-            </div>
-            <div className="har-detail__pane">
-              <div className="har-detail__section">
-                <div className="har-detail__section-title">Request Headers</div>
-                <HeadersTable headers={selectedEntry.request.headers} />
+          <>
+            {/* Resize handle */}
+            <div className="har-resize-handle" onMouseDown={onResizeMouseDown} title="Drag to resize" />
+
+            {/* Detail panel */}
+            <div className="har-detail" style={{ width: detailWidth, minWidth: detailWidth, maxWidth: detailWidth }}>
+              <div className="har-detail__header">
+                <span className="har-method" style={{ color: methodColor(selectedEntry.request.method) }}>
+                  {selectedEntry.request.method}
+                </span>
+                <span className="har-detail__url">{selectedEntry.request.url}</span>
               </div>
-              {selectedEntry.request.postData && (
-                <div className="har-detail__section">
-                  <div className="har-detail__section-title">
-                    Request Body
-                    <span className="har-detail__section-mime">{selectedEntry.request.postData.mimeType}</span>
+              <div className="har-detail__meta">
+                <span className="har-stat" style={{ color: statusColor(selectedEntry.response.status) }}>
+                  {selectedEntry.response.status} {selectedEntry.response.statusText}
+                </span>
+                <span className="har-stat har-stat--muted">{fmtTime(selectedEntry.time)}</span>
+                <span className="har-stat har-stat--muted">{fmtBytes(selectedEntry.response.content.size)}</span>
+              </div>
+
+              {/* Tabs */}
+              <div className="har-detail__tabs">
+                {(['request', 'response', 'timing'] as DetailTab[]).map(tab => (
+                  <button
+                    key={tab}
+                    className={`har-detail__tab${detailTab === tab ? ' har-detail__tab--active' : ''}`}
+                    onClick={() => setDetailTab(tab)}
+                  >
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  </button>
+                ))}
+              </div>
+
+              <div className="har-detail__pane">
+                {detailTab === 'request' && (
+                  <>
+                    <div className="har-detail__section">
+                      <div className="har-detail__section-title">Headers</div>
+                      <HeadersTable headers={selectedEntry.request.headers} />
+                    </div>
+                    {selectedEntry.request.postData && (
+                      <div className="har-detail__section">
+                        <div className="har-detail__section-title">
+                          Body
+                          <span className="har-detail__section-mime">{selectedEntry.request.postData.mimeType}</span>
+                          <div className="har-detail__section-actions">
+                            <button className="har-action-btn" onClick={() => openInEditor(selectedEntry.request.postData?.text)} title="Open in JSON Editor">↗ Editor</button>
+                            <button className="har-action-btn" onClick={() => copyText(selectedEntry.request.postData?.text)} title="Copy body">⎘ Copy</button>
+                          </div>
+                        </div>
+                        <pre className="har-detail__body-pane">{tryPretty(selectedEntry.request.postData.text)}</pre>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {detailTab === 'response' && (
+                  <>
+                    <div className="har-detail__section">
+                      <div className="har-detail__section-title">Headers</div>
+                      <HeadersTable headers={selectedEntry.response.headers} />
+                    </div>
+                    {selectedEntry.response.content.text && (
+                      <div className="har-detail__section">
+                        <div className="har-detail__section-title">
+                          Body
+                          <span className="har-detail__section-mime">{selectedEntry.response.content.mimeType}</span>
+                          <div className="har-detail__section-actions">
+                            <button className="har-action-btn" onClick={() => openInEditor(selectedEntry.response.content.text)} title="Open in JSON Editor">↗ Editor</button>
+                            <button className="har-action-btn" onClick={() => copyText(selectedEntry.response.content.text)} title="Copy body">⎘ Copy</button>
+                          </div>
+                        </div>
+                        <pre className="har-detail__body-pane">{tryPretty(selectedEntry.response.content.text)}</pre>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {detailTab === 'timing' && (
+                  <div className="har-detail__section">
+                    <div className="har-detail__section-title">Timing</div>
+                    <TimingBar timings={selectedEntry.timings} total={selectedEntry.time} />
                   </div>
-                  <pre className="har-detail__body-pane">{tryPretty(selectedEntry.request.postData.text)}</pre>
-                </div>
-              )}
-              <div className="har-detail__section">
-                <div className="har-detail__section-title">Response Headers</div>
-                <HeadersTable headers={selectedEntry.response.headers} />
-              </div>
-              {selectedEntry.response.content.text && (
-                <div className="har-detail__section">
-                  <div className="har-detail__section-title">
-                    Response Body
-                    <span className="har-detail__section-mime">{selectedEntry.response.content.mimeType}</span>
-                  </div>
-                  <pre className="har-detail__body-pane">{tryPretty(selectedEntry.response.content.text)}</pre>
-                </div>
-              )}
-              <div className="har-detail__section">
-                <div className="har-detail__section-title">Timing</div>
-                <TimingBar timings={selectedEntry.timings} total={selectedEntry.time} />
+                )}
               </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>

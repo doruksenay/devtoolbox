@@ -10,6 +10,7 @@ interface TreeNodeProps {
   forceOpen?: boolean
   path?: string
   diffs?: Map<string, DiffType> | null
+  activeDiffPath?: string
 }
 
 const MAX_AUTO_EXPAND_DEPTH = 2
@@ -34,7 +35,7 @@ function getDiffClass(diffs: Map<string, DiffType> | null | undefined, path: str
 
 const CHUNK_SIZE = 100
 
-function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs }: TreeNodeProps) {
+function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs, activeDiffPath }: TreeNodeProps) {
   const [open, setOpen] = useState(forceOpen !== undefined ? forceOpen : depth < MAX_AUTO_EXPAND_DEPTH)
   const [visibleCount, setVisibleCount] = useState(CHUNK_SIZE)
 
@@ -46,12 +47,13 @@ function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs }:
   const openBracket  = isArray ? '[' : '{'
   const closeBracket = isArray ? ']' : '}'
   const diffClass = getDiffClass(diffs, path)
+  const isActive = activeDiffPath === path
 
   const visibleEntries = count > CHUNK_SIZE ? entries.slice(0, visibleCount) : entries
   const hasMore = visibleCount < count
 
   return (
-    <div className={`tree-node${diffClass}`}>
+    <div className={`tree-node${diffClass}${isActive ? ' tree-node--active-diff' : ''}`} data-diff-path={diffClass ? path : undefined}>
       <button className="tree-node__toggle" onClick={() => setOpen(!open)} type="button">
         <span className={`tree-node__caret tree-node__caret--${open ? 'open' : 'closed'}`}>▾</span>
         {nodeKey !== null && (
@@ -84,6 +86,7 @@ function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs }:
                   forceOpen={forceOpen}
                   path={childPath}
                   diffs={diffs}
+                  activeDiffPath={activeDiffPath}
                 />
               )
             })}
@@ -104,7 +107,7 @@ function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs }:
   )
 }
 
-function LeafNode({ nodeKey, data, path = '$', diffs }: { nodeKey: string | null; data: unknown; path?: string; diffs?: Map<string, DiffType> | null }) {
+function LeafNode({ nodeKey, data, path = '$', diffs, activeDiffPath }: { nodeKey: string | null; data: unknown; path?: string; diffs?: Map<string, DiffType> | null; activeDiffPath?: string }) {
   const type = getType(data)
   let display: string
   let className: string
@@ -132,9 +135,10 @@ function LeafNode({ nodeKey, data, path = '$', diffs }: { nodeKey: string | null
   }
 
   const diffClass = getDiffClass(diffs, path)
+  const isActive = activeDiffPath === path
 
   return (
-    <div className={`tree-leaf${diffClass}`}>
+    <div className={`tree-leaf${diffClass}${isActive ? ' tree-node--active-diff' : ''}`} data-diff-path={diffClass ? path : undefined}>
       {nodeKey !== null && (
         <>
           <span className="tree-leaf__key">"{nodeKey}"</span>
@@ -146,7 +150,7 @@ function LeafNode({ nodeKey, data, path = '$', diffs }: { nodeKey: string | null
   )
 }
 
-function TreeNodeComponent({ nodeKey, data, depth, forceOpen, path = '$', diffs }: TreeNodeProps) {
+function TreeNodeComponent({ nodeKey, data, depth, forceOpen, path = '$', diffs, activeDiffPath }: TreeNodeProps) {
   const type = getType(data)
 
   if (type === 'object' || type === 'array') {
@@ -154,8 +158,9 @@ function TreeNodeComponent({ nodeKey, data, depth, forceOpen, path = '$', diffs 
     const isEmpty = Array.isArray(obj) ? obj.length === 0 : Object.keys(obj).length === 0
     if (isEmpty) {
       const diffClass = getDiffClass(diffs, path)
+      const isActive = activeDiffPath === path
       return (
-        <div className={`tree-leaf${diffClass}`}>
+        <div className={`tree-leaf${diffClass}${isActive ? ' tree-node--active-diff' : ''}`} data-diff-path={diffClass ? path : undefined}>
           {nodeKey !== null && (
             <>
               <span className="tree-leaf__key">"{nodeKey}"</span>
@@ -166,22 +171,23 @@ function TreeNodeComponent({ nodeKey, data, depth, forceOpen, path = '$', diffs 
         </div>
       )
     }
-    return <CollapsibleNode nodeKey={nodeKey} data={data} depth={depth} forceOpen={forceOpen} path={path} diffs={diffs} />
+    return <CollapsibleNode nodeKey={nodeKey} data={data} depth={depth} forceOpen={forceOpen} path={path} diffs={diffs} activeDiffPath={activeDiffPath} />
   }
 
-  return <LeafNode nodeKey={nodeKey} data={data} path={path} diffs={diffs} />
+  return <LeafNode nodeKey={nodeKey} data={data} path={path} diffs={diffs} activeDiffPath={activeDiffPath} />
 }
 
 interface TreeViewProps {
   data: unknown
   forceOpen?: boolean
   diffs?: Map<string, DiffType> | null
+  activeDiffPath?: string
 }
 
-export function TreeView({ data, forceOpen, diffs }: TreeViewProps) {
+export function TreeView({ data, forceOpen, diffs, activeDiffPath }: TreeViewProps) {
   return (
     <div className="tree-view">
-      <TreeNodeComponent nodeKey={null} data={data} depth={0} forceOpen={forceOpen} path="$" diffs={diffs} />
+      <TreeNodeComponent nodeKey={null} data={data} depth={0} forceOpen={forceOpen} path="$" diffs={diffs} activeDiffPath={activeDiffPath} />
     </div>
   )
 }

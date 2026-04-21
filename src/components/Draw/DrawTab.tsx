@@ -7,10 +7,16 @@ import type { DrawShape, DrawConnection, DrawTool } from '../../types'
 const DEFAULT_W = 140
 const DEFAULT_H = 60
 const HANDLE_SIZE = 8
+const GRID_SIZE = 20
 const COLORS = ['#4f8ef7','#4caf50','#ff9800','#f44336','#9c27b0','#00bcd4','#607d8b','#795548','#e91e63','#fff176']
 
 function uid() {
   return Math.random().toString(36).slice(2, 10)
+}
+
+function snapToGrid(v: number, enabled: boolean): number {
+  if (!enabled) return v
+  return Math.round(v / GRID_SIZE) * GRID_SIZE
 }
 
 // ── Shape rendering helpers ──────────────────────────────────────────────────
@@ -33,6 +39,25 @@ function ShapeEl({
     body = <ellipse cx={cx} cy={cy} rx={w / 2} ry={h / 2} fill={color} stroke={selected ? '#fff' : 'none'} strokeWidth={2} />
   } else if (type === 'diamond') {
     const pts = `${cx},${y} ${x + w},${cy} ${cx},${y + h} ${x},${cy}`
+    body = <polygon points={pts} fill={color} stroke={selected ? '#fff' : 'none'} strokeWidth={2} />
+  } else if (type === 'cylinder') {
+    const ry = h * 0.15
+    body = (
+      <g>
+        <rect x={x} y={y + ry} width={w} height={h - ry * 2} fill={color} stroke={selected ? '#fff' : 'none'} strokeWidth={2} />
+        <ellipse cx={cx} cy={y + ry} rx={w / 2} ry={ry} fill={color} stroke={selected ? '#fff' : 'none'} strokeWidth={2} />
+        <ellipse cx={cx} cy={y + h - ry} rx={w / 2} ry={ry} fill={color} stroke={selected ? '#fff' : 'none'} strokeWidth={2} />
+        {/* top rim line */}
+        <ellipse cx={cx} cy={y + ry} rx={w / 2} ry={ry} fill="none" stroke={isLight(color) ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.25)'} strokeWidth={1} />
+      </g>
+    )
+  } else if (type === 'hexagon') {
+    const q = w / 4
+    const pts = `${x + q},${y} ${x + w - q},${y} ${x + w},${cy} ${x + w - q},${y + h} ${x + q},${y + h} ${x},${cy}`
+    body = <polygon points={pts} fill={color} stroke={selected ? '#fff' : 'none'} strokeWidth={2} />
+  } else if (type === 'parallelogram') {
+    const offset = w * 0.15
+    const pts = `${x + offset},${y} ${x + w},${y} ${x + w - offset},${y + h} ${x},${y + h}`
     body = <polygon points={pts} fill={color} stroke={selected ? '#fff' : 'none'} strokeWidth={2} />
   } else {
     // text node
@@ -111,6 +136,12 @@ export function DrawTab() {
   const svgRef = useRef<SVGSVGElement>(null)
   const undoStack = useRef<UndoFrame[]>([])
 
+  // Grid & snap
+  const [showGrid, setShowGrid] = useState(true)
+  const [snapEnabled, setSnapEnabled] = useState(true)
+
+  const snap = useCallback((v: number) => snapToGrid(v, snapEnabled), [snapEnabled])
+
   // Local drag state (not in global store to avoid unnecessary re-renders)
   const drag = useRef<{
     mode: DragMode
@@ -149,7 +180,7 @@ export function DrawTab() {
   // ── Mouse down on canvas ─────────────────────────────────────────────────
 
   function onCanvasMouseDown(e: React.MouseEvent) {
-    if (e.target === svgRef.current || (e.target as Element).classList.contains('draw-canvas-bg')) {
+    if (e.target === svgRef.current || (e.target as Element).classList.contains('draw-canvas-bg') || (e.target as Element).tagName === 'pattern' || (e.target as Element).classList.contains('draw-grid')) {
       // Click on empty canvas
       if (tool === 'select') {
         dispatch({ type: 'SET_DRAW_SELECTED_IDS', ids: [] })
@@ -162,8 +193,10 @@ export function DrawTab() {
       const h = DEFAULT_H
       const id = uid()
       const shapeType = tool as DrawShape['type']
+      const sx = snap(x - w / 2)
+      const sy = snap(y - h / 2)
       const newShape: DrawShape = {
-        id, type: shapeType, x: x - w / 2, y: y - h / 2,
+        id, type: shapeType, x: sx, y: sy,
         w, h, label: shapeType === 'text' ? 'Text' : shapeType.charAt(0).toUpperCase() + shapeType.slice(1),
         color: selectedColor,
       }
@@ -216,7 +249,9 @@ export function DrawTab() {
 
     if (d.mode === 'move' && d.origShapes) {
       const updated = d.origShapes.map(s =>
-        selectedIds.includes(s.id) ? { ...s, x: s.x + dx, y: s.y + dy } : s
+        selectedIds.includes(s.id)
+          ? { ...s, x: snap(s.x + dx), y: snap(s.y + dy) }
+          : s
       )
       dispatch({ type: 'SET_DRAW_SHAPES', shapes: updated })
     }
@@ -225,7 +260,7 @@ export function DrawTab() {
       const orig = d.origShapes.find(s => s.id === d.shapeId)!
       const updated = d.origShapes.map(s =>
         s.id === d.shapeId
-          ? { ...s, w: Math.max(60, orig.w + dx), h: Math.max(30, orig.h + dy) }
+          ? { ...s, w: Math.max(60, snap(orig.w + dx)), h: Math.max(30, snap(orig.h + dy)) }
           : s
       )
       dispatch({ type: 'SET_DRAW_SHAPES', shapes: updated })
@@ -236,13 +271,13 @@ export function DrawTab() {
       if (orig) {
         const updated = shapes.map(s =>
           s.id === d.newShapeId
-            ? { ...s, w: Math.max(60, DEFAULT_W + dx), h: Math.max(30, DEFAULT_H + dy) }
+            ? { ...s, w: Math.max(60, snap(DEFAULT_W + dx)), h: Math.max(30, snap(DEFAULT_H + dy)) }
             : s
         )
         dispatch({ type: 'SET_DRAW_SHAPES', shapes: updated })
       }
     }
-  }, [selectedIds, shapes, dispatch])
+  }, [selectedIds, shapes, dispatch, snap])
 
   const onMouseUp = useCallback((e: MouseEvent) => {
     const d = drag.current
@@ -368,12 +403,15 @@ export function DrawTab() {
   // ── Toolbar tools ────────────────────────────────────────────────────────
 
   const TOOLS: { id: DrawTool; label: string; key: string }[] = [
-    { id: 'select',  label: '↖ Select',   key: 'S' },
-    { id: 'rect',    label: '▭ Rect',      key: 'R' },
-    { id: 'ellipse', label: '⬭ Ellipse',   key: 'E' },
-    { id: 'diamond', label: '◇ Diamond',   key: 'D' },
-    { id: 'text',    label: 'T Text',      key: 'T' },
-    { id: 'connect', label: '→ Connect',   key: 'C' },
+    { id: 'select',       label: '↖ Select',       key: 'S' },
+    { id: 'rect',         label: '▭ Rect',          key: 'R' },
+    { id: 'ellipse',      label: '⬭ Ellipse',       key: 'E' },
+    { id: 'diamond',      label: '◇ Diamond',       key: 'D' },
+    { id: 'cylinder',     label: '⬤ Cylinder',      key: 'Y' },
+    { id: 'hexagon',      label: '⬡ Hexagon',       key: 'H' },
+    { id: 'parallelogram',label: '▱ Process',       key: 'P' },
+    { id: 'text',         label: 'T Text',          key: 'T' },
+    { id: 'connect',      label: '→ Connect',       key: 'C' },
   ]
 
   return (
@@ -405,6 +443,23 @@ export function DrawTab() {
         </div>
         <div className="draw-toolbar__sep" />
         <div className="draw-toolbar__group">
+          <button
+            className={`draw-action-btn${showGrid ? ' draw-action-btn--active' : ''}`}
+            onClick={() => setShowGrid(g => !g)}
+            title="Toggle grid"
+          >
+            ⊞ Grid
+          </button>
+          <button
+            className={`draw-action-btn${snapEnabled ? ' draw-action-btn--active' : ''}`}
+            onClick={() => setSnapEnabled(s => !s)}
+            title="Toggle snap to grid"
+          >
+            ⊹ Snap
+          </button>
+        </div>
+        <div className="draw-toolbar__sep" />
+        <div className="draw-toolbar__group">
           <button className="draw-action-btn" onClick={undo} title="Undo (Ctrl+Z)">↩ Undo</button>
           <button className="draw-action-btn" onClick={exportDiagram} title="Export as JSON">⬇ Export</button>
           <button className="draw-action-btn draw-action-btn--import" onClick={() => importRef.current?.click()} title="Import JSON">⬆ Import</button>
@@ -417,6 +472,7 @@ export function DrawTab() {
         Tool: <strong>{tool}</strong>
         {selectedIds.length > 0 && ` · ${selectedIds.length} selected`}
         {tool === 'connect' && ' · Click source shape, then target shape'}
+        {snapEnabled && <span style={{ color: 'var(--accent)', marginLeft: 8 }}>Snap ON</span>}
       </div>
 
       <div className="draw-canvas-wrap">
@@ -429,14 +485,22 @@ export function DrawTab() {
             if (id) onShapeDblClick(e, id)
           }}
         >
-          <rect className="draw-canvas-bg" x={0} y={0} width="100%" height="100%" fill="transparent" />
-
-          {/* Connections */}
           <defs>
+            <pattern id="draw-grid-pattern" width={GRID_SIZE} height={GRID_SIZE} patternUnits="userSpaceOnUse">
+              <path d={`M ${GRID_SIZE} 0 L 0 0 0 ${GRID_SIZE}`} fill="none" stroke="var(--border)" strokeWidth="0.5" />
+            </pattern>
             <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
               <path d="M0,0 L0,6 L8,3 z" fill="var(--text-secondary)" />
             </marker>
           </defs>
+
+          {/* Grid background */}
+          {showGrid && (
+            <rect className="draw-grid" width="100%" height="100%" fill="url(#draw-grid-pattern)" />
+          )}
+          <rect className="draw-canvas-bg" x={0} y={0} width="100%" height="100%" fill="transparent" />
+
+          {/* Connections */}
           {connections.map(conn => {
             const from = shapes.find(s => s.id === conn.from)
             const to   = shapes.find(s => s.id === conn.to)
