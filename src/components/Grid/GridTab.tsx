@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useCallback } from 'react'
 import { useApp } from '../../context/AppContext'
 import { JsonTextarea } from '../shared/JsonTextarea'
 import { parseJson } from '../../context/AppContext'
@@ -159,6 +159,34 @@ function TreeGridNode({ nodeKey, data, depth }: NodeProps) {
 // ── Main component ─────────────────────────────────────────────────────────────
 export function GridTab() {
   const { state, dispatch } = useApp()
+  const [leftWidth, setLeftWidth] = useState(50)
+
+  const resizeDragging = useRef(false)
+  const resizeStartX = useRef(0)
+  const resizeStartWidth = useRef(0)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const onResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    resizeDragging.current = true
+    resizeStartX.current = e.clientX
+    resizeStartWidth.current = leftWidth
+
+    function onMove(ev: MouseEvent) {
+      if (!resizeDragging.current || !containerRef.current) return
+      const containerWidth = containerRef.current.getBoundingClientRect().width
+      const delta = ev.clientX - resizeStartX.current
+      const newPct = resizeStartWidth.current + (delta / containerWidth) * 100
+      setLeftWidth(Math.max(20, Math.min(80, newPct)))
+    }
+    function onUp() {
+      resizeDragging.current = false
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }, [leftWidth])
 
   const parsed = useMemo(() => {
     if (!state.gridRaw.trim()) return { data: null, error: null }
@@ -168,9 +196,9 @@ export function GridTab() {
   }, [state.gridRaw])
 
   return (
-    <div className="grid-tab">
+    <div className="grid-tab" ref={containerRef}>
       {/* Left: JSON editor */}
-      <div className="grid-tab__left panel">
+      <div className="grid-tab__left panel" style={{ width: `${leftWidth}%` }}>
         <div className="panel__header">
           <span className="panel__label">JSON Input</span>
           <div className="flex-row">
@@ -203,6 +231,9 @@ export function GridTab() {
           />
         </div>
       </div>
+
+      {/* Resize handle */}
+      <div className="grid-tab__resize-handle" onMouseDown={onResizeMouseDown} title="Drag to resize" />
 
       {/* Right: Tree grid */}
       <div className="grid-tab__right panel">
