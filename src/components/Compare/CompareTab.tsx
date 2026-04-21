@@ -1,8 +1,10 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useApp } from '../../context/AppContext'
 import { JsonTextarea } from '../shared/JsonTextarea'
 import { TreeView } from '../Tree/TreeView'
 import { computeJsonDiff } from '../../utils/jsonDiff'
+
+type PanelMode = 'text' | 'tree'
 
 export function CompareTab() {
   const { state, dispatch, runCompare } = useApp()
@@ -11,11 +13,31 @@ export function CompareTab() {
   const [diffIndex, setDiffIndex] = useState(0)
   const leftPaneRef = useRef<HTMLDivElement>(null)
   const rightPaneRef = useRef<HTMLDivElement>(null)
+  const [leftMode, setLeftMode] = useState<PanelMode>('text')
+  const [rightMode, setRightMode] = useState<PanelMode>('text')
+  const hasAutoSwitched = useRef(false)
 
   const hasResults =
     state.compareEqual !== null &&
     state.compareLeftParsed !== null &&
     state.compareRightParsed !== null
+
+  // Auto-compare with debounce whenever both sides have content
+  useEffect(() => {
+    if (!state.compareLeft.trim() || !state.compareRight.trim()) return
+    const timer = setTimeout(runCompare, 400)
+    return () => clearTimeout(timer)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.compareLeft, state.compareRight])
+
+  // Auto-switch to tree mode on first successful compare
+  useEffect(() => {
+    if (hasResults && !hasAutoSwitched.current) {
+      hasAutoSwitched.current = true
+      setLeftMode('tree')
+      setRightMode('tree')
+    }
+  }, [hasResults])
 
   // Compute diffs for highlighting
   const { leftDiffs, rightDiffs } = useMemo(() => {
@@ -36,7 +58,6 @@ export function CompareTab() {
   function scrollToDiff(idx: number) {
     const path = diffPaths[idx]
     if (!path) return
-    // Find elements with data-diff-path matching this path in both panes
     for (const paneRef of [leftPaneRef, rightPaneRef]) {
       const el = paneRef.current?.querySelector(`[data-diff-path="${CSS.escape(path)}"]`)
       if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
@@ -65,68 +86,19 @@ export function CompareTab() {
     setTreeKey((k) => k + 1)
   }
 
+  function handleClearAll() {
+    dispatch({ type: 'CLEAR_COMPARE' })
+    hasAutoSwitched.current = false
+    setLeftMode('text')
+    setRightMode('text')
+    setDiffIndex(0)
+  }
+
   return (
     <div className="compare-tab">
-      {/* Two JSON inputs */}
-      <div className="compare-tab__inputs">
-        <div className="compare-tab__pane">
-          <div className="panel" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div className="panel__header">
-              <span className="panel__label">Left (original)</span>
-              <button
-                className="btn btn-ghost"
-                style={{ fontSize: 11 }}
-                onClick={() => dispatch({ type: 'SET_COMPARE_LEFT', raw: '' })}
-              >
-                Clear
-              </button>
-            </div>
-            <div className="panel__body">
-              <JsonTextarea
-                value={state.compareLeft}
-                onChange={(val) => dispatch({ type: 'SET_COMPARE_LEFT', raw: val })}
-                placeholder="Paste original JSON..."
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="compare-tab__pane">
-          <div className="panel" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div className="panel__header">
-              <span className="panel__label">Right (modified)</span>
-              <button
-                className="btn btn-ghost"
-                style={{ fontSize: 11 }}
-                onClick={() => dispatch({ type: 'SET_COMPARE_RIGHT', raw: '' })}
-              >
-                Clear
-              </button>
-            </div>
-            <div className="panel__body">
-              <JsonTextarea
-                value={state.compareRight}
-                onChange={(val) => dispatch({ type: 'SET_COMPARE_RIGHT', raw: val })}
-                placeholder="Paste modified JSON..."
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Toolbar */}
       <div className="toolbar" style={{ flexShrink: 0 }}>
-        <button
-          className="btn btn-primary"
-          onClick={runCompare}
-          disabled={!state.compareLeft.trim() || !state.compareRight.trim()}
-        >
-          Compare ⇄
-        </button>
-        <button
-          className="btn btn-ghost"
-          onClick={() => dispatch({ type: 'CLEAR_COMPARE' })}
-        >
+        <button className="btn btn-ghost" onClick={handleClearAll}>
           Clear all
         </button>
 
@@ -158,31 +130,85 @@ export function CompareTab() {
         )}
       </div>
 
-      {/* Side-by-side tree compare */}
+      {/* Side-by-side panels */}
       <div className="compare-tab__trees">
+        {/* Left panel */}
         <div className="compare-tab__pane panel">
           <div className="panel__header">
-            <span className="panel__label">Left Tree</span>
+            <span className="panel__label">Left JSON</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div className="compare-mode-toggle">
+                <button
+                  className={`compare-mode-toggle__btn${leftMode === 'text' ? ' compare-mode-toggle__btn--active' : ''}`}
+                  onClick={() => setLeftMode('text')}
+                >text</button>
+                <button
+                  className={`compare-mode-toggle__btn${leftMode === 'tree' ? ' compare-mode-toggle__btn--active' : ''}`}
+                  onClick={() => setLeftMode('tree')}
+                  disabled={!hasResults}
+                >tree</button>
+              </div>
+              <button
+                className="btn btn-ghost"
+                style={{ fontSize: 11 }}
+                onClick={() => dispatch({ type: 'SET_COMPARE_LEFT', raw: '' })}
+              >
+                Clear
+              </button>
+            </div>
           </div>
           <div className="panel__body" ref={leftPaneRef}>
-            {hasResults ? (
+            {leftMode === 'text' ? (
+              <JsonTextarea
+                value={state.compareLeft}
+                onChange={(val) => dispatch({ type: 'SET_COMPARE_LEFT', raw: val })}
+                placeholder="Paste left JSON..."
+              />
+            ) : hasResults ? (
               <TreeView key={`left-${treeKey}`} data={state.compareLeftParsed} forceOpen={treeForceOpen} diffs={leftDiffs} activeDiffPath={diffPaths[diffIndex]} />
             ) : (
               <div className="empty-state">
                 <div className="empty-state__icon">{ '{ }' }</div>
-                <div className="empty-state__title">Left tree is not ready</div>
-                <div>Run Compare to render tree view</div>
+                <div className="empty-state__title">No data yet</div>
+                <div>Switch to text mode and paste JSON</div>
               </div>
             )}
           </div>
         </div>
 
+        {/* Right panel */}
         <div className="compare-tab__pane panel">
           <div className="panel__header">
-            <span className="panel__label">Right Tree</span>
+            <span className="panel__label">Right JSON</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div className="compare-mode-toggle">
+                <button
+                  className={`compare-mode-toggle__btn${rightMode === 'text' ? ' compare-mode-toggle__btn--active' : ''}`}
+                  onClick={() => setRightMode('text')}
+                >text</button>
+                <button
+                  className={`compare-mode-toggle__btn${rightMode === 'tree' ? ' compare-mode-toggle__btn--active' : ''}`}
+                  onClick={() => setRightMode('tree')}
+                  disabled={!hasResults}
+                >tree</button>
+              </div>
+              <button
+                className="btn btn-ghost"
+                style={{ fontSize: 11 }}
+                onClick={() => dispatch({ type: 'SET_COMPARE_RIGHT', raw: '' })}
+              >
+                Clear
+              </button>
+            </div>
           </div>
           <div className="panel__body" ref={rightPaneRef}>
-            {hasResults ? (
+            {rightMode === 'text' ? (
+              <JsonTextarea
+                value={state.compareRight}
+                onChange={(val) => dispatch({ type: 'SET_COMPARE_RIGHT', raw: val })}
+                placeholder="Paste right JSON..."
+              />
+            ) : hasResults ? (
               <TreeView key={`right-${treeKey}`} data={state.compareRightParsed} forceOpen={treeForceOpen} diffs={rightDiffs} activeDiffPath={diffPaths[diffIndex]} />
             ) : state.compareError ? (
               <div className="empty-state">
@@ -193,8 +219,8 @@ export function CompareTab() {
             ) : (
               <div className="empty-state">
                 <div className="empty-state__icon">{ '{ }' }</div>
-                <div className="empty-state__title">Right tree is not ready</div>
-                <div>Run Compare to render side-by-side tree view</div>
+                <div className="empty-state__title">No data yet</div>
+                <div>Switch to text mode and paste JSON</div>
               </div>
             )}
           </div>
