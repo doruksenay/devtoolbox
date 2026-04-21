@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { useApp } from '../../context/AppContext'
 import { JsonTextarea } from '../shared/JsonTextarea'
 import { TreeView } from '../Tree/TreeView'
@@ -8,6 +8,10 @@ export function CompareTab() {
   const { state, dispatch, runCompare } = useApp()
   const [treeKey, setTreeKey] = useState(0)
   const [treeForceOpen, setTreeForceOpen] = useState<boolean | undefined>(undefined)
+  const [diffIndex, setDiffIndex] = useState(0)
+  const leftPaneRef = useRef<HTMLDivElement>(null)
+  const rightPaneRef = useRef<HTMLDivElement>(null)
+
   const hasResults =
     state.compareEqual !== null &&
     state.compareLeftParsed !== null &&
@@ -20,6 +24,36 @@ export function CompareTab() {
     const rightDiffs = computeJsonDiff(state.compareRightParsed, state.compareLeftParsed, '$')
     return { leftDiffs, rightDiffs }
   }, [hasResults, state.compareLeftParsed, state.compareRightParsed])
+
+  // Collect distinct diff paths (sorted for navigation)
+  const diffPaths = useMemo(() => {
+    if (!leftDiffs) return []
+    return Array.from(leftDiffs.keys()).sort()
+  }, [leftDiffs])
+
+  const totalDiffs = diffPaths.length
+
+  function scrollToDiff(idx: number) {
+    const path = diffPaths[idx]
+    if (!path) return
+    // Find elements with data-diff-path matching this path in both panes
+    for (const paneRef of [leftPaneRef, rightPaneRef]) {
+      const el = paneRef.current?.querySelector(`[data-diff-path="${CSS.escape(path)}"]`)
+      if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    }
+  }
+
+  function handlePrevDiff() {
+    const next = (diffIndex - 1 + totalDiffs) % totalDiffs
+    setDiffIndex(next)
+    scrollToDiff(next)
+  }
+
+  function handleNextDiff() {
+    const next = (diffIndex + 1) % totalDiffs
+    setDiffIndex(next)
+    scrollToDiff(next)
+  }
 
   function handleExpandAll() {
     setTreeForceOpen(true)
@@ -102,12 +136,14 @@ export function CompareTab() {
             <span
               className={`status-badge ${state.compareEqual ? 'status-badge--equal' : 'status-badge--notequal'}`}
             >
-              {state.compareEqual ? '✓ Equal' : '⇄ Differences found'}
+              {state.compareEqual ? '✓ Equal' : `⇄ ${totalDiffs} difference${totalDiffs !== 1 ? 's' : ''}`}
             </span>
-            {state.compareLines && !state.compareEqual && (
-              <span className="text-xs text-muted mono">
-                +{state.compareLines.filter(l => l.type === 'added').length} / -{state.compareLines.filter(l => l.type === 'removed').length} lines
-              </span>
+            {!state.compareEqual && totalDiffs > 0 && (
+              <div className="compare-nav">
+                <button className="compare-nav__btn" onClick={handlePrevDiff} title="Previous difference">‹</button>
+                <span className="compare-nav__count">{diffIndex + 1} / {totalDiffs}</span>
+                <button className="compare-nav__btn" onClick={handleNextDiff} title="Next difference">›</button>
+              </div>
             )}
             <button className="btn btn-ghost" onClick={handleExpandAll}>
               Expand All
@@ -128,9 +164,9 @@ export function CompareTab() {
           <div className="panel__header">
             <span className="panel__label">Left Tree</span>
           </div>
-          <div className="panel__body">
+          <div className="panel__body" ref={leftPaneRef}>
             {hasResults ? (
-              <TreeView key={`left-${treeKey}`} data={state.compareLeftParsed} forceOpen={treeForceOpen} diffs={leftDiffs} />
+              <TreeView key={`left-${treeKey}`} data={state.compareLeftParsed} forceOpen={treeForceOpen} diffs={leftDiffs} activeDiffPath={diffPaths[diffIndex]} />
             ) : (
               <div className="empty-state">
                 <div className="empty-state__icon">{ '{ }' }</div>
@@ -145,9 +181,9 @@ export function CompareTab() {
           <div className="panel__header">
             <span className="panel__label">Right Tree</span>
           </div>
-          <div className="panel__body">
+          <div className="panel__body" ref={rightPaneRef}>
             {hasResults ? (
-              <TreeView key={`right-${treeKey}`} data={state.compareRightParsed} forceOpen={treeForceOpen} diffs={rightDiffs} />
+              <TreeView key={`right-${treeKey}`} data={state.compareRightParsed} forceOpen={treeForceOpen} diffs={rightDiffs} activeDiffPath={diffPaths[diffIndex]} />
             ) : state.compareError ? (
               <div className="empty-state">
                 <div className="empty-state__icon text-error">✗</div>

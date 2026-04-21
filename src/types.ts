@@ -201,11 +201,11 @@ export type AppAction =
   | { type: 'SET_COMMAND_PALETTE_OPEN'; open: boolean }
 
 // ── Draw types ───────────────────────────────────
-export type DrawTool = 'select' | 'rect' | 'ellipse' | 'diamond' | 'text' | 'connect'
+export type DrawTool = 'select' | 'rect' | 'ellipse' | 'diamond' | 'cylinder' | 'hexagon' | 'parallelogram' | 'text' | 'connect'
 
 export interface DrawShape {
   id: string
-  type: 'rect' | 'ellipse' | 'diamond' | 'text'
+  type: 'rect' | 'ellipse' | 'diamond' | 'cylinder' | 'hexagon' | 'parallelogram' | 'text'
   x: number
   y: number
   w: number
