@@ -129,6 +129,20 @@ const initialState: AppState = {
   fetchUrl: '',
   fetchLoading: false,
   fetchError: null,
+  harRaw: '',
+  harError: null,
+  harSelectedEntry: null,
+  harFilter: '',
+  harMethodFilter: '',
+  cronExpression: '*/5 * * * *',
+  cronError: null,
+  jwtInput: '',
+  jwtError: null,
+  drawShapes: [],
+  drawConnections: [],
+  drawTool: 'select',
+  drawSelectedIds: [],
+  drawSelectedColor: '#4f8ef7',
 }
 
 // ─────────────────────────────────────────────

@@ -2,7 +2,7 @@
 //  Shared type definitions across the app
 // ─────────────────────────────────────────────
 
-export type TabId = 'editor' | 'compare' | 'xml' | 'grid' | 'query' | 'convert'
+export type TabId = 'editor' | 'compare' | 'xml' | 'grid' | 'query' | 'convert' | 'har' | 'cron' | 'jwt' | 'draw'
 
 export interface ParseResult {
   valid: boolean
@@ -76,6 +76,28 @@ export interface AppState {
   fetchUrl: string
   fetchLoading: boolean
   fetchError: string | null
+
+  // ── HAR Viewer ──────────────────────────────
+  harRaw: string
+  harError: string | null
+  harSelectedEntry: number | null
+  harFilter: string
+  harMethodFilter: string
+
+  // ── Cron ─────────────────────────────────────
+  cronExpression: string
+  cronError: string | null
+
+  // ── JWT ──────────────────────────────────────
+  jwtInput: string
+  jwtError: string | null
+
+  // ── Draw ─────────────────────────────────────
+  drawShapes: DrawShape[]
+  drawConnections: DrawConnection[]
+  drawTool: DrawTool
+  drawSelectedIds: string[]
+  drawSelectedColor: string
 }
 
 export type AppAction =
@@ -114,3 +136,42 @@ export type AppAction =
   | { type: 'SET_FETCH_URL'; url: string }
   | { type: 'SET_FETCH_LOADING'; loading: boolean }
   | { type: 'SET_FETCH_ERROR'; error: string }
+  // HAR Viewer
+  | { type: 'SET_HAR_RAW'; raw: string }
+  | { type: 'SET_HAR_ERROR'; error: string }
+  | { type: 'SET_HAR_SELECTED_ENTRY'; index: number | null }
+  | { type: 'SET_HAR_FILTER'; filter: string }
+  | { type: 'SET_HAR_METHOD_FILTER'; method: string }
+  | { type: 'CLEAR_HAR' }
+  // Cron
+  | { type: 'SET_CRON_EXPRESSION'; expression: string }
+  // JWT
+  | { type: 'SET_JWT_INPUT'; input: string }
+  | { type: 'CLEAR_JWT' }
+  // Draw
+  | { type: 'SET_DRAW_SHAPES'; shapes: DrawShape[] }
+  | { type: 'SET_DRAW_CONNECTIONS'; connections: DrawConnection[] }
+  | { type: 'SET_DRAW_TOOL'; tool: DrawTool }
+  | { type: 'SET_DRAW_SELECTED_IDS'; ids: string[] }
+  | { type: 'SET_DRAW_SELECTED_COLOR'; color: string }
+  | { type: 'CLEAR_DRAW' }
+
+// ── Draw types ───────────────────────────────────
+export type DrawTool = 'select' | 'rect' | 'ellipse' | 'diamond' | 'text' | 'connect'
+
+export interface DrawShape {
+  id: string
+  type: 'rect' | 'ellipse' | 'diamond' | 'text'
+  x: number
+  y: number
+  w: number
+  h: number
+  label: string
+  color: string
+}
+
+export interface DrawConnection {
+  id: string
+  from: string
+  to: string
+}

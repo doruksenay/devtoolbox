@@ -5,6 +5,10 @@ import { xmlReducer } from './xmlReducer'
 import { gridReducer } from './gridReducer'
 import { queryReducer } from './queryReducer'
 import { convertReducer } from './convertReducer'
+import { harReducer } from './harReducer'
+import { cronReducer } from './cronReducer'
+import { jwtReducer } from './jwtReducer'
+import { drawReducer } from './drawReducer'
 
 const featureReducers = [
   editorReducer,
@@ -13,6 +17,10 @@ const featureReducers = [
   gridReducer,
   queryReducer,
   convertReducer,
+  harReducer,
+  cronReducer,
+  jwtReducer,
+  drawReducer,
 ]
 
 export function rootReducer(state: AppState, action: AppAction): AppState {
