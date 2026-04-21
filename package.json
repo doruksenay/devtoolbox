@@ -41,11 +41,11 @@
     "@types/diff": "^5.2.3",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.3.1",
+    "@vitejs/plugin-react": "^5.2.0",
     "gh-pages": "^6.2.0",
     "jsdom": "^29.0.2",
     "typescript": "^5.5.3",
-    "vite": "^5.4.2",
+    "vite": "^6.4.2",
     "vitest": "^4.1.4"
   }
 }
