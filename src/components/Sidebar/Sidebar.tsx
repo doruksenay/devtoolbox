@@ -12,20 +12,45 @@ interface TabDef {
   icon: React.ReactNode
 }
 
-const TABS: TabDef[] = [
-  { id: 'editor',  label: 'JSON Editor',  icon: <IconEditor /> },
-  { id: 'compare', label: 'Compare',      icon: <IconCompare /> },
-  { id: 'xml',     label: 'XML',          icon: <IconXml /> },
-  { id: 'grid',    label: 'Grid View',    icon: <IconGrid /> },
-  { id: 'query',   label: 'JSONPath',     icon: <IconQuery /> },
-  { id: 'convert', label: 'Convert',      icon: <IconConvert /> },
-  { id: 'har',     label: 'HAR Viewer',   icon: <IconHar /> },
-  { id: 'cron',    label: 'Cron',         icon: <IconCron /> },
-  { id: 'jwt',     label: 'JWT Decoder',  icon: <IconJwt /> },
-  { id: 'draw',    label: 'Diagram',      icon: <IconDraw /> },
-  { id: 'yaml',    label: 'YAML ↔ JSON',  icon: <IconYaml /> },
-  { id: 'base64',  label: 'Base64',       icon: <IconBase64 /> },
-  { id: 'urlenc',  label: 'URL Encoder',  icon: <IconUrlEnc /> },
+interface TabGroup {
+  label: string
+  tabs: TabDef[]
+}
+
+const GROUPS: TabGroup[] = [
+  {
+    label: 'Edit & View',
+    tabs: [
+      { id: 'editor', label: 'JSON Editor', icon: <IconEditor /> },
+      { id: 'grid',   label: 'Grid View',   icon: <IconGrid /> },
+      { id: 'draw',   label: 'Diagram',     icon: <IconDraw /> },
+    ],
+  },
+  {
+    label: 'Transform',
+    tabs: [
+      { id: 'compare', label: 'Compare',     icon: <IconCompare /> },
+      { id: 'xml',     label: 'XML',         icon: <IconXml /> },
+      { id: 'yaml',    label: 'YAML ↔ JSON', icon: <IconYaml /> },
+      { id: 'convert', label: 'Convert',     icon: <IconConvert /> },
+    ],
+  },
+  {
+    label: 'Analyze',
+    tabs: [
+      { id: 'query', label: 'JSONPath',   icon: <IconQuery /> },
+      { id: 'har',   label: 'HAR Viewer', icon: <IconHar /> },
+    ],
+  },
+  {
+    label: 'Utilities',
+    tabs: [
+      { id: 'base64', label: 'Base64',      icon: <IconBase64 /> },
+      { id: 'urlenc', label: 'URL Encoder', icon: <IconUrlEnc /> },
+      { id: 'cron',   label: 'Cron',        icon: <IconCron /> },
+      { id: 'jwt',    label: 'JWT Decoder', icon: <IconJwt /> },
+    ],
+  },
 ]
 
 export function Sidebar() {
@@ -35,19 +60,24 @@ export function Sidebar() {
   return (
     <aside className={`sidebar${collapsed ? ' sidebar--collapsed' : ''}`} aria-label="Tool navigation">
       <nav className="sidebar__nav" role="navigation">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            role="button"
-            aria-label={tab.label}
-            aria-current={state.activeTab === tab.id ? 'page' : undefined}
-            className={`sidebar__item${state.activeTab === tab.id ? ' sidebar__item--active' : ''}`}
-            onClick={() => dispatch({ type: 'SET_TAB', tab: tab.id })}
-            title={collapsed ? tab.label : undefined}
-          >
-            <span className="sidebar__item-icon">{tab.icon}</span>
-            {!collapsed && <span className="sidebar__item-label">{tab.label}</span>}
-          </button>
+        {GROUPS.map((group) => (
+          <div key={group.label} className="sidebar__group">
+            <span className="sidebar__group-label">{group.label}</span>
+            {group.tabs.map((tab) => (
+              <button
+                key={tab.id}
+                role="button"
+                aria-label={tab.label}
+                aria-current={state.activeTab === tab.id ? 'page' : undefined}
+                className={`sidebar__item${state.activeTab === tab.id ? ' sidebar__item--active' : ''}`}
+                onClick={() => dispatch({ type: 'SET_TAB', tab: tab.id })}
+                title={collapsed ? tab.label : undefined}
+              >
+                <span className="sidebar__item-icon">{tab.icon}</span>
+                {!collapsed && <span className="sidebar__item-label">{tab.label}</span>}
+              </button>
+            ))}
+          </div>
         ))}
       </nav>
 

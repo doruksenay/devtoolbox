@@ -8,8 +8,8 @@ export function Header() {
     <header className="app-header">
       <div className="app-header__brand">
         <div className="app-header__brand-icon">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M4 4L2 8l2 4M12 4l2 4-2 4M9 2L7 14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 4L2 8l2 4M12 4l2 4-2 4M9 2L7 14" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </div>
         DevToolbox
@@ -23,7 +23,7 @@ export function Header() {
         >
           <IconSearch size={14} />
           <span className="app-header__cmd-label">Search tools…</span>
-          <kbd className="shortcut-hint">Ctrl+K</kbd>
+          <kbd className="shortcut-hint">⌘K</kbd>
         </button>
 
         <button
