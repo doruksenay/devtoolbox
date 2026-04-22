@@ -3,6 +3,9 @@ import { useApp } from '../../context/AppContext'
 import { useAuth } from '../../context/AuthContext'
 import { IconSun, IconMoon, IconGithub, IconSearch } from '../icons/Icons'
 import { AuthModal } from '../Auth/AuthModal'
+import { AdminPanel } from '../Admin/AdminPanel'
+import { ChangePasswordModal } from '../Admin/ChangePasswordModal'
+import { ChangeAvatarModal } from '../Admin/ChangeAvatarModal'
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 const cmdLabel = isMac ? '⌘K' : 'Ctrl+K'
@@ -17,12 +20,18 @@ function pickAvatar(uid: string): string {
 
 export function Header() {
   const { state, dispatch } = useApp()
-  const { user, signOut, loading } = useAuth()
+  const { user, signOut, loading, isAdmin } = useAuth()
   const [showAuth, setShowAuth] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
+  const [showAdminPanel, setShowAdminPanel] = useState(false)
+  const [showChangePassword, setShowChangePassword] = useState(false)
+  const [showChangeAvatar, setShowChangeAvatar] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  const avatar = useMemo(() => user ? pickAvatar(user.id) : '', [user])
+  const avatar = useMemo(() => {
+    if (!user) return ''
+    return (user.user_metadata?.avatar as string | undefined) ?? pickAvatar(user.id)
+  }, [user])
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -39,6 +48,21 @@ export function Header() {
   async function handleSignOut() {
     setShowMenu(false)
     await signOut()
+  }
+
+  function openAdminPanel() {
+    setShowMenu(false)
+    setShowAdminPanel(true)
+  }
+
+  function openChangePassword() {
+    setShowMenu(false)
+    setShowChangePassword(true)
+  }
+
+  function openChangeAvatar() {
+    setShowMenu(false)
+    setShowChangeAvatar(true)
   }
 
   return (
@@ -86,6 +110,18 @@ export function Header() {
               <div className="app-header__user-menu">
                 <p className="app-header__user-email">{user.email}</p>
                 <hr className="app-header__user-divider" />
+                {isAdmin && (
+                  <button className="app-header__user-menu-item" onClick={openAdminPanel}>
+                    🛡️ Admin Panel
+                  </button>
+                )}
+                <button className="app-header__user-menu-item" onClick={openChangeAvatar}>
+                  🎭 Change Avatar
+                </button>
+                <button className="app-header__user-menu-item" onClick={openChangePassword}>
+                  🔑 Change Password
+                </button>
+                <hr className="app-header__user-divider" />
                 <button className="app-header__user-signout" onClick={handleSignOut}>
                   Sign out
                 </button>
@@ -115,6 +151,9 @@ export function Header() {
       </div>
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+      {showAdminPanel && <AdminPanel onClose={() => setShowAdminPanel(false)} />}
+      {showChangePassword && <ChangePasswordModal onClose={() => setShowChangePassword(false)} />}
+      {showChangeAvatar && <ChangeAvatarModal onClose={() => setShowChangeAvatar(false)} currentAvatar={avatar} />}
     </header>
   )
 }

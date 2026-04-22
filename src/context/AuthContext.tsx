@@ -16,9 +16,12 @@ interface AuthContextValue {
   user: User | null
   session: Session | null
   loading: boolean
+  isAdmin: boolean
   signIn: (email: string, password: string) => Promise<string | null>
   signUp: (email: string, password: string) => Promise<string | null>
   signOut: () => Promise<void>
+  changePassword: (newPassword: string) => Promise<string | null>
+  updateAvatar: (emoji: string) => Promise<string | null>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -31,6 +34,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const isAdmin = user?.app_metadata?.role === 'admin'
+
   useEffect(() => {
     // Get existing session on mount
     supabase.auth.getSession().then(({ data }) => {
@@ -42,10 +47,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     // Listen for auth state changes
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, sess) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, sess) => {
       setSession(sess)
       setUser(sess?.user ?? null)
       setLoading(false)
+
+      // Log a login event whenever the user signs in
+      if (event === 'SIGNED_IN' && sess?.user?.id) {
+        supabase
+          .from('login_events')
+          .insert({ user_id: sess.user.id })
+          .then(() => undefined)
+      }
     })
 
     return () => {
@@ -67,8 +80,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
   }, [])
 
+  const changePassword = useCallback(async (newPassword: string): Promise<string | null> => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    return error?.message ?? null
+  }, [])
+
+  const updateAvatar = useCallback(async (emoji: string): Promise<string | null> => {
+    const { data, error } = await supabase.auth.updateUser({ data: { avatar: emoji } })
+    if (error) return error.message
+    if (data.user) setUser(data.user)
+    return null
+  }, [])
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isAdmin, signIn, signUp, signOut, changePassword, updateAvatar }}>
       {children}
     </AuthContext.Provider>
   )
