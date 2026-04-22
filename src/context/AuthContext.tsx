@@ -18,7 +18,7 @@ interface AuthContextValue {
   loading: boolean
   isAdmin: boolean
   signIn: (email: string, password: string) => Promise<string | null>
-  signUp: (email: string, password: string) => Promise<string | null>
+  signUp: (email: string, password: string) => Promise<{ error: string | null; autoSignedIn: boolean }>
   signOut: () => Promise<void>
   changePassword: (newPassword: string) => Promise<string | null>
   updateAvatar: (emoji: string) => Promise<string | null>
@@ -54,11 +54,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Log a login event whenever the user signs in
       if (event === 'SIGNED_IN' && sess?.user?.id) {
-        supabase
+        void supabase
           .from('login_events')
           .insert({ user_id: sess.user.id })
-          .then(() => undefined)
-          .catch(err => console.error('[DevToolbox] Failed to log login event:', err))
+          .then(({ error }) => {
+            if (error) console.error('[DevToolbox] Failed to log login event:', error.message)
+          })
       }
     })
 
@@ -72,9 +73,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return error?.message ?? null
   }, [])
 
-  const signUp = useCallback(async (email: string, password: string): Promise<string | null> => {
-    const { error } = await supabase.auth.signUp({ email, password })
-    return error?.message ?? null
+  const signUp = useCallback(async (email: string, password: string): Promise<{ error: string | null; autoSignedIn: boolean }> => {
+    const { data, error } = await supabase.auth.signUp({ email, password })
+    return { error: error?.message ?? null, autoSignedIn: !!data.session }
   }, [])
 
   const signOut = useCallback(async () => {

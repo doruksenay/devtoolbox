@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, type ChangeEvent } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import '../Auth/AuthModal.css'
 
@@ -6,29 +6,48 @@ interface Props {
   onClose: () => void
 }
 
+function validatePassword(password: string): string | null {
+  if (!password) return 'Password is required'
+  if (password.length < 8) return 'Password must be at least 8 characters'
+  return null
+}
+
 export function ChangePasswordModal({ onClose }: Props) {
   const { changePassword } = useAuth()
   const [newPassword, setNewPassword] = useState('')
   const [confirm, setConfirm] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [newPasswordError, setNewPasswordError] = useState<string | null>(null)
+  const [confirmError, setConfirmError] = useState<string | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [busy, setBusy] = useState(false)
 
+  function handleNewPasswordChange(e: ChangeEvent<HTMLInputElement>) {
+    setNewPassword(e.target.value)
+    if (newPasswordError) setNewPasswordError(validatePassword(e.target.value))
+  }
+
+  function handleConfirmChange(e: ChangeEvent<HTMLInputElement>) {
+    setConfirm(e.target.value)
+    if (confirmError && e.target.value === newPassword) setConfirmError(null)
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    setError(null)
+    setFormError(null)
 
-    if (newPassword !== confirm) {
-      setError('Passwords do not match')
-      return
-    }
+    const pErr = validatePassword(newPassword)
+    setNewPasswordError(pErr)
+    const cErr = confirm !== newPassword ? 'Passwords do not match' : null
+    setConfirmError(cErr)
+    if (pErr || cErr) return
 
     setBusy(true)
     const err = await changePassword(newPassword)
     setBusy(false)
 
     if (err) {
-      setError(err)
+      setFormError(err)
     } else {
       setSuccess(true)
     }
@@ -50,35 +69,42 @@ export function ChangePasswordModal({ onClose }: Props) {
             </button>
           </>
         ) : (
-          <form className="auth-modal__form" onSubmit={handleSubmit}>
-            <label className="auth-modal__label">
-              New Password
+          <form className="auth-modal__form" onSubmit={handleSubmit} noValidate>
+            <div className="auth-modal__field">
+              <label className="auth-modal__label" htmlFor="cp-new">New Password</label>
               <input
-                className="auth-modal__input"
+                id="cp-new"
+                className={`auth-modal__input${newPasswordError ? ' auth-modal__input--invalid' : ''}`}
                 type="password"
                 value={newPassword}
-                onChange={e => setNewPassword(e.target.value)}
+                onChange={handleNewPasswordChange}
+                onBlur={() => setNewPasswordError(validatePassword(newPassword))}
                 placeholder="••••••••"
-                required
-                minLength={8}
+                autoComplete="new-password"
                 autoFocus
               />
-            </label>
+              {newPasswordError
+                ? <span className="auth-modal__field-error">{newPasswordError}</span>
+                : <span className="auth-modal__field-hint">Minimum 8 characters</span>
+              }
+            </div>
 
-            <label className="auth-modal__label">
-              Confirm Password
+            <div className="auth-modal__field">
+              <label className="auth-modal__label" htmlFor="cp-confirm">Confirm Password</label>
               <input
-                className="auth-modal__input"
+                id="cp-confirm"
+                className={`auth-modal__input${confirmError ? ' auth-modal__input--invalid' : ''}`}
                 type="password"
                 value={confirm}
-                onChange={e => setConfirm(e.target.value)}
+                onChange={handleConfirmChange}
+                onBlur={() => setConfirmError(confirm !== newPassword ? 'Passwords do not match' : null)}
                 placeholder="••••••••"
-                required
-                minLength={8}
+                autoComplete="new-password"
               />
-            </label>
+              {confirmError && <span className="auth-modal__field-error">{confirmError}</span>}
+            </div>
 
-            {error && <p className="auth-modal__error">{error}</p>}
+            {formError && <p className="auth-modal__error">{formError}</p>}
 
             <button className="btn auth-modal__submit" type="submit" disabled={busy}>
               {busy ? 'Updating…' : 'Change Password'}
