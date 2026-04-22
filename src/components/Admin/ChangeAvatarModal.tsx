@@ -19,12 +19,17 @@ export function ChangeAvatarModal({ onClose, currentAvatar }: Props) {
   async function handleSave() {
     setBusy(true)
     setError(null)
-    const err = await updateAvatar(selected)
-    setBusy(false)
-    if (err) {
-      setError(err)
-    } else {
-      onClose()
+    try {
+      const err = await updateAvatar(selected)
+      if (err) {
+        setError(err)
+      } else {
+        onClose()
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unexpected error. Please try again.')
+    } finally {
+      setBusy(false)
     }
   }
 
