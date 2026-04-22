@@ -85,3 +85,40 @@ begin
   );
 end;
 $$;
+
+-- ─────────────────────────────────────────────
+-- RPC: get_user_login_stats — returns per-user login counts
+-- (today / this week / this month / this year).
+-- Same security model as get_login_stats: admin-only, SECURITY DEFINER.
+-- ─────────────────────────────────────────────
+create or replace function get_user_login_stats()
+returns json
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  caller_role text;
+begin
+  select coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') into caller_role;
+  if caller_role <> 'admin' then
+    raise exception 'Access denied';
+  end if;
+
+  return (
+    select coalesce(json_agg(row_to_json(t)), '[]'::json)
+    from (
+      select
+        u.email,
+        count(*) filter (where e.created_at >= current_date)                    as today,
+        count(*) filter (where e.created_at >= date_trunc('week',  now()))      as week,
+        count(*) filter (where e.created_at >= date_trunc('month', now()))      as month,
+        count(*) filter (where e.created_at >= date_trunc('year',  now()))      as year
+      from auth.users u
+      inner join public.login_events e on e.user_id = u.id
+      group by u.email
+      order by max(e.created_at) desc
+    ) t
+  );
+end;
+$$;
