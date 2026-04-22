@@ -289,6 +289,23 @@ body {
   margin: 0.35rem 0;
 }
 
+.app-header__user-menu-item {
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background var(--duration-fast);
+}
+
+.app-header__user-menu-item:hover {
+  background: var(--bg-hover);
+}
+
 .app-header__user-signout {
   width: 100%;
   background: none;

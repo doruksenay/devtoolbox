@@ -1,0 +1,31 @@
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.avatar-grid__item {
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 1.5rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: border-color var(--duration-fast), background var(--duration-fast), transform var(--duration-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+}
+
+.avatar-grid__item:hover {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+  transform: scale(1.08);
+}
+
+.avatar-grid__item--selected {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
