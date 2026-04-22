@@ -58,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .from('login_events')
           .insert({ user_id: sess.user.id })
           .then(() => undefined)
+          .catch(err => console.error('[DevToolbox] Failed to log login event:', err))
       }
     })
 

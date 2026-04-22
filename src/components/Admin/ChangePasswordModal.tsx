@@ -60,7 +60,7 @@ export function ChangePasswordModal({ onClose }: Props) {
                 onChange={e => setNewPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                minLength={6}
+                minLength={8}
                 autoFocus
               />
             </label>
@@ -74,7 +74,7 @@ export function ChangePasswordModal({ onClose }: Props) {
                 onChange={e => setConfirm(e.target.value)}
                 placeholder="••••••••"
                 required
-                minLength={6}
+                minLength={8}
               />
             </label>
 
