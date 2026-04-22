@@ -9,7 +9,7 @@ const cmdLabel = isMac ? '⌘K' : 'Ctrl+K'
 
 export function Header() {
   const { state, dispatch } = useApp()
-  const { user, signOut } = useAuth()
+  const { user, signOut, loading } = useAuth()
   const [showAuth, setShowAuth] = useState(false)
 
   return (
@@ -43,7 +43,7 @@ export function Header() {
           {state.theme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
         </button>
 
-        {user ? (
+        {loading ? null : user ? (
           <button
             className="btn btn-ghost app-header__user-btn"
             title={`Signed in as ${user.email} — click to sign out`}
