@@ -7,6 +7,14 @@ interface LoginStats {
   monthly: number
 }
 
+interface UserLoginStat {
+  email: string
+  today: number
+  week: number
+  month: number
+  year: number
+}
+
 interface Props {
   onClose: () => void
 }
@@ -27,16 +35,30 @@ export function AdminPanel({ onClose }: Props) {
   const [statsLoading, setStatsLoading] = useState(true)
   const [statsError, setStatsError] = useState<string | null>(null)
 
+  const [userStats, setUserStats] = useState<UserLoginStat[]>([])
+  const [userStatsLoading, setUserStatsLoading] = useState(true)
+
   const buildTime = new Date(__BUILD_TIME__)
 
   useEffect(() => {
-    supabase
-      .rpc('get_login_stats')
-      .then(({ data, error }) => {
+    void (async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_login_stats')
         if (error) setStatsError(error.message)
         else setStats(data as LoginStats)
+      } catch (err: unknown) {
+        setStatsError(err instanceof Error ? err.message : 'Failed to load stats')
+      } finally {
         setStatsLoading(false)
-      })
+      }
+
+      try {
+        const { data, error } = await supabase.rpc('get_user_login_stats')
+        if (!error && Array.isArray(data)) setUserStats(data as UserLoginStat[])
+      } catch { /* non-critical */ } finally {
+        setUserStatsLoading(false)
+      }
+    })()
   }, [])
 
   return (
@@ -74,6 +96,29 @@ export function AdminPanel({ onClose }: Props) {
         </div>
 
         {statsError && <p className="auth-modal__error">{statsError}</p>}
+
+        <div className="admin-panel__users">
+          <h3 className="admin-panel__users-title">User Logins</h3>
+          {userStatsLoading ? (
+            <p className="admin-panel__users-empty">Loading…</p>
+          ) : userStats.length === 0 ? (
+            <p className="admin-panel__users-empty">No login data yet.</p>
+          ) : (
+            <ul className="admin-panel__user-list">
+              {userStats.map(u => (
+                <li key={u.email} className="admin-panel__user-row">
+                  <span className="admin-panel__user-email">{u.email}</span>
+                  <span className="admin-panel__user-badges">
+                    <span className="admin-panel__badge" title="Today">{u.today}d</span>
+                    <span className="admin-panel__badge" title="This week">{u.week}w</span>
+                    <span className="admin-panel__badge" title="This month">{u.month}m</span>
+                    <span className="admin-panel__badge" title="This year">{u.year}y</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   )
