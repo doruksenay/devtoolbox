@@ -89,7 +89,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateAvatar = useCallback(async (emoji: string): Promise<string | null> => {
     try {
-      const { data, error } = await supabase.auth.updateUser({ data: { avatar: emoji } })
+      const timeoutMs = 10_000
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Request timed out. Please try again.')), timeoutMs)
+      )
+      const { data, error } = await Promise.race([
+        supabase.auth.updateUser({ data: { avatar: emoji } }),
+        timeout,
+      ])
       if (error) return error.message
       if (data.user) setUser(data.user)
       return null
