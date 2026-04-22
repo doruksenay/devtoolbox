@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useApp } from '../../context/AppContext'
 import { useAuth } from '../../context/AuthContext'
 import { IconSun, IconMoon, IconGithub, IconSearch } from '../icons/Icons'
@@ -7,10 +7,39 @@ import { AuthModal } from '../Auth/AuthModal'
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 const cmdLabel = isMac ? '⌘K' : 'Ctrl+K'
 
+const AVATARS = ['🦊', '🐼', '🦁', '🐨', '🐸', '🦄', '🐙', '🦋', '🐺', '🦝', '🐻', '🦩', '🐯', '🦅', '🦜']
+
+function pickAvatar(uid: string): string {
+  let hash = 0
+  for (let i = 0; i < uid.length; i++) hash = (hash * 31 + uid.charCodeAt(i)) >>> 0
+  return AVATARS[hash % AVATARS.length]
+}
+
 export function Header() {
   const { state, dispatch } = useApp()
   const { user, signOut, loading } = useAuth()
   const [showAuth, setShowAuth] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  const avatar = useMemo(() => user ? pickAvatar(user.id) : '', [user])
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (!showMenu) return
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [showMenu])
+
+  async function handleSignOut() {
+    setShowMenu(false)
+    await signOut()
+  }
 
   return (
     <header className="app-header">
@@ -44,15 +73,25 @@ export function Header() {
         </button>
 
         {loading ? null : user ? (
-          <button
-            className="btn btn-ghost app-header__user-btn"
-            title={`Signed in as ${user.email} — click to sign out`}
-            onClick={signOut}
-          >
-            <span className="app-header__user-avatar">
-              {(user.email ?? '?')[0].toUpperCase()}
-            </span>
-          </button>
+          <div className="app-header__user-wrap" ref={menuRef}>
+            <button
+              className="btn btn-ghost app-header__user-btn"
+              title={`Signed in as ${user.email}`}
+              onClick={() => setShowMenu(v => !v)}
+              aria-expanded={showMenu}
+            >
+              <span className="app-header__user-avatar">{avatar}</span>
+            </button>
+            {showMenu && (
+              <div className="app-header__user-menu">
+                <p className="app-header__user-email">{user.email}</p>
+                <hr className="app-header__user-divider" />
+                <button className="app-header__user-signout" onClick={handleSignOut}>
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
         ) : (
           <button
             className="btn btn-ghost"

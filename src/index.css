@@ -243,17 +243,67 @@ body {
   padding: 4px !important;
 }
 
+.app-header__user-wrap {
+  position: relative;
+}
+
 .app-header__user-avatar {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.app-header__user-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xl);
+  padding: 0.5rem;
+  min-width: 180px;
+  z-index: 200;
+  animation: auth-fade-in var(--duration-fast) var(--ease);
+}
+
+.app-header__user-email {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  padding: 0.25rem 0.5rem;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-header__user-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.35rem 0;
+}
+
+.app-header__user-signout {
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+  font-size: 0.8rem;
+  color: var(--error);
+  cursor: pointer;
+  transition: background var(--duration-fast);
+}
+
+.app-header__user-signout:hover {
+  background: var(--error-bg);
 }
 
 .app-header__cmd-btn {
