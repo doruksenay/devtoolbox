@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   useCallback,
   type ReactNode,
@@ -87,22 +88,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return error?.message ?? null
   }, [])
 
+  // Keep a stable ref to the current user so the background callback can
+  // read the user id without stale-closure issues.
+  const userRef = useRef<User | null>(null)
+  useEffect(() => { userRef.current = user }, [user])
+
   const updateAvatar = useCallback(async (emoji: string): Promise<string | null> => {
-    try {
-      const timeoutMs = 10_000
-      const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Request timed out. Please try again.')), timeoutMs)
-      )
-      const { data, error } = await Promise.race([
-        supabase.auth.updateUser({ data: { avatar: emoji } }),
-        timeout,
-      ])
-      if (error) return error.message
-      if (data.user) setUser(data.user)
-      return null
-    } catch (e) {
-      return e instanceof Error ? e.message : 'Failed to update avatar'
+    // Optimistic update – show the change immediately and close the modal
+    // without waiting for the network round-trip.
+    setUser(prev =>
+      prev ? { ...prev, user_metadata: { ...prev.user_metadata, avatar: emoji } } : prev
+    )
+
+    // Persist locally so the avatar survives a page reload even if the
+    // Supabase sync below is slow or fails.
+    const uid = userRef.current?.id
+    if (uid) {
+      try { localStorage.setItem(`dtb_avatar_${uid}`, emoji) } catch { /* quota exceeded etc. */ }
     }
+
+    // Background sync to Supabase – we intentionally don't await this.
+    void supabase.auth.updateUser({ data: { avatar: emoji } })
+      .then(({ data }) => {
+        if (data.user) {
+          setUser(data.user)
+          // Supabase is now the canonical source; remove the local copy so
+          // a newer change from another device isn't overridden on next load.
+          try { localStorage.removeItem(`dtb_avatar_${data.user.id}`) } catch { /* ignore */ }
+        }
+      })
+      .catch((e) => {
+        // Sync failed – local state and localStorage retain the change so the
+        // avatar is still visible in this session and on reload.
+        console.warn('[DevToolbox] Avatar sync to Supabase failed; local copy retained.', e)
+      })
+
+    return null
   }, [])
 
   return (

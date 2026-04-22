@@ -30,7 +30,10 @@ export function Header() {
 
   const avatar = useMemo(() => {
     if (!user) return ''
-    return (user.user_metadata?.avatar as string | undefined) ?? pickAvatar(user.id)
+    // localStorage takes priority – it reflects the most recent choice on this
+    // device, even if the background Supabase sync hasn't completed yet.
+    const local = localStorage.getItem(`dtb_avatar_${user.id}`)
+    return local ?? (user.user_metadata?.avatar as string | undefined) ?? pickAvatar(user.id)
   }, [user])
 
   // Close menu when clicking outside
