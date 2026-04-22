@@ -88,10 +88,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const updateAvatar = useCallback(async (emoji: string): Promise<string | null> => {
-    const { data, error } = await supabase.auth.updateUser({ data: { avatar: emoji } })
-    if (error) return error.message
-    if (data.user) setUser(data.user)
-    return null
+    try {
+      const { data, error } = await supabase.auth.updateUser({ data: { avatar: emoji } })
+      if (error) return error.message
+      if (data.user) setUser(data.user)
+      return null
+    } catch (e) {
+      return e instanceof Error ? e.message : 'Failed to update avatar'
+    }
   }, [])
 
   return (
