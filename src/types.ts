@@ -2,7 +2,7 @@
 //  Shared type definitions across the app
 // ─────────────────────────────────────────────
 
-export type TabId = 'editor' | 'compare' | 'xml' | 'grid' | 'query' | 'convert' | 'har' | 'cron' | 'jwt' | 'draw' | 'yaml' | 'base64' | 'urlenc'
+export type TabId = 'editor' | 'compare' | 'xml' | 'grid' | 'query' | 'convert' | 'har' | 'cron' | 'jwt' | 'draw' | 'yaml' | 'base64' | 'urlenc' | 'soap'
 
 export type { EditorSyntaxTheme } from './utils/editorThemes'
 import type { EditorSyntaxTheme } from './utils/editorThemes'
@@ -121,6 +121,10 @@ export interface AppState {
   urlMode: 'encode' | 'decode'
   urlError: string | null
 
+  // ── SOAP / WSDL Viewer ────────────────────────
+  soapInput: string
+  soapError: string | null
+
   // ── UI state ──────────────────────────────────
   sidebarCollapsed: boolean
   commandPaletteOpen: boolean
@@ -204,6 +208,10 @@ export type AppAction =
   | { type: 'TOGGLE_SIDEBAR' }
   | { type: 'TOGGLE_COMMAND_PALETTE' }
   | { type: 'SET_COMMAND_PALETTE_OPEN'; open: boolean }
+  // SOAP / WSDL
+  | { type: 'SET_SOAP_INPUT'; input: string }
+  | { type: 'SET_SOAP_ERROR'; error: string }
+  | { type: 'CLEAR_SOAP' }
   // Internal
   | { type: 'LOAD_PERSISTED_STATE'; payload: Partial<AppState> }
 

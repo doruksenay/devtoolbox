@@ -3,7 +3,7 @@ import type { TabId } from '../../types'
 import {
   IconEditor, IconCompare, IconXml, IconGrid, IconQuery,
   IconConvert, IconHar, IconCron, IconJwt, IconDraw,
-  IconBase64, IconUrlEnc, IconChevronLeft, IconChevronRight,
+  IconBase64, IconUrlEnc, IconSoap, IconChevronLeft, IconChevronRight,
 } from '../icons/Icons'
 
 interface TabDef {
@@ -37,8 +37,9 @@ const GROUPS: TabGroup[] = [
   {
     label: 'Analyze',
     tabs: [
-      { id: 'query', label: 'JSONPath',   icon: <IconQuery /> },
-      { id: 'har',   label: 'HAR Viewer', icon: <IconHar /> },
+      { id: 'query', label: 'JSONPath',    icon: <IconQuery /> },
+      { id: 'har',   label: 'HAR Viewer',  icon: <IconHar /> },
+      { id: 'soap',  label: 'SOAP / WSDL', icon: <IconSoap /> },
     ],
   },
   {

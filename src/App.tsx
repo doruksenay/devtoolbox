@@ -14,6 +14,7 @@ import { DrawTab } from './components/Draw/DrawTab'
 import { YamlTab } from './components/Yaml/YamlTab'
 import { Base64Tab } from './components/Base64/Base64Tab'
 import { UrlTab } from './components/UrlEnc/UrlTab'
+import { SoapTab } from './components/Soap/SoapTab'
 import { CommandPalette } from './components/CommandPalette/CommandPalette'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useLiveValidation } from './hooks/useLiveValidation'
@@ -47,6 +48,7 @@ export default function App() {
           {state.activeTab === 'yaml'    && <YamlTab />}
           {state.activeTab === 'base64'  && <Base64Tab />}
           {state.activeTab === 'urlenc'  && <UrlTab />}
+          {state.activeTab === 'soap'    && <SoapTab />}
         </div>
       </div>
       <CommandPalette />

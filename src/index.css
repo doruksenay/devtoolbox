@@ -2737,3 +2737,521 @@ body {
     width: 100% !important;
   }
 }
+/* ─────────────────────────────────────────────
+   SOAP / WSDL Viewer Tab
+───────────────────────────────────────────── */
+.soap-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.soap-tab__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.soap-tab__panels {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  min-height: 0;
+}
+
+.soap-tab__pane {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.soap-tab__output {
+  overflow-y: auto;
+}
+
+/* Summary card */
+.soap-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.soap-summary__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+}
+
+.soap-summary__label {
+  min-width: 88px;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.soap-summary__value {
+  color: var(--text-primary);
+  font-size: 12.5px;
+}
+
+.soap-summary__value--mono {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-code);
+  word-break: break-all;
+}
+
+.soap-summary__value--badge {
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-xl);
+}
+
+/* Collapsible section */
+.soap-section {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.soap-section__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  text-align: left;
+  transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
+}
+
+.soap-section__head:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.soap-section__caret {
+  font-size: 13px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.soap-section__title {
+  flex: 1;
+}
+
+.soap-section__badge {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: var(--radius-xl);
+}
+
+.soap-section__body {
+  padding: 0 0 8px 0;
+}
+
+/* Endpoints table */
+.soap-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.soap-table th {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.soap-table td {
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  vertical-align: top;
+}
+
+.soap-table tr:last-child td {
+  border-bottom: none;
+}
+
+.soap-table tr:hover td {
+  background: var(--bg-hover);
+}
+
+.soap-mono {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-code);
+}
+
+.soap-address {
+  color: var(--accent);
+  word-break: break-all;
+}
+
+.soap-empty {
+  color: var(--text-muted);
+}
+
+/* Operation rows */
+.soap-ops-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.soap-op {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.soap-op:last-child {
+  border-bottom: none;
+}
+
+.soap-op__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--duration-fast) var(--ease);
+  min-height: 0;
+  flex-wrap: wrap;
+}
+
+.soap-op__head:hover {
+  background: var(--bg-hover);
+}
+
+.soap-op--open .soap-op__head {
+  background: var(--bg-elevated);
+}
+
+.soap-op__caret {
+  color: var(--text-muted);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.soap-op__name {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.soap-op__action {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1px 7px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+.soap-op__style {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-radius: var(--radius-xl);
+  padding: 1px 7px;
+}
+
+.soap-op__body {
+  padding: 10px 16px 14px 34px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.soap-op__doc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  font-style: italic;
+}
+
+.soap-op__msgs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.soap-op__no-msgs {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Message cards within an operation */
+.soap-msg-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+}
+
+.soap-msg-card__label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  padding: 2px 7px;
+  border-radius: var(--radius-xl);
+  flex-shrink: 0;
+}
+
+.soap-msg-card__label--input  { background: var(--accent-bg);   color: var(--accent); }
+.soap-msg-card__label--output { background: var(--success-bg);  color: var(--success); }
+.soap-msg-card__label--fault  { background: var(--error-bg);    color: var(--error); }
+
+.soap-msg-card__name {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.soap-msg-card__parts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: 100%;
+  padding-left: 0;
+  margin-top: 2px;
+}
+
+.soap-msg-card__part {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 1px 7px;
+}
+
+.soap-msg-card__part-name {
+  color: var(--text-code);
+}
+
+.soap-msg-card__part-type {
+  color: var(--text-muted);
+}
+.soap-msg-card__part-type::before {
+  content: ': ';
+  color: var(--border);
+}
+
+/* Messages section (flat list) */
+.soap-msgs-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.soap-msg-def {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.soap-msg-def:last-child {
+  border-bottom: none;
+}
+
+.soap-msg-def__name {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.soap-msg-def__parts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-left: 8px;
+}
+
+.soap-msg-def__part {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 1px 7px;
+}
+
+.soap-msg-def__part-name {
+  color: var(--text-code);
+}
+
+.soap-msg-def__part-type {
+  color: var(--text-muted);
+}
+.soap-msg-def__part-type::before {
+  content: ': ';
+  color: var(--border);
+}
+
+/* SOAP element tree */
+.soap-tree {
+  padding: 8px 16px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+.soap-node {
+  line-height: 1.8;
+}
+
+.soap-node__head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+.soap-node__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+.soap-node__toggle:hover .soap-node__tag {
+  color: var(--accent);
+}
+
+.soap-node__caret {
+  color: var(--text-muted);
+  font-size: 12px;
+  width: 12px;
+  flex-shrink: 0;
+}
+
+.soap-node__tag {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.soap-node__tag--leaf {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.soap-node__attr {
+  font-size: 11.5px;
+}
+
+.soap-node__attr-name {
+  color: var(--success);
+}
+
+.soap-node__attr-eq {
+  color: var(--text-muted);
+}
+
+.soap-node__attr-val {
+  color: var(--warning);
+}
+
+.soap-node__text {
+  color: var(--text-code);
+  margin-left: 4px;
+}
+
+.soap-node__children {
+  padding-left: 16px;
+  border-left: 1px solid var(--border-subtle);
+  margin-left: 6px;
+}
+
+.soap-error-detail {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--error);
+  word-break: break-word;
+  max-width: 400px;
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* Viewer wrapper */
+.soap-viewer {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive */
+@media (max-width: 980px) {
+  .soap-tab__panels {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .soap-tab {
+    padding: 10px;
+    gap: 10px;
+  }
+}

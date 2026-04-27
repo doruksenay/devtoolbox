@@ -139,6 +139,16 @@ export function IconUrlEnc(p: IconProps) {
   )
 }
 
+export function IconSoap(p: IconProps) {
+  return (
+    <Icon {...p}>
+      <rect x="2" y="3" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M6 8l-2 1 2 1M12 8l2 1-2 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10.5 7l-3 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </Icon>
+  )
+}
+
 export function IconChevronLeft(p: IconProps) {
   return (
     <Icon {...p}>
