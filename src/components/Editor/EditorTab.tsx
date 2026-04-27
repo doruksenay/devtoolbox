@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
 import { useApp } from '../../context/AppContext'
 import { JsonTextarea } from '../shared/JsonTextarea'
 import { TreeView } from '../Tree/TreeView'
@@ -22,6 +22,19 @@ export function EditorTab() {
   const [treeForceOpen, setTreeForceOpen] = useState<boolean | undefined>(undefined)
   const [showSchema, setShowSchema] = useState(false)
   const [showUrlInput, setShowUrlInput] = useState(false)
+  const [themePickerOpen, setThemePickerOpen] = useState(false)
+  const themePickerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!themePickerOpen) return
+    function handleClick(e: MouseEvent) {
+      if (themePickerRef.current && !themePickerRef.current.contains(e.target as Node)) {
+        setThemePickerOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [themePickerOpen])
 
   function handleExpandAll() {
     setTreeForceOpen(true)
@@ -170,18 +183,34 @@ export function EditorTab() {
         </button>
 
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-          <div className="editor-theme-picker">
-            <IconPalette size={13} className="editor-theme-picker__icon" />
-            <select
-              className="editor-theme-picker__select"
-              value={state.editorSyntaxTheme}
-              onChange={(e) => dispatch({ type: 'SET_EDITOR_SYNTAX_THEME', theme: e.target.value as import('../../utils/editorThemes').EditorSyntaxTheme })}
+          <div className="editor-theme-picker" ref={themePickerRef}>
+            <button
+              className="editor-theme-picker__btn"
+              onClick={() => setThemePickerOpen((o) => !o)}
               title="Editor syntax theme"
             >
-              {EDITOR_THEME_ORDER.map((id) => (
-                <option key={id} value={id}>{EDITOR_THEMES[id].label}</option>
-              ))}
-            </select>
+              <IconPalette size={13} className="editor-theme-picker__icon" />
+              <span>{EDITOR_THEMES[state.editorSyntaxTheme].label}</span>
+              <svg className="editor-theme-picker__chevron" width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            {themePickerOpen && (
+              <div className="editor-theme-picker__menu">
+                {EDITOR_THEME_ORDER.map((id) => (
+                  <button
+                    key={id}
+                    className={`editor-theme-picker__option${id === state.editorSyntaxTheme ? ' editor-theme-picker__option--active' : ''}`}
+                    onClick={() => {
+                      dispatch({ type: 'SET_EDITOR_SYNTAX_THEME', theme: id })
+                      setThemePickerOpen(false)
+                    }}
+                  >
+                    {EDITOR_THEMES[id].label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           {statusBadge}
           <div className="view-toggle">
