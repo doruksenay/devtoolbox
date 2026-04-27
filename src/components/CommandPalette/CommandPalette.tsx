@@ -4,7 +4,7 @@ import type { TabId } from '../../types'
 import {
   IconEditor, IconCompare, IconXml, IconGrid, IconQuery,
   IconConvert, IconHar, IconCron, IconJwt, IconDraw,
-  IconYaml, IconBase64, IconUrlEnc,
+  IconYaml, IconBase64, IconUrlEnc, IconSoap,
 } from '../icons/Icons'
 
 interface ToolEntry {
@@ -28,6 +28,7 @@ const TOOLS: ToolEntry[] = [
   { id: 'yaml',    label: 'YAML ↔ JSON',    description: 'Convert between YAML and JSON',    icon: <IconYaml /> },
   { id: 'base64',  label: 'Base64',         description: 'Encode and decode Base64',         icon: <IconBase64 /> },
   { id: 'urlenc',  label: 'URL Encoder',    description: 'URL encode and decode strings',    icon: <IconUrlEnc /> },
+  { id: 'soap',    label: 'SOAP / WSDL',    description: 'Parse WSDL services and SOAP envelopes', icon: <IconSoap /> },
 ]
 
 export function CommandPalette() {

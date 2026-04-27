@@ -130,11 +130,20 @@ export function IconBase64(p: IconProps) {
   )
 }
 
-export function IconUrlEnc(p: IconProps) {
-  return (
+export function IconUrlEnc(p: IconProps) {  return (
     <Icon {...p}>
       <path d="M6 9a3 3 0 0 0 0 6h1M12 9a3 3 0 0 1 0 6h-1M7 12h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       <path d="M9 3v3M6 4l3 2 3-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </Icon>
+  )
+}
+
+export function IconSoap(p: IconProps) {
+  return (
+    <Icon {...p}>
+      <rect x="2" y="3" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M6 8l-2 1 2 1M12 8l2 1-2 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10.5 7l-3 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
     </Icon>
   )
 }

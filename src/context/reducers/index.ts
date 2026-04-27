@@ -13,6 +13,7 @@ import { drawReducer } from './drawReducer'
 import { yamlReducer } from './yamlReducer'
 import { base64Reducer } from './base64Reducer'
 import { urlReducer } from './urlReducer'
+import { soapReducer } from './soapReducer'
 
 const featureReducers = [
   editorReducer,
@@ -28,6 +29,7 @@ const featureReducers = [
   yamlReducer,
   base64Reducer,
   urlReducer,
+  soapReducer,
 ]
 
 export function rootReducer(state: AppState, action: AppAction): AppState {

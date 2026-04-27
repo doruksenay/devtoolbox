@@ -69,6 +69,8 @@ const emptyState: AppState = {
   urlOutput: '',
   urlMode: 'encode',
   urlError: null,
+  soapInput: '',
+  soapError: null,
   sidebarCollapsed: false,
   commandPaletteOpen: false,
 }
