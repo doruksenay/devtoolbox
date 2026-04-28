@@ -72,6 +72,15 @@ function fmtTime(ms: number) {
   return `${(ms / 1000).toFixed(2)} s`
 }
 
+function getUrlPath(url: string): string {
+  try {
+    const u = new URL(url)
+    return (u.pathname + u.search) || url
+  } catch {
+    return url
+  }
+}
+
 function tryPretty(text: string | undefined) {
   if (!text) return ''
   try { return JSON.stringify(JSON.parse(text), null, 2) } catch { return text }
@@ -343,8 +352,8 @@ export function HarTab() {
                       {entry.request.method}
                     </span>
                   </td>
-                  <td className="har-table__url">
-                    <span className="har-table__mono">{entry.request.url}</span>
+                  <td className="har-table__url" title={entry.request.url}>
+                    <span className="har-table__mono">{getUrlPath(entry.request.url)}</span>
                   </td>
                   <td>
                     <span className="har-status" style={{ color: statusColor(entry.response.status) }}>
