@@ -783,10 +783,26 @@ body {
   color: var(--text-muted);
 }
 
-.tree-node__count {
+.tree-node__count-badge {
+  display: inline-block;
   font-size: 10.5px;
-  color: var(--text-muted);
+  padding: 0 6px;
+  border-radius: 4px;
   margin-left: 4px;
+  line-height: 1.65;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.tree-node__count-badge--object {
+  color: var(--warning);
+  background: var(--warning-bg);
+}
+
+.tree-node__count-badge--array {
+  color: var(--accent);
+  background: var(--accent-bg);
 }
 
 .tree-node__children {

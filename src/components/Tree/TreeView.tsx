@@ -77,13 +77,12 @@ function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs, a
             <span className="tree-node__bracket">: </span>
           </>
         )}
-        <span className="tree-node__bracket">{openBracket}</span>
-        {!open && (
-          <>
-            <span className="tree-node__bracket">…</span>
-            <span className="tree-node__bracket">{closeBracket}</span>
-            <span className="tree-node__count">{count} {count === 1 ? 'item' : 'items'}</span>
-          </>
+        {open ? (
+          <span className="tree-node__bracket">{openBracket}</span>
+        ) : (
+          <span className={`tree-node__count-badge tree-node__count-badge--${isArray ? 'array' : 'object'}`}>
+            {openBracket} … {count} {isArray ? (count === 1 ? 'item' : 'items') : (count === 1 ? 'prop' : 'props')} {closeBracket}
+          </span>
         )}
       </button>
 
