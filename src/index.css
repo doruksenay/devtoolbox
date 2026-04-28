@@ -28,10 +28,14 @@
   --warning:      #fbbf24;
   --warning-bg:   #251c08;
 
-  --diff-added-bg:   #082419;
-  --diff-added-text: #34d399;
-  --diff-removed-bg: #2a1212;
-  --diff-removed-text: #ff7777;
+  --diff-added-bg:      #0d3320;
+  --diff-added-border:  #22c55e;
+  --diff-added-text:    #86efac;
+  --diff-removed-bg:    #3a1414;
+  --diff-removed-border:#ef4444;
+  --diff-removed-text:  #fca5a5;
+  --diff-changed-bg:    #2e2008;
+  --diff-changed-border:#f59e0b;
 
   --tab-active-bg:  #1a1e35;
   --tab-active-border: #3b9eff;
@@ -90,10 +94,14 @@
   --warning:      #d97706;
   --warning-bg:   #fef3c7;
 
-  --diff-added-bg:   #d1fae5;
-  --diff-added-text: #065f46;
-  --diff-removed-bg: #fee2e2;
-  --diff-removed-text: #991b1b;
+  --diff-added-bg:      #dcfce7;
+  --diff-added-border:  #16a34a;
+  --diff-added-text:    #166534;
+  --diff-removed-bg:    #fee2e2;
+  --diff-removed-border:#dc2626;
+  --diff-removed-text:  #991b1b;
+  --diff-changed-bg:    #fef9c3;
+  --diff-changed-border:#d97706;
 
   --tab-active-bg:  #ffffff;
   --tab-active-border: #0070f3;
@@ -819,18 +827,24 @@ body {
 .tree-node--added,
 .tree-leaf.tree-node--added {
   background: var(--diff-added-bg);
+  border-left: 3px solid var(--diff-added-border);
+  padding-left: 6px;
   border-radius: var(--radius-sm);
 }
 
 .tree-node--removed,
 .tree-leaf.tree-node--removed {
   background: var(--diff-removed-bg);
+  border-left: 3px solid var(--diff-removed-border);
+  padding-left: 6px;
   border-radius: var(--radius-sm);
 }
 
 .tree-node--changed,
 .tree-leaf.tree-node--changed {
-  background: var(--warning-bg);
+  background: var(--diff-changed-bg);
+  border-left: 3px solid var(--diff-changed-border);
+  padding-left: 6px;
   border-radius: var(--radius-sm);
 }
 
@@ -840,7 +854,9 @@ body {
 }
 
 .tree-node--modified {
-  background: var(--warning-bg);
+  background: var(--diff-changed-bg);
+  border-left: 3px solid var(--diff-changed-border);
+  padding-left: 6px;
   border-radius: var(--radius-sm);
 }
 
@@ -963,11 +979,13 @@ body {
 .diff-line--added {
   background: var(--diff-added-bg);
   color: var(--diff-added-text);
+  border-left: 3px solid var(--diff-added-border);
 }
 
 .diff-line--removed {
   background: var(--diff-removed-bg);
   color: var(--diff-removed-text);
+  border-left: 3px solid var(--diff-removed-border);
 }
 
 .diff-line--unchanged {
