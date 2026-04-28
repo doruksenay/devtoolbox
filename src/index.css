@@ -828,6 +828,12 @@ body {
   border-radius: var(--radius-sm);
 }
 
+.tree-node--changed,
+.tree-leaf.tree-node--changed {
+  background: var(--warning-bg);
+  border-radius: var(--radius-sm);
+}
+
 .tree-node--active-diff {
   outline: 2px solid var(--accent) !important;
   outline-offset: 1px;

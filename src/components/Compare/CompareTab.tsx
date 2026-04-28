@@ -6,6 +6,10 @@ import { computeJsonDiff } from '../../utils/jsonDiff'
 
 type PanelMode = 'text' | 'tree'
 
+// Delay before scrolling to a diff so that CollapsibleNode useEffect hooks
+// have time to auto-expand the relevant tree nodes first.
+const SCROLL_TO_DIFF_DELAY_MS = 100
+
 export function CompareTab() {
   const { state, dispatch, runCompare } = useApp()
   const [treeKey, setTreeKey] = useState(0)
@@ -58,10 +62,13 @@ export function CompareTab() {
   function scrollToDiff(idx: number) {
     const path = diffPaths[idx]
     if (!path) return
-    for (const paneRef of [leftPaneRef, rightPaneRef]) {
-      const el = paneRef.current?.querySelector(`[data-diff-path="${CSS.escape(path)}"]`)
-      if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
-    }
+    // Wait for React to re-render (nodes auto-expand via useEffect) before scrolling
+    setTimeout(() => {
+      for (const paneRef of [leftPaneRef, rightPaneRef]) {
+        const el = paneRef.current?.querySelector(`[data-diff-path="${CSS.escape(path)}"]`)
+        if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      }
+    }, SCROLL_TO_DIFF_DELAY_MS)
   }
 
   function handlePrevDiff() {

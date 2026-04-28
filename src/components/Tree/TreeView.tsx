@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import type { DiffType } from '../../utils/jsonDiff'
 import { pathHasDiff } from '../../utils/jsonDiff'
 import type { EditorSyntaxTheme } from '../../utils/editorThemes'
@@ -41,6 +41,18 @@ const CHUNK_SIZE = 100
 function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs, activeDiffPath }: TreeNodeProps) {
   const [open, setOpen] = useState(forceOpen !== undefined ? forceOpen : depth < MAX_AUTO_EXPAND_DEPTH)
   const [visibleCount, setVisibleCount] = useState(CHUNK_SIZE)
+
+  // Auto-expand this node when the active diff path falls inside its subtree
+  useEffect(() => {
+    if (!activeDiffPath) return
+    if (
+      activeDiffPath === path ||
+      activeDiffPath.startsWith(path + '.') ||
+      activeDiffPath.startsWith(path + '[')
+    ) {
+      setOpen(true)
+    }
+  }, [activeDiffPath, path])
 
   const isArray = Array.isArray(data)
   const entries = useMemo(() => isArray
