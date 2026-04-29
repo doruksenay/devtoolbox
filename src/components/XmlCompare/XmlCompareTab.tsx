@@ -5,6 +5,10 @@ import type { DiffLine } from '../../types'
 
 type PanelMode = 'text' | 'diff'
 
+// Delay before scrolling to a diff row so React has time to switch
+// the panel to diff mode and render the rows before we try to scroll.
+const SCROLL_TO_DIFF_DELAY_MS = 50
+
 interface SideBySideRow {
   leftLine: string | null
   leftType: 'unchanged' | 'removed' | 'empty'
@@ -101,14 +105,14 @@ export function XmlCompareTab() {
     if (isSyncingScroll.current || !rightDiffRef.current || !leftDiffRef.current) return
     isSyncingScroll.current = true
     rightDiffRef.current.scrollTop = leftDiffRef.current.scrollTop
-    isSyncingScroll.current = false
+    requestAnimationFrame(() => { isSyncingScroll.current = false })
   }
 
   function handleRightDiffScroll() {
     if (isSyncingScroll.current || !leftDiffRef.current || !rightDiffRef.current) return
     isSyncingScroll.current = true
     leftDiffRef.current.scrollTop = rightDiffRef.current.scrollTop
-    isSyncingScroll.current = false
+    requestAnimationFrame(() => { isSyncingScroll.current = false })
   }
 
   function scrollToDiffRow(idx: number) {
@@ -119,7 +123,7 @@ export function XmlCompareTab() {
         const el = ref.current?.querySelector(`[data-row="${rowIdx}"]`) as HTMLElement | null
         if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
       }
-    }, 50)
+    }, SCROLL_TO_DIFF_DELAY_MS)
   }
 
   function handlePrevDiff() {
