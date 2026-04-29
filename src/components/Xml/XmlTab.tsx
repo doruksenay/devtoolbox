@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../Toast/ToastProvider'
+import { XmlCodeEditor } from '../shared/XmlCodeEditor'
 
 export function XmlTab() {
   const { state, dispatch, validateXml, formatXmlAction } = useApp()
@@ -91,14 +92,10 @@ export function XmlTab() {
           )}
         </div>
         <div className="panel__body">
-          <textarea
-            className="json-textarea"
+          <XmlCodeEditor
             value={state.xmlRaw}
-            onChange={(e) => dispatch({ type: 'SET_XML_RAW', raw: e.target.value })}
-            placeholder={`<root>\n  <item id="1">hello</item>\n</root>`}
-            spellCheck={false}
-            autoCapitalize="off"
-            autoCorrect="off"
+            onChange={(val) => dispatch({ type: 'SET_XML_RAW', raw: val })}
+            theme={state.theme}
           />
         </div>
         {state.xmlValid === false && state.xmlError && (

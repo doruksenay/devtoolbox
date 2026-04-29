@@ -2,7 +2,7 @@
 //  Shared type definitions across the app
 // ─────────────────────────────────────────────
 
-export type TabId = 'editor' | 'compare' | 'xml' | 'grid' | 'query' | 'convert' | 'har' | 'cron' | 'jwt' | 'draw' | 'yaml' | 'base64' | 'urlenc' | 'soap'
+export type TabId = 'editor' | 'compare' | 'xml' | 'xmlcompare' | 'grid' | 'query' | 'convert' | 'har' | 'cron' | 'jwt' | 'draw' | 'yaml' | 'base64' | 'urlenc' | 'soap'
 
 export type { EditorSyntaxTheme } from './utils/editorThemes'
 import type { EditorSyntaxTheme } from './utils/editorThemes'
@@ -45,6 +45,13 @@ export interface AppState {
   xmlRaw: string
   xmlValid: boolean | null
   xmlError: string | null
+
+  // ── XML Compare tab ──────────────────────────
+  xmlCompareLeft: string
+  xmlCompareRight: string
+  xmlCompareLines: DiffLine[] | null
+  xmlCompareEqual: boolean | null
+  xmlCompareError: string | null
 
   // ── Grid tab ────────────────────────────────
   gridRaw: string
@@ -146,6 +153,12 @@ export type AppAction =
   | { type: 'SET_XML_VALID' }
   | { type: 'SET_XML_ERROR'; error: string }
   | { type: 'CLEAR_XML' }
+  // XML Compare tab
+  | { type: 'SET_XML_COMPARE_LEFT'; raw: string }
+  | { type: 'SET_XML_COMPARE_RIGHT'; raw: string }
+  | { type: 'SET_XML_COMPARE_RESULT'; lines: DiffLine[]; equal: boolean }
+  | { type: 'SET_XML_COMPARE_ERROR'; error: string }
+  | { type: 'CLEAR_XML_COMPARE' }
   | { type: 'SET_GRID_RAW'; raw: string }
   | { type: 'SET_GRID_PATH'; path: string }
   | { type: 'SET_QUERY_RAW'; raw: string }

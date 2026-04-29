@@ -14,6 +14,7 @@ import { yamlReducer } from './yamlReducer'
 import { base64Reducer } from './base64Reducer'
 import { urlReducer } from './urlReducer'
 import { soapReducer } from './soapReducer'
+import { xmlCompareReducer } from './xmlCompareReducer'
 
 const featureReducers = [
   editorReducer,
@@ -30,6 +31,7 @@ const featureReducers = [
   base64Reducer,
   urlReducer,
   soapReducer,
+  xmlCompareReducer,
 ]
 
 export function rootReducer(state: AppState, action: AppAction): AppState {

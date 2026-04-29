@@ -109,6 +109,11 @@ const initialState: AppState = {
   xmlRaw: '',
   xmlValid: null,
   xmlError: null,
+  xmlCompareLeft: '',
+  xmlCompareRight: '',
+  xmlCompareLines: null,
+  xmlCompareEqual: null,
+  xmlCompareError: null,
   gridRaw: '',
   gridParsed: null,
   gridError: null,
@@ -195,6 +200,7 @@ interface AppContextValue {
   beautifyEditor: () => void
   minifyEditor: () => void
   runCompare: () => void
+  runXmlCompare: () => void
   validateXml: () => void
   formatXmlAction: () => void
   runQuery: () => void
@@ -349,6 +355,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SET_COMPARE_RESULT', lines, equal })
   }, [state.compareLeft, state.compareRight])
 
+  const runXmlCompare = useCallback(() => {
+    const leftRaw = state.xmlCompareLeft
+    const rightRaw = state.xmlCompareRight
+
+    if (!leftRaw.trim() && !rightRaw.trim()) {
+      dispatch({ type: 'CLEAR_XML_COMPARE' })
+      return
+    }
+
+    const rawChanges = Diff.diffLines(leftRaw, rightRaw)
+    const lines: DiffLine[] = []
+    for (const part of rawChanges) {
+      const partLines = part.value.split('\n')
+      const cleaned = partLines[partLines.length - 1] === '' ? partLines.slice(0, -1) : partLines
+      for (const line of cleaned) {
+        lines.push({
+          type: part.added ? 'added' : part.removed ? 'removed' : 'unchanged',
+          value: line,
+        })
+      }
+    }
+    const equal = leftRaw === rightRaw
+    dispatch({ type: 'SET_XML_COMPARE_RESULT', lines, equal })
+  }, [state.xmlCompareLeft, state.xmlCompareRight])
+
   const validateXml = useCallback(() => {
     const result = parseXml(state.xmlRaw)
     if (!result.valid || result.error) {
@@ -400,7 +431,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider
-      value={{ state, dispatch, validateEditor, beautifyEditor, minifyEditor, runCompare, validateXml, formatXmlAction, runQuery }}
+      value={{ state, dispatch, validateEditor, beautifyEditor, minifyEditor, runCompare, runXmlCompare, validateXml, formatXmlAction, runQuery }}
     >
       {children}
     </AppContext.Provider>
