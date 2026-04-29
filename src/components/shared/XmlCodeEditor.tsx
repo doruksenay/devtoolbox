@@ -3,7 +3,7 @@ import { EditorState } from '@codemirror/state'
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view'
 import { xml } from '@codemirror/lang-xml'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
-import { bracketMatching, foldGutter, indentOnInput } from '@codemirror/language'
+import { bracketMatching, foldGutter, foldKeymap, indentOnInput } from '@codemirror/language'
 import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete'
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search'
 import { oneDark } from '@codemirror/theme-one-dark'
@@ -77,6 +77,7 @@ export function XmlCodeEditor({ value, onChange, readOnly = false, theme = 'dark
         ...historyKeymap,
         ...closeBracketsKeymap,
         ...searchKeymap,
+        ...foldKeymap,
       ]),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {

@@ -1,17 +1,84 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { useApp } from '../../context/AppContext'
 import { XmlCodeEditor } from '../shared/XmlCodeEditor'
+import type { DiffLine } from '../../types'
+
+type PanelMode = 'text' | 'diff'
+
+interface SideBySideRow {
+  leftLine: string | null
+  leftType: 'unchanged' | 'removed' | 'empty'
+  rightLine: string | null
+  rightType: 'unchanged' | 'added' | 'empty'
+  isChange: boolean
+}
+
+function buildSideBySide(lines: DiffLine[]): SideBySideRow[] {
+  const rows: SideBySideRow[] = []
+  let i = 0
+  while (i < lines.length) {
+    if (lines[i].type === 'unchanged') {
+      rows.push({
+        leftLine: lines[i].value,
+        leftType: 'unchanged',
+        rightLine: lines[i].value,
+        rightType: 'unchanged',
+        isChange: false,
+      })
+      i++
+    } else {
+      // Collect a block of removed lines then added lines
+      const removed: string[] = []
+      while (i < lines.length && lines[i].type === 'removed') {
+        removed.push(lines[i].value)
+        i++
+      }
+      const added: string[] = []
+      while (i < lines.length && lines[i].type === 'added') {
+        added.push(lines[i].value)
+        i++
+      }
+      const maxLen = Math.max(removed.length, added.length)
+      for (let j = 0; j < maxLen; j++) {
+        rows.push({
+          leftLine: j < removed.length ? removed[j] : null,
+          leftType: j < removed.length ? 'removed' : 'empty',
+          rightLine: j < added.length ? added[j] : null,
+          rightType: j < added.length ? 'added' : 'empty',
+          isChange: true,
+        })
+      }
+    }
+  }
+  return rows
+}
 
 export function XmlCompareTab() {
   const { state, dispatch, runXmlCompare } = useApp()
   const leftFileRef = useRef<HTMLInputElement>(null)
   const rightFileRef = useRef<HTMLInputElement>(null)
   const [diffIndex, setDiffIndex] = useState(0)
-  const diffResultRef = useRef<HTMLDivElement>(null)
+  const [leftMode, setLeftMode] = useState<PanelMode>('text')
+  const [rightMode, setRightMode] = useState<PanelMode>('text')
+  const hasAutoSwitched = useRef(false)
+  const leftDiffRef = useRef<HTMLDivElement>(null)
+  const rightDiffRef = useRef<HTMLDivElement>(null)
+  const isSyncingScroll = useRef(false)
 
   const hasLeft = state.xmlCompareLeft.trim().length > 0
   const hasRight = state.xmlCompareRight.trim().length > 0
   const hasResult = state.xmlCompareLines !== null
+
+  const sideBySideRows = useMemo(
+    () => (state.xmlCompareLines ? buildSideBySide(state.xmlCompareLines) : []),
+    [state.xmlCompareLines],
+  )
+
+  const changeRowIndexes = useMemo(
+    () => sideBySideRows.map((r, i) => (r.isChange ? i : -1)).filter((i) => i !== -1),
+    [sideBySideRows],
+  )
+  const totalDiffs = changeRowIndexes.length
 
   // Auto-compare with debounce
   useEffect(() => {
@@ -21,34 +88,58 @@ export function XmlCompareTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.xmlCompareLeft, state.xmlCompareRight])
 
-  // Count diffs
-  const diffLineIndexes = (state.xmlCompareLines ?? [])
-    .map((l, i) => (l.type !== 'unchanged' ? i : -1))
-    .filter((i) => i !== -1)
-  const totalDiffs = diffLineIndexes.length
+  // Auto-switch to diff mode on first successful compare
+  useEffect(() => {
+    if (hasResult && !hasAutoSwitched.current) {
+      hasAutoSwitched.current = true
+      setLeftMode('diff')
+      setRightMode('diff')
+    }
+  }, [hasResult])
 
-  function scrollToDiff(idx: number) {
-    const lineIdx = diffLineIndexes[idx]
-    if (lineIdx == null || !diffResultRef.current) return
-    const el = diffResultRef.current.querySelector(`[data-line-index="${lineIdx}"]`)
-    if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  function handleLeftDiffScroll() {
+    if (isSyncingScroll.current || !rightDiffRef.current || !leftDiffRef.current) return
+    isSyncingScroll.current = true
+    rightDiffRef.current.scrollTop = leftDiffRef.current.scrollTop
+    isSyncingScroll.current = false
+  }
+
+  function handleRightDiffScroll() {
+    if (isSyncingScroll.current || !leftDiffRef.current || !rightDiffRef.current) return
+    isSyncingScroll.current = true
+    leftDiffRef.current.scrollTop = rightDiffRef.current.scrollTop
+    isSyncingScroll.current = false
+  }
+
+  function scrollToDiffRow(idx: number) {
+    const rowIdx = changeRowIndexes[idx]
+    if (rowIdx == null) return
+    setTimeout(() => {
+      for (const ref of [leftDiffRef, rightDiffRef]) {
+        const el = ref.current?.querySelector(`[data-row="${rowIdx}"]`) as HTMLElement | null
+        if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      }
+    }, 50)
   }
 
   function handlePrevDiff() {
     const next = (diffIndex - 1 + totalDiffs) % totalDiffs
     setDiffIndex(next)
-    scrollToDiff(next)
+    scrollToDiffRow(next)
   }
 
   function handleNextDiff() {
     const next = (diffIndex + 1) % totalDiffs
     setDiffIndex(next)
-    scrollToDiff(next)
+    scrollToDiffRow(next)
   }
 
   function handleClearAll() {
     dispatch({ type: 'CLEAR_XML_COMPARE' })
     setDiffIndex(0)
+    hasAutoSwitched.current = false
+    setLeftMode('text')
+    setRightMode('text')
   }
 
   function handleFileUpload(side: 'left' | 'right', e: React.ChangeEvent<HTMLInputElement>) {
@@ -102,13 +193,29 @@ export function XmlCompareTab() {
         )}
       </div>
 
-      {/* Editors */}
+      {/* Side-by-side panels */}
       <div className="xml-compare-tab__editors">
         {/* Left panel */}
         <div className="xml-compare-tab__pane panel">
           <div className="panel__header">
             <span className="panel__label">Left XML</span>
-            <div style={{ display: 'flex', gap: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {hasResult && (
+                <div className="compare-mode-toggle">
+                  <button
+                    className={`compare-mode-toggle__btn${leftMode === 'text' ? ' compare-mode-toggle__btn--active' : ''}`}
+                    onClick={() => setLeftMode('text')}
+                  >
+                    text
+                  </button>
+                  <button
+                    className={`compare-mode-toggle__btn${leftMode === 'diff' ? ' compare-mode-toggle__btn--active' : ''}`}
+                    onClick={() => setLeftMode('diff')}
+                  >
+                    diff
+                  </button>
+                </div>
+              )}
               <button
                 className="btn btn-ghost"
                 style={{ fontSize: 11 }}
@@ -134,11 +241,37 @@ export function XmlCompareTab() {
             </div>
           </div>
           <div className="panel__body">
-            <XmlCodeEditor
-              value={state.xmlCompareLeft}
-              onChange={(val) => dispatch({ type: 'SET_XML_COMPARE_LEFT', raw: val })}
-              theme={state.theme}
-            />
+            {leftMode === 'text' ? (
+              <XmlCodeEditor
+                value={state.xmlCompareLeft}
+                onChange={(val) => dispatch({ type: 'SET_XML_COMPARE_LEFT', raw: val })}
+                theme={state.theme}
+              />
+            ) : state.xmlCompareEqual ? (
+              <div className="empty-state">
+                <div className="empty-state__icon" style={{ color: 'var(--success)' }}>
+                  ✓
+                </div>
+                <div className="empty-state__title" style={{ color: 'var(--success)' }}>
+                  Files are identical
+                </div>
+              </div>
+            ) : (
+              <div className="xml-sbs-pane" ref={leftDiffRef} onScroll={handleLeftDiffScroll}>
+                {sideBySideRows.map((row, i) => (
+                  <div
+                    key={i}
+                    data-row={i}
+                    className={`xml-sbs-row xml-sbs-row--${row.leftType}${changeRowIndexes[diffIndex] === i ? ' xml-sbs-row--active' : ''}`}
+                  >
+                    <span className="xml-sbs-row__marker">
+                      {row.leftType === 'removed' ? '−' : ' '}
+                    </span>
+                    <span className="xml-sbs-row__content">{row.leftLine ?? ''}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -146,7 +279,23 @@ export function XmlCompareTab() {
         <div className="xml-compare-tab__pane panel">
           <div className="panel__header">
             <span className="panel__label">Right XML</span>
-            <div style={{ display: 'flex', gap: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {hasResult && (
+                <div className="compare-mode-toggle">
+                  <button
+                    className={`compare-mode-toggle__btn${rightMode === 'text' ? ' compare-mode-toggle__btn--active' : ''}`}
+                    onClick={() => setRightMode('text')}
+                  >
+                    text
+                  </button>
+                  <button
+                    className={`compare-mode-toggle__btn${rightMode === 'diff' ? ' compare-mode-toggle__btn--active' : ''}`}
+                    onClick={() => setRightMode('diff')}
+                  >
+                    diff
+                  </button>
+                </div>
+              )}
               <button
                 className="btn btn-ghost"
                 style={{ fontSize: 11 }}
@@ -172,56 +321,40 @@ export function XmlCompareTab() {
             </div>
           </div>
           <div className="panel__body">
-            <XmlCodeEditor
-              value={state.xmlCompareRight}
-              onChange={(val) => dispatch({ type: 'SET_XML_COMPARE_RIGHT', raw: val })}
-              theme={state.theme}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Diff result */}
-      {hasResult && (
-        <div className="xml-compare-tab__result panel">
-          <div className="panel__header">
-            <span className="panel__label">Diff</span>
-            {!state.xmlCompareEqual && (
-              <span className="text-xs text-muted">
-                {state.xmlCompareLines?.filter((l) => l.type === 'added').length} added ·{' '}
-                {state.xmlCompareLines?.filter((l) => l.type === 'removed').length} removed
-              </span>
-            )}
-          </div>
-          <div className="panel__body" ref={diffResultRef}>
-            {state.xmlCompareEqual ? (
+            {rightMode === 'text' ? (
+              <XmlCodeEditor
+                value={state.xmlCompareRight}
+                onChange={(val) => dispatch({ type: 'SET_XML_COMPARE_RIGHT', raw: val })}
+                theme={state.theme}
+              />
+            ) : state.xmlCompareEqual ? (
               <div className="empty-state">
-                <div className="empty-state__icon" style={{ color: 'var(--success)' }}>✓</div>
+                <div className="empty-state__icon" style={{ color: 'var(--success)' }}>
+                  ✓
+                </div>
                 <div className="empty-state__title" style={{ color: 'var(--success)' }}>
                   Files are identical
                 </div>
               </div>
             ) : (
-              <div className="xml-diff-lines">
-                {(state.xmlCompareLines ?? []).map((line, i) => (
+              <div className="xml-sbs-pane" ref={rightDiffRef} onScroll={handleRightDiffScroll}>
+                {sideBySideRows.map((row, i) => (
                   <div
                     key={i}
-                    data-line-index={i}
-                    className={`xml-diff-line xml-diff-line--${line.type}${
-                      diffLineIndexes[diffIndex] === i ? ' xml-diff-line--active' : ''
-                    }`}
+                    data-row={i}
+                    className={`xml-sbs-row xml-sbs-row--${row.rightType}${changeRowIndexes[diffIndex] === i ? ' xml-sbs-row--active' : ''}`}
                   >
-                    <span className="xml-diff-line__marker">
-                      {line.type === 'added' ? '+' : line.type === 'removed' ? '−' : ' '}
+                    <span className="xml-sbs-row__marker">
+                      {row.rightType === 'added' ? '+' : ' '}
                     </span>
-                    <span className="xml-diff-line__content">{line.value}</span>
+                    <span className="xml-sbs-row__content">{row.rightLine ?? ''}</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }
