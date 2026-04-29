@@ -1,7 +1,7 @@
 import { useApp } from '../../context/AppContext'
 import type { TabId } from '../../types'
 import {
-  IconEditor, IconCompare, IconXml, IconGrid, IconQuery,
+  IconEditor, IconCompare, IconXml, IconXmlCompare, IconGrid, IconQuery,
   IconConvert, IconHar, IconCron, IconJwt, IconDraw,
   IconBase64, IconUrlEnc, IconSoap, IconChevronLeft, IconChevronRight,
 } from '../icons/Icons'
@@ -22,6 +22,7 @@ const GROUPS: TabGroup[] = [
     label: 'Edit & View',
     tabs: [
       { id: 'editor', label: 'JSON Editor', icon: <IconEditor /> },
+      { id: 'xml',    label: 'XML Editor',  icon: <IconXml /> },
       { id: 'grid',   label: 'Grid View',   icon: <IconGrid /> },
       { id: 'draw',   label: 'Diagram',     icon: <IconDraw /> },
     ],
@@ -29,9 +30,9 @@ const GROUPS: TabGroup[] = [
   {
     label: 'Transform',
     tabs: [
-      { id: 'compare', label: 'Compare',     icon: <IconCompare /> },
-      { id: 'xml',     label: 'XML',         icon: <IconXml /> },
-      { id: 'convert', label: 'Convert',     icon: <IconConvert /> },
+      { id: 'compare',    label: 'JSON Compare', icon: <IconCompare /> },
+      { id: 'xmlcompare', label: 'XML Compare',  icon: <IconXmlCompare /> },
+      { id: 'convert',    label: 'Convert',      icon: <IconConvert /> },
     ],
   },
   {

@@ -4,6 +4,7 @@ import { Header } from './components/Layout/Header'
 import { EditorTab } from './components/Editor/EditorTab'
 import { CompareTab } from './components/Compare/CompareTab'
 import { XmlTab } from './components/Xml/XmlTab'
+import { XmlCompareTab } from './components/XmlCompare/XmlCompareTab'
 import { GridTab } from './components/Grid/GridTab'
 import { QueryTab } from './components/Query/QueryTab'
 import { ConvertTab } from './components/Convert/ConvertTab'
@@ -37,7 +38,8 @@ export default function App() {
         <div className="tab-content">
           {state.activeTab === 'editor'  && <EditorTab />}
           {state.activeTab === 'compare' && <CompareTab />}
-          {state.activeTab === 'xml'     && <XmlTab />}
+          {state.activeTab === 'xml'        && <XmlTab />}
+          {state.activeTab === 'xmlcompare' && <XmlCompareTab />}
           {state.activeTab === 'grid'    && <GridTab />}
           {state.activeTab === 'query'   && <QueryTab />}
           {state.activeTab === 'convert' && <ConvertTab />}

@@ -43,6 +43,15 @@ export function IconXml(p: IconProps) {
   )
 }
 
+export function IconXmlCompare(p: IconProps) {
+  return (
+    <Icon {...p}>
+      <path d="M2 9h14M11 5l4 4-4 4M7 5L3 9l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5 2l-2 3 2 3M13 2l2 3-2 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    </Icon>
+  )
+}
+
 export function IconGrid(p: IconProps) {
   return (
     <Icon {...p}>
