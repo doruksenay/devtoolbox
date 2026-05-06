@@ -85,7 +85,7 @@ function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs, a
               {openBracket} … {count} {isArray ? (count === 1 ? 'item' : 'items') : (count === 1 ? 'prop' : 'props')} {closeBracket}
             </span>
             {diffClass && (
-              <span className={`tree-node__diff-pill${diffClass}`} title="Contains differences">⇄</span>
+              <span className={`tree-node__diff-pill ${diffClass.trim()}`} title="Contains differences">⇄</span>
             )}
           </>
         )}
