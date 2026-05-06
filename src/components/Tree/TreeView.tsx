@@ -80,9 +80,14 @@ function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs, a
         {open ? (
           <span className="tree-node__bracket">{openBracket}</span>
         ) : (
-          <span className={`tree-node__count-badge tree-node__count-badge--${isArray ? 'array' : 'object'}`}>
-            {openBracket} … {count} {isArray ? (count === 1 ? 'item' : 'items') : (count === 1 ? 'prop' : 'props')} {closeBracket}
-          </span>
+          <>
+            <span className={`tree-node__count-badge tree-node__count-badge--${isArray ? 'array' : 'object'}`}>
+              {openBracket} … {count} {isArray ? (count === 1 ? 'item' : 'items') : (count === 1 ? 'prop' : 'props')} {closeBracket}
+            </span>
+            {diffClass && (
+              <span className={`tree-node__diff-pill ${diffClass.trim()}`} title="Contains differences">⇄</span>
+            )}
+          </>
         )}
       </button>
 
