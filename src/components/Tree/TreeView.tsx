@@ -278,7 +278,10 @@ export function TreeView({ data, forceOpen, diffs, activeDiffPath, syntaxTheme, 
 
   const matchPaths = useMemo(() => new Set(matches), [matches])
   const totalMatches = matches.length
-  const activePath = totalMatches > 0 ? matches[Math.min(matchIndex, totalMatches - 1)] : undefined
+  // Clamp once so the highlighted match and the "n / total" label stay in sync,
+  // even on the render right before the reset effect fires (match set shrank).
+  const safeIndex = totalMatches > 0 ? Math.min(matchIndex, totalMatches - 1) : 0
+  const activePath = totalMatches > 0 ? matches[safeIndex] : undefined
 
   // Reset the active match whenever the query (and thus the match set) changes
   useEffect(() => {
@@ -336,7 +339,7 @@ export function TreeView({ data, forceOpen, diffs, activeDiffPath, syntaxTheme, 
           {query.trim() && (
             <>
               <span className="tree-search__count">
-                {totalMatches > 0 ? `${matchIndex % totalMatches + 1} / ${totalMatches}` : '0 / 0'}
+                {totalMatches > 0 ? `${safeIndex + 1} / ${totalMatches}` : '0 / 0'}
               </span>
               <button
                 className="tree-search__nav"
