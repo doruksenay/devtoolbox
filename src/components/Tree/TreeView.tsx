@@ -51,16 +51,30 @@ function Highlight({ text, query }: { text: string; query?: string }) {
   )
 }
 
-function getDiffClass(diffs: Map<string, DiffType> | null | undefined, path: string): string {
-  if (!diffs) return ''
-  const diff = pathHasDiff(diffs, path)
-  if (!diff) return ''
+function diffTypeToClass(diff: DiffType | null): string {
   switch (diff) {
     case 'added': return ' tree-node--added'
     case 'removed': return ' tree-node--removed'
     case 'changed': return ' tree-node--changed'
     default: return ''
   }
+}
+
+/**
+ * Highlight class for a node that is *exactly* the diff endpoint.
+ * Leaf-style nodes have no children, so their exact diff is the same as
+ * `pathHasDiff`, but for container nodes this avoids shading the whole
+ * subtree just because a descendant differs.
+ */
+function getDiffClass(diffs: Map<string, DiffType> | null | undefined, path: string): string {
+  if (!diffs) return ''
+  return diffTypeToClass(diffs.get(path) ?? null)
+}
+
+/** Class describing whether this node contains a diff anywhere in its subtree. */
+function getContainsDiffClass(diffs: Map<string, DiffType> | null | undefined, path: string): string {
+  if (!diffs) return ''
+  return diffTypeToClass(pathHasDiff(diffs, path))
 }
 
 const CHUNK_SIZE = 100
@@ -94,6 +108,7 @@ function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs, a
   const openBracket  = isArray ? '[' : '{'
   const closeBracket = isArray ? ']' : '}'
   const diffClass = getDiffClass(diffs, path)
+  const containsDiffClass = getContainsDiffClass(diffs, path)
   const isActive = activeDiffPath === path
   const isSearchMatch = search?.matchPaths.has(path) ?? false
   const isActiveSearch = search?.activePath === path
@@ -124,8 +139,8 @@ function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs, a
             <span className={`tree-node__count-badge tree-node__count-badge--${isArray ? 'array' : 'object'}`}>
               {openBracket} … {count} {isArray ? (count === 1 ? 'item' : 'items') : (count === 1 ? 'prop' : 'props')} {closeBracket}
             </span>
-            {diffClass && (
-              <span className={`tree-node__diff-pill ${diffClass.trim()}`} title="Contains differences">⇄</span>
+            {containsDiffClass && (
+              <span className={`tree-node__diff-pill ${containsDiffClass.trim()}`} title="Contains differences">⇄</span>
             )}
           </>
         )}
