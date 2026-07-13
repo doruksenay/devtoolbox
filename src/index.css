@@ -858,28 +858,31 @@ body {
   color: #000;
 }
 
-/* Tree diff highlighting */
-.tree-node--added,
+/* Tree diff highlighting — only the node's own row is shaded, never the
+   whole nested subtree, so deeply nested diffs stay readable. */
+.tree-node--added > .tree-node__toggle,
 .tree-leaf.tree-node--added {
   background: var(--diff-added-bg);
   border-radius: var(--radius-sm);
 }
 
-.tree-node--removed,
+.tree-node--removed > .tree-node__toggle,
 .tree-leaf.tree-node--removed {
   background: var(--diff-removed-bg);
   border-radius: var(--radius-sm);
 }
 
-.tree-node--changed,
+.tree-node--changed > .tree-node__toggle,
 .tree-leaf.tree-node--changed {
   background: var(--warning-bg);
   border-radius: var(--radius-sm);
 }
 
-.tree-node--active-diff {
+.tree-node--active-diff > .tree-node__toggle,
+.tree-leaf.tree-node--active-diff {
   outline: 2px solid var(--accent) !important;
   outline-offset: 1px;
+  border-radius: var(--radius-sm);
 }
 
 .tree-node--modified {
