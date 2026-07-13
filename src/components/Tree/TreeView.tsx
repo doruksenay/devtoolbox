@@ -1,9 +1,17 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import type { DiffType } from '../../utils/jsonDiff'
 import { pathHasDiff } from '../../utils/jsonDiff'
+import { computeTreeMatches, splitHighlight } from '../../utils/treeSearch'
 import type { EditorSyntaxTheme } from '../../utils/editorThemes'
 import { EDITOR_THEMES } from '../../utils/editorThemes'
 import { useApp } from '../../context/AppContext'
+
+interface SearchContext {
+  query: string
+  matchPaths: Set<string>
+  expandPaths: Set<string>
+  activePath?: string
+}
 
 interface TreeNodeProps {
   nodeKey: string | null
@@ -14,6 +22,7 @@ interface TreeNodeProps {
   path?: string
   diffs?: Map<string, DiffType> | null
   activeDiffPath?: string
+  search?: SearchContext | null
 }
 
 const MAX_AUTO_EXPAND_DEPTH = 2
@@ -22,6 +31,24 @@ function getType(val: unknown): string {
   if (val === null) return 'null'
   if (Array.isArray(val)) return 'array'
   return typeof val
+}
+
+/** Renders text, wrapping search-matching substrings in a highlight mark. */
+function Highlight({ text, query }: { text: string; query?: string }) {
+  if (!query) return <>{text}</>
+  const segments = splitHighlight(text, query)
+  if (segments.length === 1 && !segments[0].match) return <>{text}</>
+  return (
+    <>
+      {segments.map((seg, i) =>
+        seg.match ? (
+          <mark key={i} className="tree-search__mark">{seg.text}</mark>
+        ) : (
+          <span key={i}>{seg.text}</span>
+        )
+      )}
+    </>
+  )
 }
 
 function getDiffClass(diffs: Map<string, DiffType> | null | undefined, path: string): string {
@@ -38,7 +65,7 @@ function getDiffClass(diffs: Map<string, DiffType> | null | undefined, path: str
 
 const CHUNK_SIZE = 100
 
-function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs, activeDiffPath }: TreeNodeProps) {
+function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs, activeDiffPath, search }: TreeNodeProps) {
   const [open, setOpen] = useState(forceOpen !== undefined ? forceOpen : depth < MAX_AUTO_EXPAND_DEPTH)
   const [visibleCount, setVisibleCount] = useState(CHUNK_SIZE)
 
@@ -54,6 +81,11 @@ function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs, a
     }
   }, [activeDiffPath, path])
 
+  // Auto-expand this node when a search match lives inside its subtree
+  useEffect(() => {
+    if (search?.expandPaths.has(path)) setOpen(true)
+  }, [search, path])
+
   const isArray = Array.isArray(data)
   const entries = useMemo(() => isArray
     ? (data as unknown[]).map((v, i) => [String(i), v] as [string, unknown])
@@ -63,17 +95,25 @@ function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs, a
   const closeBracket = isArray ? ']' : '}'
   const diffClass = getDiffClass(diffs, path)
   const isActive = activeDiffPath === path
+  const isSearchMatch = search?.matchPaths.has(path) ?? false
+  const isActiveSearch = search?.activePath === path
 
   const visibleEntries = count > CHUNK_SIZE ? entries.slice(0, visibleCount) : entries
   const hasMore = visibleCount < count
 
+  const dataSearchPath = isSearchMatch ? path : undefined
+
   return (
-    <div className={`tree-node${diffClass}${isActive ? ' tree-node--active-diff' : ''}`} data-diff-path={diffClass ? path : undefined}>
+    <div
+      className={`tree-node${diffClass}${isActive ? ' tree-node--active-diff' : ''}${isSearchMatch ? ' tree-node--search-match' : ''}${isActiveSearch ? ' tree-node--search-active' : ''}`}
+      data-diff-path={diffClass ? path : undefined}
+      data-search-path={dataSearchPath}
+    >
       <button className="tree-node__toggle" onClick={() => setOpen(!open)} type="button">
         <span className={`tree-node__caret tree-node__caret--${open ? 'open' : 'closed'}`}>▾</span>
         {nodeKey !== null && (
           <>
-            <span className="tree-node__key">"{nodeKey}"</span>
+            <span className="tree-node__key">"<Highlight text={nodeKey} query={search?.query} />"</span>
             <span className="tree-node__bracket">: </span>
           </>
         )}
@@ -106,6 +146,7 @@ function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs, a
                   path={childPath}
                   diffs={diffs}
                   activeDiffPath={activeDiffPath}
+                  search={search}
                 />
               )
             })}
@@ -126,7 +167,7 @@ function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs, a
   )
 }
 
-function LeafNode({ nodeKey, data, path = '$', diffs, activeDiffPath }: { nodeKey: string | null; data: unknown; path?: string; diffs?: Map<string, DiffType> | null; activeDiffPath?: string }) {
+function LeafNode({ nodeKey, data, path = '$', diffs, activeDiffPath, search }: { nodeKey: string | null; data: unknown; path?: string; diffs?: Map<string, DiffType> | null; activeDiffPath?: string; search?: SearchContext | null }) {
   const type = getType(data)
   let display: string
   let className: string
@@ -155,21 +196,27 @@ function LeafNode({ nodeKey, data, path = '$', diffs, activeDiffPath }: { nodeKe
 
   const diffClass = getDiffClass(diffs, path)
   const isActive = activeDiffPath === path
+  const isSearchMatch = search?.matchPaths.has(path) ?? false
+  const isActiveSearch = search?.activePath === path
 
   return (
-    <div className={`tree-leaf${diffClass}${isActive ? ' tree-node--active-diff' : ''}`} data-diff-path={diffClass ? path : undefined}>
+    <div
+      className={`tree-leaf${diffClass}${isActive ? ' tree-node--active-diff' : ''}${isSearchMatch ? ' tree-node--search-match' : ''}${isActiveSearch ? ' tree-node--search-active' : ''}`}
+      data-diff-path={diffClass ? path : undefined}
+      data-search-path={isSearchMatch ? path : undefined}
+    >
       {nodeKey !== null && (
         <>
-          <span className="tree-leaf__key">"{nodeKey}"</span>
+          <span className="tree-leaf__key">"<Highlight text={nodeKey} query={search?.query} />"</span>
           <span className="tree-node__bracket">: </span>
         </>
       )}
-      <span className={className}>{display}</span>
+      <span className={className}><Highlight text={display} query={search?.query} /></span>
     </div>
   )
 }
 
-function TreeNodeComponent({ nodeKey, data, depth, forceOpen, path = '$', diffs, activeDiffPath }: TreeNodeProps) {
+function TreeNodeComponent({ nodeKey, data, depth, forceOpen, path = '$', diffs, activeDiffPath, search }: TreeNodeProps) {
   const type = getType(data)
 
   if (type === 'object' || type === 'array') {
@@ -178,11 +225,17 @@ function TreeNodeComponent({ nodeKey, data, depth, forceOpen, path = '$', diffs,
     if (isEmpty) {
       const diffClass = getDiffClass(diffs, path)
       const isActive = activeDiffPath === path
+      const isSearchMatch = search?.matchPaths.has(path) ?? false
+      const isActiveSearch = search?.activePath === path
       return (
-        <div className={`tree-leaf${diffClass}${isActive ? ' tree-node--active-diff' : ''}`} data-diff-path={diffClass ? path : undefined}>
+        <div
+          className={`tree-leaf${diffClass}${isActive ? ' tree-node--active-diff' : ''}${isSearchMatch ? ' tree-node--search-match' : ''}${isActiveSearch ? ' tree-node--search-active' : ''}`}
+          data-diff-path={diffClass ? path : undefined}
+          data-search-path={isSearchMatch ? path : undefined}
+        >
           {nodeKey !== null && (
             <>
-              <span className="tree-leaf__key">"{nodeKey}"</span>
+              <span className="tree-leaf__key">"<Highlight text={nodeKey} query={search?.query} />"</span>
               <span className="tree-node__bracket">: </span>
             </>
           )}
@@ -190,10 +243,10 @@ function TreeNodeComponent({ nodeKey, data, depth, forceOpen, path = '$', diffs,
         </div>
       )
     }
-    return <CollapsibleNode nodeKey={nodeKey} data={data} depth={depth} forceOpen={forceOpen} path={path} diffs={diffs} activeDiffPath={activeDiffPath} />
+    return <CollapsibleNode nodeKey={nodeKey} data={data} depth={depth} forceOpen={forceOpen} path={path} diffs={diffs} activeDiffPath={activeDiffPath} search={search} />
   }
 
-  return <LeafNode nodeKey={nodeKey} data={data} path={path} diffs={diffs} activeDiffPath={activeDiffPath} />
+  return <LeafNode nodeKey={nodeKey} data={data} path={path} diffs={diffs} activeDiffPath={activeDiffPath} search={search} />
 }
 
 interface TreeViewProps {
@@ -202,13 +255,57 @@ interface TreeViewProps {
   diffs?: Map<string, DiffType> | null
   activeDiffPath?: string
   syntaxTheme?: EditorSyntaxTheme
+  /** Show the built-in search bar. Defaults to true. */
+  enableSearch?: boolean
 }
 
-export function TreeView({ data, forceOpen, diffs, activeDiffPath, syntaxTheme }: TreeViewProps) {
+const SCROLL_TO_MATCH_DELAY_MS = 60
+
+export function TreeView({ data, forceOpen, diffs, activeDiffPath, syntaxTheme, enableSearch = true }: TreeViewProps) {
   const { state } = useApp()
   const theme: EditorSyntaxTheme = (syntaxTheme ?? state.editorSyntaxTheme ?? 'default') as EditorSyntaxTheme
   const colorMode = state.theme === 'dark' ? 'dark' : 'light'
   const colors = EDITOR_THEMES[theme][colorMode]
+
+  const [query, setQuery] = useState('')
+  const [matchIndex, setMatchIndex] = useState(0)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const { matches, expandPaths } = useMemo(
+    () => computeTreeMatches(data, query),
+    [data, query]
+  )
+
+  const matchPaths = useMemo(() => new Set(matches), [matches])
+  const totalMatches = matches.length
+  // Clamp once so the highlighted match and the "n / total" label stay in sync,
+  // even on the render right before the reset effect fires (match set shrank).
+  const safeIndex = totalMatches > 0 ? Math.min(matchIndex, totalMatches - 1) : 0
+  const activePath = totalMatches > 0 ? matches[safeIndex] : undefined
+
+  // Reset the active match whenever the query (and thus the match set) changes
+  useEffect(() => {
+    setMatchIndex(0)
+  }, [query])
+
+  // Scroll the active match into view once nodes have expanded
+  useEffect(() => {
+    if (!activePath) return
+    const timer = setTimeout(() => {
+      const el = containerRef.current?.querySelector(`[data-search-path="${CSS.escape(activePath)}"]`)
+      if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    }, SCROLL_TO_MATCH_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [activePath])
+
+  const search: SearchContext | null = query.trim()
+    ? { query, matchPaths, expandPaths, activePath }
+    : null
+
+  function gotoMatch(delta: number) {
+    if (totalMatches === 0) return
+    setMatchIndex((i) => (i + delta + totalMatches) % totalMatches)
+  }
 
   const cssVars = {
     '--tree-string-color': colors.string,
@@ -219,8 +316,58 @@ export function TreeView({ data, forceOpen, diffs, activeDiffPath, syntaxTheme }
   } as React.CSSProperties
 
   return (
-    <div className="tree-view" style={cssVars}>
-      <TreeNodeComponent nodeKey={null} data={data} depth={0} forceOpen={forceOpen} path="$" diffs={diffs} activeDiffPath={activeDiffPath} />
+    <div className="tree-view-wrapper" style={cssVars}>
+      {enableSearch && (
+        <div className="tree-search">
+          <span className="tree-search__icon" aria-hidden>⌕</span>
+          <input
+            className="tree-search__input"
+            type="text"
+            value={query}
+            placeholder="Search keys and values…"
+            spellCheck={false}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                gotoMatch(e.shiftKey ? -1 : 1)
+              } else if (e.key === 'Escape') {
+                setQuery('')
+              }
+            }}
+          />
+          {query.trim() && (
+            <>
+              <span className="tree-search__count">
+                {totalMatches > 0 ? `${safeIndex + 1} / ${totalMatches}` : '0 / 0'}
+              </span>
+              <button
+                className="tree-search__nav"
+                onClick={() => gotoMatch(-1)}
+                disabled={totalMatches === 0}
+                title="Previous match (Shift+Enter)"
+                type="button"
+              >‹</button>
+              <button
+                className="tree-search__nav"
+                onClick={() => gotoMatch(1)}
+                disabled={totalMatches === 0}
+                title="Next match (Enter)"
+                type="button"
+              >›</button>
+              <button
+                className="tree-search__nav"
+                onClick={() => setQuery('')}
+                title="Clear search"
+                type="button"
+              >✕</button>
+            </>
+          )}
+        </div>
+      )}
+      <div className="tree-view" ref={containerRef}>
+        <TreeNodeComponent nodeKey={null} data={data} depth={0} forceOpen={forceOpen} path="$" diffs={diffs} activeDiffPath={activeDiffPath} search={search} />
+      </div>
     </div>
   )
 }
