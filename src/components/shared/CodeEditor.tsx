@@ -8,6 +8,7 @@ import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete'
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { tags } from '@lezer/highlight'
+import { codeSearch } from './codeSearch'
 import type { EditorSyntaxTheme } from '../../utils/editorThemes'
 import { EDITOR_THEMES } from '../../utils/editorThemes'
 
@@ -89,6 +90,7 @@ export function CodeEditor({ value, onChange, readOnly = false, theme = 'dark', 
       bracketMatching(),
       closeBrackets(),
       highlightSelectionMatches(),
+      codeSearch,
       history(),
       json(),
       keymap.of([
