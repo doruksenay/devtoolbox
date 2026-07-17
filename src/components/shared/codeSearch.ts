@@ -12,6 +12,7 @@ function countMatches(view: EditorView): number {
   let count = 0
   while (!cursor.next().done) {
     count++
+    // Safety limit: stop early on huge documents to keep the UI responsive.
     if (count >= MAX_COUNT) break
   }
   return count
