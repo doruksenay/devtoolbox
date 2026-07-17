@@ -307,7 +307,7 @@ export function EditorTab() {
               <div className="empty-state">
                 <div className="empty-state__icon">✗</div>
                 <div className="empty-state__title">Cannot render tree</div>
-                <div className="text-error" style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                <div className="text-error" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, whiteSpace: 'pre-wrap', textAlign: 'left' }}>
                   {editorError}
                 </div>
               </div>

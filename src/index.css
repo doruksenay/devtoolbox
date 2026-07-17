@@ -591,6 +591,8 @@ body {
   font-family: var(--font-mono);
   line-height: 1.5;
   flex-shrink: 0;
+  white-space: pre-wrap;
+  overflow-x: auto;
 }
 
 /* ─────────────────────────────────────────────

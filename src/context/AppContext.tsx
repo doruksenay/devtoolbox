@@ -14,6 +14,7 @@ import type { AppState, AppAction, DiffLine, ParseResult } from '../types'
 import type { EditorSyntaxTheme } from '../utils/editorThemes'
 import { rootReducer } from './reducers'
 import { supabase } from '../lib/supabase'
+import { formatJsonError } from '../utils/jsonError'
 
 // ─────────────────────────────────────────────
 //  Helpers
@@ -27,7 +28,8 @@ export function parseJson(raw: string): ParseResult {
     const parsed = JSON.parse(raw)
     return { valid: true, parsed, error: null }
   } catch (e) {
-    return { valid: false, parsed: null, error: (e as Error).message }
+    const message = (e as Error).message
+    return { valid: false, parsed: null, error: formatJsonError(raw, message) }
   }
 }
 
