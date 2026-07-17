@@ -7,6 +7,7 @@ import { bracketMatching, foldGutter, indentOnInput } from '@codemirror/language
 import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete'
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search'
 import { oneDark } from '@codemirror/theme-one-dark'
+import { codeSearch } from './codeSearch'
 
 const lightTheme = EditorView.theme({
   '&': {
@@ -70,6 +71,7 @@ export function XmlCodeEditor({ value, onChange, readOnly = false, theme = 'dark
       bracketMatching(),
       closeBrackets(),
       highlightSelectionMatches(),
+      codeSearch,
       history(),
       xml(),
       keymap.of([
