@@ -77,6 +77,8 @@ const emptyState: AppState = {
   soapInput: '',
   soapError: null,
   cleanInput: '',
+  taxIncome: '',
+  taxProvince: 'ON',
   sidebarCollapsed: false,
   commandPaletteOpen: false,
 }

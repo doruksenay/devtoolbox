@@ -167,6 +167,15 @@ export function IconClean(p: IconProps) {
   )
 }
 
+export function IconTax(p: IconProps) {
+  return (
+    <Icon {...p}>
+      <path d="M11 2H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V6l-3-4z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M6.5 8.5l5 5M7 9a.6.6 0 1 0 0-.01M11 13a.6.6 0 1 0 0-.01" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </Icon>
+  )
+}
+
 export function IconChevronLeft(p: IconProps) {
   return (
     <Icon {...p}>

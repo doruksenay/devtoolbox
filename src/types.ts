@@ -2,7 +2,7 @@
 //  Shared type definitions across the app
 // ─────────────────────────────────────────────
 
-export type TabId = 'editor' | 'compare' | 'xml' | 'xmlcompare' | 'grid' | 'query' | 'convert' | 'har' | 'cron' | 'jwt' | 'draw' | 'yaml' | 'base64' | 'urlenc' | 'soap' | 'clean'
+export type TabId = 'editor' | 'compare' | 'xml' | 'xmlcompare' | 'grid' | 'query' | 'convert' | 'har' | 'cron' | 'jwt' | 'draw' | 'yaml' | 'base64' | 'urlenc' | 'soap' | 'clean' | 'tax'
 
 export type { EditorSyntaxTheme } from './utils/editorThemes'
 import type { EditorSyntaxTheme } from './utils/editorThemes'
@@ -135,6 +135,10 @@ export interface AppState {
   // ── Text Cleaner ──────────────────────────────
   cleanInput: string
 
+  // ── Canada Tax Calculator ─────────────────────
+  taxIncome: string          // raw income input (string to allow empty/partial entry)
+  taxProvince: string        // province/territory code, e.g. 'ON'
+
   // ── UI state ──────────────────────────────────
   sidebarCollapsed: boolean
   commandPaletteOpen: boolean
@@ -231,6 +235,10 @@ export type AppAction =
   // Text Cleaner
   | { type: 'SET_CLEAN_INPUT'; input: string }
   | { type: 'CLEAR_CLEAN' }
+  // Canada Tax Calculator
+  | { type: 'SET_TAX_INCOME'; income: string }
+  | { type: 'SET_TAX_PROVINCE'; province: string }
+  | { type: 'CLEAR_TAX' }
   // Internal
   | { type: 'LOAD_PERSISTED_STATE'; payload: Partial<AppState> }
 

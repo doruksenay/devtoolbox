@@ -2287,6 +2287,88 @@ body {
 .cron-ref-table code { font-family: var(--font-mono); background: var(--surface-2); border-radius: 4px; padding: 1px 5px; }
 
 /* ─────────────────────────────────────────────
+   Tax Calculator Tab
+───────────────────────────────────────────── */
+.tax-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+}
+.tax-field { display: flex; flex-direction: column; gap: 4px; min-width: 200px; }
+.tax-field__label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); }
+.tax-field__input {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  padding: 9px 12px;
+  transition: border-color var(--duration-base) var(--ease), box-shadow var(--duration-base) var(--ease);
+}
+.tax-field__input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59, 158, 255, 0.12);
+}
+.tax-clear-btn { height: 38px; }
+
+.tax-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+
+.tax-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+.tax-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.tax-card--total { border-color: var(--accent); }
+.tax-card--net { border-color: var(--success, #3ba55d); }
+.tax-card__label { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
+.tax-card__value { font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tax-card--net .tax-card__value { color: var(--success, #3ba55d); }
+
+.tax-rates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 4px;
+}
+.tax-rates__item { display: flex; flex-direction: column; gap: 2px; }
+.tax-rates__label { font-size: 0.75rem; color: var(--text-secondary); }
+.tax-rates__value { font-size: 1rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.tax-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+.tax-breakdown__heading {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.tax-breakdown__table { width: 100%; }
+.tax-breakdown__table td, .tax-breakdown__table th { font-variant-numeric: tabular-nums; }
+
+.tax-disclaimer {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  max-width: 760px;
+  margin: 4px 0 0;
+}
+
+/* ─────────────────────────────────────────────
    JWT Tab
 ───────────────────────────────────────────── */
 .jwt-tab {

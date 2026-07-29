@@ -166,6 +166,8 @@ const initialState: AppState = {
   soapInput: '',
   soapError: null,
   cleanInput: '',
+  taxIncome: '',
+  taxProvince: 'ON',
   sidebarCollapsed: false,
   commandPaletteOpen: false,
 }
@@ -184,6 +186,8 @@ function buildSavePayload(state: AppState): Partial<AppState> {
     gridPath: state.gridPath,
     queryRaw: state.queryRaw,
     queryExpression: state.queryExpression,
+    taxIncome: state.taxIncome,
+    taxProvince: state.taxProvince,
     theme: state.theme,
     editorSyntaxTheme: state.editorSyntaxTheme,
     sidebarCollapsed: state.sidebarCollapsed,
