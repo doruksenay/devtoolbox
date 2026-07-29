@@ -17,6 +17,7 @@ import { Base64Tab } from './components/Base64/Base64Tab'
 import { UrlTab } from './components/UrlEnc/UrlTab'
 import { SoapTab } from './components/Soap/SoapTab'
 import { CleanTab } from './components/Clean/CleanTab'
+import { TaxTab } from './components/Tax/TaxTab'
 import { CommandPalette } from './components/CommandPalette/CommandPalette'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useLiveValidation } from './hooks/useLiveValidation'
@@ -53,6 +54,7 @@ export default function App() {
           {state.activeTab === 'urlenc'  && <UrlTab />}
           {state.activeTab === 'soap'    && <SoapTab />}
           {state.activeTab === 'clean'   && <CleanTab />}
+          {state.activeTab === 'tax'     && <TaxTab />}
         </div>
       </div>
       <CommandPalette />

@@ -3,7 +3,7 @@ import type { TabId } from '../../types'
 import {
   IconEditor, IconCompare, IconXml, IconXmlCompare, IconGrid, IconQuery,
   IconConvert, IconHar, IconCron, IconJwt, IconDraw,
-  IconBase64, IconUrlEnc, IconSoap, IconClean, IconChevronLeft, IconChevronRight,
+  IconBase64, IconUrlEnc, IconSoap, IconClean, IconTax, IconChevronLeft, IconChevronRight,
 } from '../icons/Icons'
 
 interface TabDef {
@@ -51,6 +51,7 @@ const GROUPS: TabGroup[] = [
       { id: 'cron',   label: 'Cron',        icon: <IconCron /> },
       { id: 'jwt',    label: 'JWT Decoder', icon: <IconJwt /> },
       { id: 'clean',  label: 'Text Cleaner', icon: <IconClean /> },
+      { id: 'tax',    label: 'Tax Calculator', icon: <IconTax /> },
     ],
   },
 ]

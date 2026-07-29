@@ -16,6 +16,7 @@ import { urlReducer } from './urlReducer'
 import { soapReducer } from './soapReducer'
 import { cleanReducer } from './cleanReducer'
 import { xmlCompareReducer } from './xmlCompareReducer'
+import { taxReducer } from './taxReducer'
 
 const featureReducers = [
   editorReducer,
@@ -34,6 +35,7 @@ const featureReducers = [
   soapReducer,
   cleanReducer,
   xmlCompareReducer,
+  taxReducer,
 ]
 
 export function rootReducer(state: AppState, action: AppAction): AppState {
@@ -64,6 +66,8 @@ export function rootReducer(state: AppState, action: AppAction): AppState {
         gridPath: s.gridPath ?? state.gridPath,
         queryRaw: s.queryRaw ?? state.queryRaw,
         queryExpression: s.queryExpression ?? state.queryExpression,
+        taxIncome: s.taxIncome ?? state.taxIncome,
+        taxProvince: s.taxProvince ?? state.taxProvince,
         theme: (s.theme as 'dark' | 'light') ?? state.theme,
         editorSyntaxTheme: (s.editorSyntaxTheme as EditorSyntaxTheme) ?? state.editorSyntaxTheme,
         sidebarCollapsed: typeof s.sidebarCollapsed === 'boolean' ? s.sidebarCollapsed : state.sidebarCollapsed,

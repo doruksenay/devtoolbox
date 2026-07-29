@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- **Canada Tax Calculator tool**: New utility that estimates Canadian federal + provincial/territorial income tax for the 2024 tax year. Enter an annual income and choose a province/territory to see federal tax, provincial tax, total tax, after-tax income, average & marginal rates, and a per-bracket breakdown. Applies each jurisdiction's Basic Personal Amount and Quebec's 16.5% federal abatement.
 - **Text Cleaner tool**: New utility that decodes HTML entities (`&amp;`, `&#10;`, `&nbsp;`, …) and detects/removes invisible or "problematic" characters — non-breaking spaces, zero-width spaces, BOM, soft hyphens, and more. Shows a live report of everything found in the pasted text, with toggle options for each cleaning pass.
 
 ### Changed
