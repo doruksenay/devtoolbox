@@ -2289,6 +2289,15 @@ body {
 /* ─────────────────────────────────────────────
    Tax Calculator Tab
 ───────────────────────────────────────────── */
+.tax-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 20px 24px;
+  overflow-y: auto;
+  max-width: 860px;
+  width: 100%;
+}
 .tax-inputs {
   display: flex;
   flex-wrap: wrap;

@@ -38,7 +38,7 @@ export function TaxTab() {
   const hasInput = state.taxIncome.trim().length > 0 && income > 0
 
   return (
-    <div className="cron-tab tax-tab">
+    <div className="tax-tab">
       {/* Inputs */}
       <div className="cron-tab__section">
         <div className="cron-tab__section-title">Annual Income &amp; Province ({TAX_YEAR} tax year)</div>
