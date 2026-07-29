@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- **Text Cleaner tool**: New utility that decodes HTML entities (`&amp;`, `&#10;`, `&nbsp;`, …) and detects/removes invisible or "problematic" characters — non-breaking spaces, zero-width spaces, BOM, soft hyphens, and more. Shows a live report of everything found in the pasted text, with toggle options for each cleaning pass.
+
 ### Changed
 - **Editor search UX**: The in-editor search panel (JSON & XML editors) now appears at the top instead of the bottom, shows a live match count next to the query, and highlights matches more prominently.
 
