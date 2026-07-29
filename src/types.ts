@@ -2,7 +2,7 @@
 //  Shared type definitions across the app
 // ─────────────────────────────────────────────
 
-export type TabId = 'editor' | 'compare' | 'xml' | 'xmlcompare' | 'grid' | 'query' | 'convert' | 'har' | 'cron' | 'jwt' | 'draw' | 'yaml' | 'base64' | 'urlenc' | 'soap'
+export type TabId = 'editor' | 'compare' | 'xml' | 'xmlcompare' | 'grid' | 'query' | 'convert' | 'har' | 'cron' | 'jwt' | 'draw' | 'yaml' | 'base64' | 'urlenc' | 'soap' | 'clean'
 
 export type { EditorSyntaxTheme } from './utils/editorThemes'
 import type { EditorSyntaxTheme } from './utils/editorThemes'
@@ -132,6 +132,9 @@ export interface AppState {
   soapInput: string
   soapError: string | null
 
+  // ── Text Cleaner ──────────────────────────────
+  cleanInput: string
+
   // ── UI state ──────────────────────────────────
   sidebarCollapsed: boolean
   commandPaletteOpen: boolean
@@ -225,6 +228,9 @@ export type AppAction =
   | { type: 'SET_SOAP_INPUT'; input: string }
   | { type: 'SET_SOAP_ERROR'; error: string }
   | { type: 'CLEAR_SOAP' }
+  // Text Cleaner
+  | { type: 'SET_CLEAN_INPUT'; input: string }
+  | { type: 'CLEAR_CLEAN' }
   // Internal
   | { type: 'LOAD_PERSISTED_STATE'; payload: Partial<AppState> }
 

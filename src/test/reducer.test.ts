@@ -76,6 +76,7 @@ const emptyState: AppState = {
   urlError: null,
   soapInput: '',
   soapError: null,
+  cleanInput: '',
   sidebarCollapsed: false,
   commandPaletteOpen: false,
 }

@@ -158,6 +158,15 @@ export function IconSoap(p: IconProps) {
   )
 }
 
+export function IconClean(p: IconProps) {
+  return (
+    <Icon {...p}>
+      <path d="M8 2l1.2 2.8L12 6l-2.8 1.2L8 10 6.8 7.2 4 6l2.8-1.2L8 2z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M13 10l.7 1.6L15.3 12l-1.6.4L13 14l-.4-1.6L11 12l1.6-.4L13 10z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    </Icon>
+  )
+}
+
 export function IconChevronLeft(p: IconProps) {
   return (
     <Icon {...p}>
