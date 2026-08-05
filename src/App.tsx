@@ -1,28 +1,39 @@
+import { lazy, Suspense, type ComponentType } from 'react'
 import { useApp } from './context/AppContext'
 import { Sidebar } from './components/Sidebar/Sidebar'
 import { Header } from './components/Layout/Header'
-import { EditorTab } from './components/Editor/EditorTab'
-import { CompareTab } from './components/Compare/CompareTab'
-import { XmlTab } from './components/Xml/XmlTab'
-import { XmlCompareTab } from './components/XmlCompare/XmlCompareTab'
-import { GridTab } from './components/Grid/GridTab'
-import { QueryTab } from './components/Query/QueryTab'
-import { ConvertTab } from './components/Convert/ConvertTab'
-import { HarTab } from './components/Har/HarTab'
-import { CronTab } from './components/Cron/CronTab'
-import { JwtTab } from './components/Jwt/JwtTab'
-import { DrawTab } from './components/Draw/DrawTab'
-import { YamlTab } from './components/Yaml/YamlTab'
-import { Base64Tab } from './components/Base64/Base64Tab'
-import { UrlTab } from './components/UrlEnc/UrlTab'
-import { SoapTab } from './components/Soap/SoapTab'
-import { CleanTab } from './components/Clean/CleanTab'
-import { TaxTab } from './components/Tax/TaxTab'
 import { CommandPalette } from './components/CommandPalette/CommandPalette'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useLiveValidation } from './hooks/useLiveValidation'
 import { useUrlState } from './hooks/useUrlState'
 import { useUndoRedo } from './hooks/useUndoRedo'
+import type { TabId } from './types'
+
+// Each tool is code-split so the initial download only contains the app shell
+// plus the tool the user actually opens.
+function lazyTab<K extends string>(loader: () => Promise<Record<K, ComponentType>>, name: K) {
+  return lazy(() => loader().then((module) => ({ default: module[name] })))
+}
+
+const TAB_COMPONENTS: Record<TabId, ComponentType> = {
+  editor: lazyTab(() => import('./components/Editor/EditorTab'), 'EditorTab'),
+  compare: lazyTab(() => import('./components/Compare/CompareTab'), 'CompareTab'),
+  xml: lazyTab(() => import('./components/Xml/XmlTab'), 'XmlTab'),
+  xmlcompare: lazyTab(() => import('./components/XmlCompare/XmlCompareTab'), 'XmlCompareTab'),
+  grid: lazyTab(() => import('./components/Grid/GridTab'), 'GridTab'),
+  query: lazyTab(() => import('./components/Query/QueryTab'), 'QueryTab'),
+  convert: lazyTab(() => import('./components/Convert/ConvertTab'), 'ConvertTab'),
+  har: lazyTab(() => import('./components/Har/HarTab'), 'HarTab'),
+  cron: lazyTab(() => import('./components/Cron/CronTab'), 'CronTab'),
+  jwt: lazyTab(() => import('./components/Jwt/JwtTab'), 'JwtTab'),
+  draw: lazyTab(() => import('./components/Draw/DrawTab'), 'DrawTab'),
+  yaml: lazyTab(() => import('./components/Yaml/YamlTab'), 'YamlTab'),
+  base64: lazyTab(() => import('./components/Base64/Base64Tab'), 'Base64Tab'),
+  urlenc: lazyTab(() => import('./components/UrlEnc/UrlTab'), 'UrlTab'),
+  soap: lazyTab(() => import('./components/Soap/SoapTab'), 'SoapTab'),
+  clean: lazyTab(() => import('./components/Clean/CleanTab'), 'CleanTab'),
+  tax: lazyTab(() => import('./components/Tax/TaxTab'), 'TaxTab'),
+}
 
 export default function App() {
   const { state } = useApp()
@@ -32,29 +43,17 @@ export default function App() {
   useUrlState()
   useUndoRedo()
 
+  const ActiveTab = TAB_COMPONENTS[state.activeTab]
+
   return (
     <div className="app-shell">
       <Header />
       <div className="app-shell__main">
         <Sidebar />
         <div className="tab-content">
-          {state.activeTab === 'editor'  && <EditorTab />}
-          {state.activeTab === 'compare' && <CompareTab />}
-          {state.activeTab === 'xml'        && <XmlTab />}
-          {state.activeTab === 'xmlcompare' && <XmlCompareTab />}
-          {state.activeTab === 'grid'    && <GridTab />}
-          {state.activeTab === 'query'   && <QueryTab />}
-          {state.activeTab === 'convert' && <ConvertTab />}
-          {state.activeTab === 'har'     && <HarTab />}
-          {state.activeTab === 'cron'    && <CronTab />}
-          {state.activeTab === 'jwt'     && <JwtTab />}
-          {state.activeTab === 'draw'    && <DrawTab />}
-          {state.activeTab === 'yaml'    && <YamlTab />}
-          {state.activeTab === 'base64'  && <Base64Tab />}
-          {state.activeTab === 'urlenc'  && <UrlTab />}
-          {state.activeTab === 'soap'    && <SoapTab />}
-          {state.activeTab === 'clean'   && <CleanTab />}
-          {state.activeTab === 'tax'     && <TaxTab />}
+          <Suspense fallback={<div className="tab-loading">Loading…</div>}>
+            {ActiveTab ? <ActiveTab /> : null}
+          </Suspense>
         </div>
       </div>
       <CommandPalette />

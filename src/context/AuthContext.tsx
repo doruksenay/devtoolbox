@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 // ─────────────────────────────────────────────
 //  Types
@@ -38,6 +38,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = user?.app_metadata?.role === 'admin'
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false)
+      return
+    }
+
     // Get existing session on mount
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
