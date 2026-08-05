@@ -1287,6 +1287,8 @@ body {
   padding: 8px;
   font-family: var(--font-mono);
   font-size: 13px;
+  width: max-content;
+  min-width: 100%;
 }
 
 .jtg-block {
@@ -1295,7 +1297,7 @@ body {
 
 .jtg-row {
   display: grid;
-  grid-template-columns: minmax(80px, 180px) 1fr;
+  grid-template-columns: minmax(120px, 220px) minmax(280px, 1fr);
   min-height: 28px;
   align-items: start;
   border-bottom: 1px solid var(--border-subtle);
@@ -1325,7 +1327,9 @@ body {
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
-  word-break: break-all;
+  min-width: 0;
+  word-break: normal;
+  overflow-wrap: anywhere;
 }
 
 .jtg-val--type {
@@ -1376,6 +1380,7 @@ body {
 /* Mini table for arrays of objects */
 .jtg-table {
   border-collapse: collapse;
+  table-layout: auto;
   font-size: 12px;
   width: auto;
   min-width: 300px;
@@ -1404,7 +1409,8 @@ body {
   padding: 4px 10px;
   border: 1px solid var(--border-subtle);
   color: var(--text-code);
-  max-width: 220px;
+  min-width: 120px;
+  max-width: 360px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1421,6 +1427,7 @@ body {
 /* Nested object/array inside a table cell — expandable drill-in */
 .jtg-td:has(.jtg-cell-nested) {
   max-width: none;
+  min-width: 320px;
   white-space: normal;
   vertical-align: top;
 }
@@ -1435,7 +1442,8 @@ body {
   margin-top: 4px;
   padding-left: 4px;
   border-left: 2px solid var(--border);
-  min-width: 260px;
+  min-width: 320px;
+  width: max-content;
 }
 
 /* Filter bar */
