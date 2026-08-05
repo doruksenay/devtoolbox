@@ -79,8 +79,9 @@ const emptyState: AppState = {
   soapInput: '',
   soapError: null,
   cleanInput: '',
-  taxIncome: '',
+  taxAmount: '',
   taxProvince: 'ON',
+  taxIncludesTax: false,
   sidebarCollapsed: false,
   commandPaletteOpen: false,
 }

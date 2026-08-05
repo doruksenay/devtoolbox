@@ -1418,6 +1418,26 @@ body {
 
 .jtg-tr:hover .jtg-td { background: var(--bg-hover); }
 
+/* Nested object/array inside a table cell — expandable drill-in */
+.jtg-td:has(.jtg-cell-nested) {
+  max-width: none;
+  white-space: normal;
+  vertical-align: top;
+}
+
+.jtg-cell-nested__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.jtg-cell-nested__body {
+  margin-top: 4px;
+  padding-left: 4px;
+  border-left: 2px solid var(--border);
+  min-width: 260px;
+}
+
 /* Filter bar */
 .filter-input {
   padding: 7px 12px;
@@ -2368,6 +2388,18 @@ body {
 }
 .tax-breakdown__table { width: 100%; }
 .tax-breakdown__table td, .tax-breakdown__table th { font-variant-numeric: tabular-nums; }
+
+.tax-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.tax-row--active td { background: var(--bg-hover); }
 
 .tax-disclaimer {
   font-size: 0.75rem;

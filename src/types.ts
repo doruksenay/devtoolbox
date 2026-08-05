@@ -143,9 +143,10 @@ export interface AppState {
   // ── Text Cleaner ──────────────────────────────
   cleanInput: string
 
-  // ── Canada Tax Calculator ─────────────────────
-  taxIncome: string          // raw income input (string to allow empty/partial entry)
+  // ── Canada Sales Tax Calculator ───────────────
+  taxAmount: string          // raw amount input (string to allow empty/partial entry)
   taxProvince: string        // province/territory code, e.g. 'ON'
+  taxIncludesTax: boolean    // true when the entered amount already includes tax
 
   // ── UI state ──────────────────────────────────
   sidebarCollapsed: boolean
@@ -247,9 +248,10 @@ export type AppAction =
   // Text Cleaner
   | { type: 'SET_CLEAN_INPUT'; input: string }
   | { type: 'CLEAR_CLEAN' }
-  // Canada Tax Calculator
-  | { type: 'SET_TAX_INCOME'; income: string }
+  // Canada Sales Tax Calculator
+  | { type: 'SET_TAX_AMOUNT'; amount: string }
   | { type: 'SET_TAX_PROVINCE'; province: string }
+  | { type: 'SET_TAX_INCLUDES_TAX'; included: boolean }
   | { type: 'CLEAR_TAX' }
   // Internal
   | { type: 'LOAD_PERSISTED_STATE'; payload: Partial<AppState> }
