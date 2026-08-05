@@ -11,10 +11,39 @@ function PrimitiveSpan({ val }: { val: unknown }) {
   return <span className="jtg-string">&quot;{String(val)}&quot;</span>
 }
 
-function CellValue({ val }: { val: unknown }) {
+function CellValue({ val, depth }: { val: unknown; depth: number }) {
+  const [open, setOpen] = useState(false)
+
+  if (val === undefined) return null
+
   if (val !== null && typeof val === 'object') {
-    const label = Array.isArray(val) ? `[${(val as unknown[]).length}]` : '{…}'
-    return <span className="jtg-type-tag">{label}</span>
+    const isArr = Array.isArray(val)
+    const size = isArr ? (val as unknown[]).length : Object.keys(val as object).length
+    const label = isArr ? `[${size}]` : `{${size}}`
+
+    if (size === 0) return <span className="jtg-type-tag">{isArr ? '[ ]' : '{ }'}</span>
+
+    return (
+      <div className="jtg-cell-nested">
+        <div className="jtg-cell-nested__head">
+          <button
+            className="jtg-toggle"
+            onClick={() => setOpen((o) => !o)}
+            type="button"
+            aria-expanded={open}
+            title={open ? 'Collapse' : 'Expand'}
+          >
+            {open ? '−' : '+'}
+          </button>
+          <span className="jtg-type-tag">{label}</span>
+        </div>
+        {open && (
+          <div className="jtg-cell-nested__body">
+            <TreeGridNode nodeKey={null} data={val} depth={depth + 1} forceOpen />
+          </div>
+        )}
+      </div>
+    )
   }
   return <PrimitiveSpan val={val} />
 }
@@ -24,10 +53,12 @@ interface NodeProps {
   nodeKey: string | null
   data: unknown
   depth: number
+  /** Render only the children (no toggle header row) — used for drill-in cells. */
+  forceOpen?: boolean
 }
 
-function TreeGridNode({ nodeKey, data, depth }: NodeProps) {
-  const [open, setOpen] = useState(depth < 2)
+function TreeGridNode({ nodeKey, data, depth, forceOpen = false }: NodeProps) {
+  const [open, setOpen] = useState(forceOpen || depth < 2)
 
   // Primitive leaf
   if (data === null || typeof data !== 'object') {
@@ -95,7 +126,7 @@ function TreeGridNode({ nodeKey, data, depth }: NodeProps) {
                       <td className="jtg-td jtg-td--index">{i + 1}</td>
                       {columns.map((c) => (
                         <td key={c} className="jtg-td">
-                          <CellValue val={row[c]} />
+                          <CellValue val={row[c]} depth={depth + 1} />
                         </td>
                       ))}
                     </tr>

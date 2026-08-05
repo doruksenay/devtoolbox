@@ -30,7 +30,7 @@ const TOOLS: ToolEntry[] = [
   { id: 'urlenc',  label: 'URL Encoder',    description: 'URL encode and decode strings',    icon: <IconUrlEnc /> },
   { id: 'soap',    label: 'SOAP / WSDL',    description: 'Parse WSDL services and SOAP envelopes', icon: <IconSoap /> },
   { id: 'clean',   label: 'Text Cleaner',   description: 'Decode HTML entities & strip invisible characters', icon: <IconClean /> },
-  { id: 'tax',     label: 'Tax Calculator', description: 'Estimate Canadian federal & provincial income tax', icon: <IconTax /> },
+  { id: 'tax',     label: 'Tax Calculator', description: 'Calculate Canadian GST / HST / PST / QST sales tax', icon: <IconTax /> },
 ]
 
 export function CommandPalette() {
