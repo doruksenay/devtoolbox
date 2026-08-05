@@ -1,6 +1,7 @@
 import type { AppState, AppAction, TabId } from '../../types'
 import type { EditorSyntaxTheme } from '../../utils/editorThemes'
 import { editorReducer } from './editorReducer'
+import { restoreEditorDocs } from './editorDocs'
 import { compareReducer } from './compareReducer'
 import { xmlReducer } from './xmlReducer'
 import { gridReducer } from './gridReducer'
@@ -58,7 +59,7 @@ export function rootReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         activeTab: (s.activeTab as TabId) ?? state.activeTab,
-        editorRaw: s.editorRaw ?? state.editorRaw,
+        ...restoreEditorDocs(state, s),
         compareLeft: s.compareLeft ?? state.compareLeft,
         compareRight: s.compareRight ?? state.compareRight,
         xmlRaw: s.xmlRaw ?? state.xmlRaw,

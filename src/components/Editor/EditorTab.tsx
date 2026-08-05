@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { useApp } from '../../context/AppContext'
 import { JsonTextarea } from '../shared/JsonTextarea'
+import { EditorDocTabs } from './EditorDocTabs'
 import { TreeView } from '../Tree/TreeView'
 import { useToast } from '../Toast/ToastProvider'
 import { EDITOR_THEMES, EDITOR_THEME_ORDER } from '../../utils/editorThemes'
@@ -134,6 +135,9 @@ export function EditorTab() {
 
   return (
     <div className="editor-tab">
+      {/* Document tabs */}
+      <EditorDocTabs />
+
       {/* Toolbar */}
       <div className="editor-tab__toolbar">
         <button className="btn btn-primary" onClick={beautifyEditor} disabled={!hasContent}>

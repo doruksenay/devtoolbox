@@ -3728,3 +3728,79 @@ body {
     gap: 10px;
   }
 }
+
+/* ─────────────────────────────────────────────
+   Editor document tabs (multi-document)
+───────────────────────────────────────────── */
+.doc-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+}
+
+.doc-tabs__tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.doc-tabs__tab:hover {
+  color: var(--text-primary);
+}
+
+.doc-tabs__tab--active {
+  background: var(--bg-base, var(--bg-elevated));
+  color: var(--text-primary);
+  border-color: var(--accent, var(--border));
+}
+
+.doc-tabs__label {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.doc-tabs__rename {
+  width: 110px;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 4px);
+  padding: 0 4px;
+}
+
+.doc-tabs__close,
+.doc-tabs__add {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, var(--text-secondary));
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm, 4px);
+}
+
+.doc-tabs__close:hover,
+.doc-tabs__add:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover, transparent);
+}
+
+.doc-tabs__add {
+  font-size: 16px;
+}
