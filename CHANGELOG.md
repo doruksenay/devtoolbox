@@ -3,10 +3,11 @@
 ## [Unreleased]
 
 ### Added
-- **Canada Tax Calculator tool**: New utility that estimates Canadian federal + provincial/territorial income tax for the 2024 tax year. Enter an annual income and choose a province/territory to see federal tax, provincial tax, total tax, after-tax income, average & marginal rates, and a per-bracket breakdown. Applies each jurisdiction's Basic Personal Amount and Quebec's 16.5% federal abatement.
+- **Canada Tax Calculator tool**: New utility that calculates Canadian sales tax (GST / HST / PST / QST / RST) on an amount. Enter a price and choose a province/territory to see the per-tax breakdown, total tax and total price, plus a comparison table across every province and territory. Supports reverse calculation when the amount already includes tax.
 - **Text Cleaner tool**: New utility that decodes HTML entities (`&amp;`, `&#10;`, `&nbsp;`, …) and detects/removes invisible or "problematic" characters — non-breaking spaces, zero-width spaces, BOM, soft hyphens, and more. Shows a live report of everything found in the pasted text, with toggle options for each cleaning pass.
 
 ### Changed
+- **Grid View**: Nested objects and arrays inside array-of-objects tables can now be expanded in place, so deeply nested data is reachable instead of showing an inert `[n]` / `{…}` tag.
 - **Editor search UX**: The in-editor search panel (JSON & XML editors) now appears at the top instead of the bottom, shows a live match count next to the query, and highlights matches more prominently.
 
 ## [0.3.0] - 2026-04-21
