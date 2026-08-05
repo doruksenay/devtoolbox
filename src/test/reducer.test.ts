@@ -5,6 +5,8 @@ import type { AppState } from '../types'
 const emptyState: AppState = {
   activeTab: 'editor',
   editorRaw: '',
+  editorDocs: [{ id: 'doc-1', name: 'Tab 1', raw: '' }],
+  editorActiveDocId: 'doc-1',
   editorParsed: null,
   editorValid: null,
   editorError: null,
@@ -127,6 +129,67 @@ describe('rootReducer', () => {
       const result = rootReducer(state, { type: 'CLEAR_EDITOR' })
       expect(result.editorRaw).toBe('')
       expect(result.editorValid).toBeNull()
+    })
+  })
+
+  describe('editor documents (tabs)', () => {
+    it('SET_EDITOR_RAW syncs the active document content', () => {
+      const result = rootReducer(emptyState, { type: 'SET_EDITOR_RAW', raw: '{"a":1}' })
+      expect(result.editorDocs[0].raw).toBe('{"a":1}')
+    })
+
+    it('ADD_EDITOR_DOC appends a new empty tab and activates it', () => {
+      const result = rootReducer({ ...emptyState, editorRaw: '{"a":1}' }, { type: 'ADD_EDITOR_DOC' })
+      expect(result.editorDocs).toHaveLength(2)
+      expect(result.editorDocs[1].name).toBe('Tab 2')
+      expect(result.editorActiveDocId).toBe(result.editorDocs[1].id)
+      expect(result.editorRaw).toBe('')
+    })
+
+    it('SELECT_EDITOR_DOC swaps the visible content', () => {
+      const state = {
+        ...emptyState,
+        editorDocs: [
+          { id: 'a', name: 'Tab 1', raw: '1' },
+          { id: 'b', name: 'Tab 2', raw: '2' },
+        ],
+        editorActiveDocId: 'a',
+        editorRaw: '1',
+      }
+      const result = rootReducer(state, { type: 'SELECT_EDITOR_DOC', id: 'b' })
+      expect(result.editorActiveDocId).toBe('b')
+      expect(result.editorRaw).toBe('2')
+    })
+
+    it('RENAME_EDITOR_DOC renames a tab and ignores blank names', () => {
+      const renamed = rootReducer(emptyState, { type: 'RENAME_EDITOR_DOC', id: 'doc-1', name: ' Orders ' })
+      expect(renamed.editorDocs[0].name).toBe('Orders')
+      const blank = rootReducer(emptyState, { type: 'RENAME_EDITOR_DOC', id: 'doc-1', name: '  ' })
+      expect(blank.editorDocs[0].name).toBe('Tab 1')
+    })
+
+    it('CLOSE_EDITOR_DOC activates a neighbour tab', () => {
+      const state = {
+        ...emptyState,
+        editorDocs: [
+          { id: 'a', name: 'Tab 1', raw: '1' },
+          { id: 'b', name: 'Tab 2', raw: '2' },
+        ],
+        editorActiveDocId: 'b',
+        editorRaw: '2',
+      }
+      const result = rootReducer(state, { type: 'CLOSE_EDITOR_DOC', id: 'b' })
+      expect(result.editorDocs).toHaveLength(1)
+      expect(result.editorActiveDocId).toBe('a')
+      expect(result.editorRaw).toBe('1')
+    })
+
+    it('CLOSE_EDITOR_DOC on the last tab recreates a fresh empty tab', () => {
+      const state = { ...emptyState, editorRaw: '{"a":1}' }
+      const result = rootReducer(state, { type: 'CLOSE_EDITOR_DOC', id: 'doc-1' })
+      expect(result.editorDocs).toHaveLength(1)
+      expect(result.editorDocs[0].name).toBe('Tab 1')
+      expect(result.editorRaw).toBe('')
     })
   })
 

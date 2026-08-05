@@ -13,6 +13,7 @@ import * as Diff from 'diff'
 import type { AppState, AppAction, DiffLine, ParseResult } from '../types'
 import type { EditorSyntaxTheme } from '../utils/editorThemes'
 import { rootReducer } from './reducers'
+import { makeDoc } from './reducers/editorDocs'
 import { supabase } from '../lib/supabase'
 
 // ─────────────────────────────────────────────
@@ -91,9 +92,13 @@ function loadPersistedState(): Partial<AppState> {
 }
 
 // For anonymous users we start with an empty slate (no localStorage restore)
+const firstDoc = makeDoc('Tab 1')
+
 const initialState: AppState = {
   activeTab: 'editor',
   editorRaw: '',
+  editorDocs: [firstDoc],
+  editorActiveDocId: firstDoc.id,
   editorParsed: null,
   editorValid: null,
   editorError: null,
@@ -179,6 +184,8 @@ function buildSavePayload(state: AppState): Partial<AppState> {
   return {
     activeTab: state.activeTab,
     editorRaw: state.editorRaw,
+    editorDocs: state.editorDocs,
+    editorActiveDocId: state.editorActiveDocId,
     compareLeft: state.compareLeft,
     compareRight: state.compareRight,
     xmlRaw: state.xmlRaw,

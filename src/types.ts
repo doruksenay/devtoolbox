@@ -18,12 +18,20 @@ export interface DiffLine {
   value: string
 }
 
+export interface EditorDoc {
+  id: string
+  name: string
+  raw: string
+}
+
 export interface AppState {
   // ── Active tab ──────────────────────────────
   activeTab: TabId
 
   // ── Editor tab ──────────────────────────────
-  editorRaw: string         // raw text in the textarea
+  editorRaw: string         // raw text in the textarea (content of the active document)
+  editorDocs: EditorDoc[]   // open editor documents ("browser tabs")
+  editorActiveDocId: string // id of the currently open document
   editorParsed: unknown | null
   editorValid: boolean | null  // null = never validated
   editorError: string | null
@@ -150,6 +158,10 @@ export type AppAction =
   | { type: 'SET_EDITOR_PARSED'; parsed: unknown; error: null }
   | { type: 'SET_EDITOR_ERROR'; error: string }
   | { type: 'CLEAR_EDITOR' }
+  | { type: 'ADD_EDITOR_DOC' }
+  | { type: 'CLOSE_EDITOR_DOC'; id: string }
+  | { type: 'SELECT_EDITOR_DOC'; id: string }
+  | { type: 'RENAME_EDITOR_DOC'; id: string; name: string }
   | { type: 'SET_COMPARE_LEFT'; raw: string }
   | { type: 'SET_COMPARE_RIGHT'; raw: string }
   | { type: 'SET_COMPARE_PARSED'; compareLeftParsed: unknown; compareRightParsed: unknown }
