@@ -159,7 +159,7 @@ export type AppAction =
   | { type: 'SET_EDITOR_PARSED'; parsed: unknown; error: null }
   | { type: 'SET_EDITOR_ERROR'; error: string }
   | { type: 'CLEAR_EDITOR' }
-  | { type: 'ADD_EDITOR_DOC' }
+  | { type: 'ADD_EDITOR_DOC'; raw?: string; name?: string }
   | { type: 'CLOSE_EDITOR_DOC'; id: string }
   | { type: 'SELECT_EDITOR_DOC'; id: string }
   | { type: 'RENAME_EDITOR_DOC'; id: string; name: string }

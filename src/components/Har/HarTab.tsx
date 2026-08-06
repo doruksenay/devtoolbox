@@ -216,7 +216,7 @@ export function HarTab() {
   function openInEditor(text: string | undefined) {
     if (!text) return
     const pretty = tryPretty(text)
-    dispatch({ type: 'SET_EDITOR_RAW', raw: pretty })
+    dispatch({ type: 'ADD_EDITOR_DOC', raw: pretty })
     dispatch({ type: 'SET_TAB', tab: 'editor' })
   }
 
