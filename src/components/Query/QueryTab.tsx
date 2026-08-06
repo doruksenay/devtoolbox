@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { useApp } from '../../context/AppContext'
 import { JsonTextarea } from '../shared/JsonTextarea'
+import { FromEditorButton } from '../shared/FromEditorButton'
 
 const EXAMPLE_QUERIES = [
   { expr: '$..*', label: 'All values (deep)' },
@@ -13,6 +14,7 @@ const EXAMPLE_QUERIES = [
 export function QueryTab() {
   const { state, dispatch, runQuery } = useApp()
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null)
+  const [copiedAll, setCopiedAll] = useState(false)
   const [exprWidth, setExprWidth] = useState(320)
   const [topHeight, setTopHeight] = useState(220)
 
@@ -75,10 +77,26 @@ export function QueryTab() {
     }
   }
 
+  function formatValue(val: unknown): string {
+    if (val === null) return 'null'
+    if (val === undefined) return ''
+    return typeof val === 'object' ? JSON.stringify(val) : String(val)
+  }
+
   function copyResult(val: unknown, idx: number) {
     navigator.clipboard.writeText(JSON.stringify(val, null, 2)).then(() => {
       setCopiedIdx(idx)
       setTimeout(() => setCopiedIdx(null), 1200)
+    })
+  }
+
+  function copyAllResults() {
+    const results = state.queryResults
+    if (!results || results.length === 0) return
+    const joined = results.map(formatValue).join(', ')
+    navigator.clipboard.writeText(joined).then(() => {
+      setCopiedAll(true)
+      setTimeout(() => setCopiedAll(false), 1200)
     })
   }
 
@@ -94,18 +112,9 @@ export function QueryTab() {
             <div className="panel__header">
               <span className="panel__label">JSON Input</span>
               <div className="flex-row">
-                <button
-                  className="btn btn-ghost"
-                  style={{ fontSize: 11 }}
-                  onClick={() => {
-                    if (state.editorRaw.trim()) {
-                      dispatch({ type: 'SET_QUERY_RAW', raw: state.editorRaw })
-                    }
-                  }}
-                  title="Copy JSON from Editor tab"
-                >
-                  From Editor
-                </button>
+                <FromEditorButton
+                  onPick={(raw) => dispatch({ type: 'SET_QUERY_RAW', raw })}
+                />
                 <button
                   className="btn btn-ghost"
                   style={{ fontSize: 11 }}
@@ -146,8 +155,19 @@ export function QueryTab() {
             </button>
           </div>
 
-          <div className="text-xs text-muted" style={{ marginTop: 2, marginBottom: 8 }}>
-            Press <kbd style={{ background: 'var(--bg-elevated)', padding: '2px 5px', borderRadius: 3, fontSize: '0.9em' }}>Ctrl+Enter</kbd> to run
+          <div className="expr-hint-row">
+            <div className="text-xs text-muted">
+              Press <kbd style={{ background: 'var(--bg-elevated)', padding: '2px 5px', borderRadius: 3, fontSize: '0.9em' }}>Ctrl+Enter</kbd> to run
+            </div>
+            <button
+              className="btn btn-ghost"
+              style={{ fontSize: 11 }}
+              onClick={copyAllResults}
+              disabled={!hasResults || resultCount === 0}
+              title="Copy all matched values, comma separated"
+            >
+              {copiedAll ? 'Copied!' : 'Copy All'}
+            </button>
           </div>
 
           {/* Example queries */}
