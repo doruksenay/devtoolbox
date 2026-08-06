@@ -40,12 +40,26 @@ export function editorReducer(state: AppState, action: AppAction): AppState | nu
       }
 
     case 'ADD_EDITOR_DOC': {
-      const doc = makeDoc(nextDocName(state.editorDocs))
+      const raw = action.raw ?? ''
+      // Reuse a single empty tab instead of leaving a blank one behind.
+      if (raw && state.editorDocs.length === 1 && !state.editorDocs[0].raw.trim()) {
+        const only = state.editorDocs[0]
+        return {
+          ...state,
+          editorDocs: [{ ...only, name: action.name?.trim() || only.name, raw }],
+          editorActiveDocId: only.id,
+          editorRaw: raw,
+          editorParsed: null,
+          editorValid: null,
+          editorError: null,
+        }
+      }
+      const doc = makeDoc(action.name?.trim() || nextDocName(state.editorDocs), raw)
       return {
         ...state,
         editorDocs: [...state.editorDocs, doc],
         editorActiveDocId: doc.id,
-        editorRaw: '',
+        editorRaw: raw,
         editorParsed: null,
         editorValid: null,
         editorError: null,

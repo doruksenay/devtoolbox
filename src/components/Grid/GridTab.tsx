@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useCallback } from 'react'
 import { useApp } from '../../context/AppContext'
 import { JsonTextarea } from '../shared/JsonTextarea'
+import { FromEditorButton } from '../shared/FromEditorButton'
 import { parseJson } from '../../context/AppContext'
 
 // ── Primitive value renderer ──────────────────────────────────────────────────
@@ -233,18 +234,9 @@ export function GridTab() {
         <div className="panel__header">
           <span className="panel__label">JSON Input</span>
           <div className="flex-row">
-            <button
-              className="btn btn-ghost"
-              style={{ fontSize: 11 }}
-              onClick={() => {
-                if (state.editorRaw.trim()) {
-                  dispatch({ type: 'SET_GRID_RAW', raw: state.editorRaw })
-                }
-              }}
-              title="Copy JSON from Editor tab"
-            >
-              From Editor
-            </button>
+            <FromEditorButton
+              onPick={(raw) => dispatch({ type: 'SET_GRID_RAW', raw })}
+            />
             <button
               className="btn btn-ghost"
               style={{ fontSize: 11 }}

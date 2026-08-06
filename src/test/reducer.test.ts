@@ -147,6 +147,27 @@ describe('rootReducer', () => {
       expect(result.editorRaw).toBe('')
     })
 
+    it('ADD_EDITOR_DOC with raw opens the content in the next tab', () => {
+      const state = {
+        ...emptyState,
+        editorRaw: '{"a":1}',
+        editorDocs: [{ id: 'doc-1', name: 'Tab 1', raw: '{"a":1}' }],
+      }
+      const result = rootReducer(state, { type: 'ADD_EDITOR_DOC', raw: '{"b":2}' })
+      expect(result.editorDocs).toHaveLength(2)
+      expect(result.editorDocs[1].raw).toBe('{"b":2}')
+      expect(result.editorActiveDocId).toBe(result.editorDocs[1].id)
+      expect(result.editorRaw).toBe('{"b":2}')
+    })
+
+    it('ADD_EDITOR_DOC with raw reuses a lone empty tab', () => {
+      const result = rootReducer(emptyState, { type: 'ADD_EDITOR_DOC', raw: '{"b":2}' })
+      expect(result.editorDocs).toHaveLength(1)
+      expect(result.editorDocs[0].id).toBe('doc-1')
+      expect(result.editorDocs[0].raw).toBe('{"b":2}')
+      expect(result.editorRaw).toBe('{"b":2}')
+    })
+
     it('SELECT_EDITOR_DOC swaps the visible content', () => {
       const state = {
         ...emptyState,

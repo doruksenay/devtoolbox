@@ -14,6 +14,9 @@
 - **State layer**: `AppProvider` memoizes its context value and exposes a separate `useAppDispatch()` hook, so dispatch-only components no longer re-render on unrelated state changes.
 - **Parsing helpers**: `parseJson`, `parseXml` and `formatXml` moved to `src/utils/parsers.ts` (still re-exported from `AppContext` for compatibility).
 - **Package metadata**: Renamed to `devtoolbox` and aligned the version with the changelog.
+- **JSONPath**: New **Copy All** button next to the expression input copies every matched value at once, comma separated (e.g. `1, 2, 3, 4, 5`), instead of copying results one by one.
+- **From Editor**: When more than one editor document (tab) is open, the "From Editor" button in JSONPath and Grid View now shows a bar asking which tab to pull the JSON from, using the tabs' (possibly renamed) names. With a single tab it behaves as before.
+- **HAR Viewer**: "Open in Editor" now opens the request/response payload in the next editor tab instead of overwriting the first one (an empty lone tab is still reused).
 - **Grid View**: Nested objects and arrays inside array-of-objects tables can now be expanded in place, so deeply nested data is reachable instead of showing an inert `[n]` / `{…}` tag.
 - **Editor search UX**: The in-editor search panel (JSON & XML editors) now appears at the top instead of the bottom, shows a live match count next to the query, and highlights matches more prominently.
 
