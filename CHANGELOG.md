@@ -3,16 +3,26 @@
 ## [Unreleased]
 
 ### Added
+- **Project documentation**: A `README.md` covering the tool catalogue, setup, environment variables, scripts, architecture and contribution steps.
+- **Linting and formatting**: ESLint (typescript-eslint, react-hooks, react-refresh, jsx-a11y) and Prettier with `lint`, `lint:fix`, `format`, `format:check` and `typecheck` scripts.
+- **Continuous integration**: A `CI` workflow that runs lint, type-check, unit tests, build and the Playwright end-to-end suite on every pull request, plus Dependabot updates for npm and GitHub Actions.
 - **Canada Tax Calculator tool**: New utility that calculates Canadian sales tax (GST / HST / PST / QST / RST) on an amount. Enter a price and choose a province/territory to see the per-tax breakdown, total tax and total price, plus a comparison table across every province and territory. Supports reverse calculation when the amount already includes tax.
 - **Text Cleaner tool**: New utility that decodes HTML entities (`&amp;`, `&#10;`, `&nbsp;`, …) and detects/removes invisible or "problematic" characters — non-breaking spaces, zero-width spaces, BOM, soft hyphens, and more. Shows a live report of everything found in the pasted text, with toggle options for each cleaning pass.
 
 ### Changed
+- **Code splitting**: Tool panes are now loaded on demand with `React.lazy`, so the initial download contains only the app shell and the active tool.
+- **State layer**: `AppProvider` memoizes its context value and exposes a separate `useAppDispatch()` hook, so dispatch-only components no longer re-render on unrelated state changes.
+- **Parsing helpers**: `parseJson`, `parseXml` and `formatXml` moved to `src/utils/parsers.ts` (still re-exported from `AppContext` for compatibility).
+- **Package metadata**: Renamed to `devtoolbox` and aligned the version with the changelog.
 - **JSONPath**: New **Copy All** button next to the expression input copies every matched value at once, comma separated (e.g. `1, 2, 3, 4, 5`), instead of copying results one by one.
 - **From Editor**: When more than one editor document (tab) is open, the "From Editor" button in JSONPath and Grid View now shows a bar asking which tab to pull the JSON from, using the tabs' (possibly renamed) names. With a single tab it behaves as before.
 - **HAR Viewer**: "Open in Editor" now opens the request/response payload in the next editor tab instead of overwriting the first one (an empty lone tab is still reused).
-
 - **Grid View**: Nested objects and arrays inside array-of-objects tables can now be expanded in place, so deeply nested data is reachable instead of showing an inert `[n]` / `{…}` tag.
 - **Editor search UX**: The in-editor search panel (JSON & XML editors) now appears at the top instead of the bottom, shows a live match count next to the query, and highlights matches more prominently.
+
+### Fixed
+- **Startup without Supabase**: The app no longer crashes when `VITE_SUPABASE_*` variables are missing; account features are simply disabled and local preferences still persist.
+- **End-to-end tests**: Updated selectors that still targeted the removed horizontal tab bar so the Playwright suite passes again.
 
 ## [0.3.0] - 2026-04-21
 

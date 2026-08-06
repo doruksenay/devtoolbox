@@ -3,6 +3,7 @@ import {
   useContext,
   useReducer,
   useCallback,
+  useMemo,
   useEffect,
   useRef,
   type ReactNode,
@@ -10,73 +11,20 @@ import {
 } from 'react'
 import { JSONPath } from 'jsonpath-plus'
 import * as Diff from 'diff'
-import type { AppState, AppAction, DiffLine, ParseResult } from '../types'
+import type { AppState, AppAction, DiffLine } from '../types'
 import type { EditorSyntaxTheme } from '../utils/editorThemes'
 import { rootReducer } from './reducers'
 import { makeDoc } from './reducers/editorDocs'
-import { supabase } from '../lib/supabase'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { parseJson, parseXml, formatXml, beautifyJson } from '../utils/parsers'
+
+export { parseJson, parseXml, formatXml }
 
 // ─────────────────────────────────────────────
 //  Helpers
 // ─────────────────────────────────────────────
 
 const STORAGE_KEY = 'devtoolbox_state_v1'
-
-export function parseJson(raw: string): ParseResult {
-  if (!raw.trim()) return { valid: false, parsed: null, error: 'Input is empty' }
-  try {
-    const parsed = JSON.parse(raw)
-    return { valid: true, parsed, error: null }
-  } catch (e) {
-    return { valid: false, parsed: null, error: (e as Error).message }
-  }
-}
-
-export function parseXml(raw: string): { valid: boolean; error: string | null } {
-  if (!raw.trim()) return { valid: false, error: 'Input is empty' }
-  try {
-    const parser = new DOMParser()
-    const doc = parser.parseFromString(raw, 'application/xml')
-    const parseError = doc.querySelector('parsererror')
-    if (parseError) {
-      return { valid: false, error: parseError.textContent?.trim() ?? 'Invalid XML' }
-    }
-    return { valid: true, error: null }
-  } catch (e) {
-    return { valid: false, error: (e as Error).message }
-  }
-}
-
-export function formatXml(raw: string): string {
-  const PADDING = '  '
-  let formatted = ''
-  let indent = 0
-  const lines = raw
-    .replace(/(>)(<)(\/*)/g, '$1\n$2$3')
-    .replace(/\r\n|\r/g, '\n')
-    .split('\n')
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim()
-    if (!line) continue
-
-    if (line.startsWith('</')) {
-      indent = Math.max(indent - 1, 0)
-    }
-
-    formatted += PADDING.repeat(indent) + line + '\n'
-
-    if (line.startsWith('<') && !line.startsWith('</') && !line.startsWith('<?') && !line.endsWith('/>') && !line.includes('</')) {
-      indent++
-    }
-  }
-
-  return formatted.trim()
-}
-
-function beautify(raw: string): string {
-  return JSON.stringify(JSON.parse(raw), null, 2)
-}
 
 // ─────────────────────────────────────────────
 //  Initial state (loaded from localStorage)
@@ -222,6 +170,11 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | null>(null)
 
+// Dispatch is exposed through its own context because it is referentially stable.
+// Components that only dispatch actions can subscribe to it without re-rendering
+// whenever unrelated parts of the state tree change.
+const AppDispatchContext = createContext<Dispatch<AppAction> | null>(null)
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(rootReducer, initialState)
   // Track current Supabase user id so we know whether to persist to DB
@@ -231,6 +184,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // ── Load state for logged-in user on mount / auth change ──────────────
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      // No backend configured — restore local preferences only.
+      const saved = loadPersistedState()
+      if (Object.keys(saved).length > 0) {
+        suppressNextPersistRef.current = true
+        dispatch({ type: 'LOAD_PERSISTED_STATE', payload: saved })
+      }
+      return
+    }
+
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const uid = session?.user?.id ?? null
       userIdRef.current = uid
@@ -314,7 +277,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'SET_EDITOR_ERROR', error: result.error ?? 'Invalid JSON' })
       return
     }
-    const pretty = beautify(state.editorRaw)
+    const pretty = beautifyJson(state.editorRaw)
     dispatch({ type: 'SET_EDITOR_RAW', raw: pretty })
     dispatch({ type: 'SET_EDITOR_PARSED', parsed: result.parsed, error: null })
   }, [state.editorRaw])
@@ -443,12 +406,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [state.queryRaw, state.queryExpression])
 
+  const value = useMemo<AppContextValue>(
+    () => ({
+      state,
+      dispatch,
+      validateEditor,
+      beautifyEditor,
+      minifyEditor,
+      runCompare,
+      runXmlCompare,
+      validateXml,
+      formatXmlAction,
+      runQuery,
+    }),
+    [
+      state,
+      validateEditor,
+      beautifyEditor,
+      minifyEditor,
+      runCompare,
+      runXmlCompare,
+      validateXml,
+      formatXmlAction,
+      runQuery,
+    ],
+  )
+
   return (
-    <AppContext.Provider
-      value={{ state, dispatch, validateEditor, beautifyEditor, minifyEditor, runCompare, runXmlCompare, validateXml, formatXmlAction, runQuery }}
-    >
-      {children}
-    </AppContext.Provider>
+    <AppDispatchContext.Provider value={dispatch}>
+      <AppContext.Provider value={value}>{children}</AppContext.Provider>
+    </AppDispatchContext.Provider>
   )
 }
 
@@ -456,4 +443,14 @@ export function useApp(): AppContextValue {
   const ctx = useContext(AppContext)
   if (!ctx) throw new Error('useApp must be used inside AppProvider')
   return ctx
+}
+
+/**
+ * Subscribe to the dispatch function only. Prefer this over `useApp()` in
+ * components that never read state, so they do not re-render on state changes.
+ */
+export function useAppDispatch(): Dispatch<AppAction> {
+  const dispatch = useContext(AppDispatchContext)
+  if (!dispatch) throw new Error('useAppDispatch must be used inside AppProvider')
+  return dispatch
 }

@@ -6,7 +6,7 @@ test.describe('Editor Tab', () => {
   })
 
   test('loads with Editor tab active', async ({ page }) => {
-    await expect(page.locator('.tab-bar__item--active')).toContainText('Editor')
+    await expect(page.locator('.sidebar__item--active')).toContainText('JSON Editor')
   })
 
   test('beautify formats JSON', async ({ page }) => {
@@ -23,20 +23,20 @@ test.describe('Editor Tab', () => {
   })
 
   test('switching tabs works', async ({ page }) => {
-    await page.click('.tab-bar__item:has-text("Compare")')
-    await expect(page.locator('.tab-bar__item--active')).toContainText('Compare')
+    await page.click('.sidebar__item[aria-label="JSON Compare"]')
+    await expect(page.locator('.sidebar__item--active')).toContainText('JSON Compare')
 
-    await page.click('.tab-bar__item:has-text("XML")')
-    await expect(page.locator('.tab-bar__item--active')).toContainText('XML')
+    await page.click('.sidebar__item[aria-label="XML Editor"]')
+    await expect(page.locator('.sidebar__item--active')).toContainText('XML Editor')
 
-    await page.click('.tab-bar__item:has-text("Grid")')
-    await expect(page.locator('.tab-bar__item--active')).toContainText('Grid')
+    await page.click('.sidebar__item[aria-label="Grid View"]')
+    await expect(page.locator('.sidebar__item--active')).toContainText('Grid View')
 
-    await page.click('.tab-bar__item:has-text("Query")')
-    await expect(page.locator('.tab-bar__item--active')).toContainText('Query')
+    await page.click('.sidebar__item[aria-label="JSONPath"]')
+    await expect(page.locator('.sidebar__item--active')).toContainText('JSONPath')
 
-    await page.click('.tab-bar__item:has-text("Convert")')
-    await expect(page.locator('.tab-bar__item--active')).toContainText('Convert')
+    await page.click('.sidebar__item[aria-label="Convert"]')
+    await expect(page.locator('.sidebar__item--active')).toContainText('Convert')
   })
 
   test('theme toggle works', async ({ page }) => {
@@ -44,11 +44,11 @@ test.describe('Editor Tab', () => {
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
 
     // Click theme toggle
-    await page.click('button:has-text("Light")')
+    await page.click('button[aria-label="Toggle theme"]')
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
 
     // Toggle back
-    await page.click('button:has-text("Dark")')
+    await page.click('button[aria-label="Toggle theme"]')
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   })
 
@@ -68,12 +68,12 @@ test.describe('Editor Tab', () => {
 test.describe('Convert Tab', () => {
   test('converts XML to JSON', async ({ page }) => {
     await page.goto('/')
-    await page.click('.tab-bar__item:has-text("Convert")')
+    await page.click('.sidebar__item[aria-label="Convert"]')
 
     const input = page.locator('.convert-tab__panels .panel:first-child textarea')
     await input.fill('<root><item>hello</item></root>')
 
-    await page.click('button:has-text("Convert")')
+    await page.click('.convert-tab .btn-primary')
 
     const output = page.locator('.convert-tab__panels .panel:last-child textarea')
     await expect(output).toHaveValue(/root/)

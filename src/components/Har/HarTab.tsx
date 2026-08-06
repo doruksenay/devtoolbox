@@ -226,7 +226,7 @@ export function HarTab() {
   }
 
   let entries: HarEntry[] = []
-  let stats = { total: 0, size: 0, time: 0 }
+  const stats = { total: 0, size: 0, time: 0 }
 
   if (state.harRaw) {
     try {

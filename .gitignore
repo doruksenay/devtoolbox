@@ -20,3 +20,11 @@ yarn-error.log*
 # Env
 .env
 .env.local
+
+# Test output
+coverage/
+playwright-report/
+test-results/
+
+# TypeScript build info
+*.tsbuildinfo
