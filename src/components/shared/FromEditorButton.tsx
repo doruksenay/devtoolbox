@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 
 interface Props {
@@ -15,6 +15,12 @@ interface Props {
 export function FromEditorButton({ onPick, title = 'Copy JSON from Editor tab', label = 'From Editor' }: Props) {
   const { state } = useApp()
   const [picking, setPicking] = useState(false)
+  const barRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!picking) return
+    barRef.current?.querySelector<HTMLButtonElement>('button:not([disabled])')?.focus()
+  }, [picking])
 
   const docs = state.editorDocs
   const hasContent = docs.some((d) => d.raw.trim())
@@ -41,7 +47,18 @@ export function FromEditorButton({ onPick, title = 'Copy JSON from Editor tab', 
       </button>
 
       {picking && (
-        <div className="editor-picker-bar" role="dialog" aria-label="Choose editor tab">
+        <div
+          ref={barRef}
+          className="editor-picker-bar"
+          role="dialog"
+          aria-label="Choose editor tab"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.stopPropagation()
+              setPicking(false)
+            }
+          }}
+        >
           <span className="editor-picker-bar__label">Which editor tab?</span>
           <div className="editor-picker-bar__tabs">
             {docs.map((doc) => (

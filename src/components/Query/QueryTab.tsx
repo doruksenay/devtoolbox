@@ -79,7 +79,6 @@ export function QueryTab() {
 
   function formatValue(val: unknown): string {
     if (val === null) return 'null'
-    if (val === undefined) return ''
     return typeof val === 'object' ? JSON.stringify(val) : String(val)
   }
 
