@@ -22,7 +22,7 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       // Accessibility findings are surfaced as warnings for now; hardening the
-      // existing components is tracked as a separate follow-up (Faz 4).
+      // existing components is tracked as a separate follow-up.
       ...Object.fromEntries(
         Object.keys(jsxA11y.flatConfigs.recommended.rules).map((rule) => [rule, 'warn']),
       ),

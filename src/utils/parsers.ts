@@ -58,6 +58,14 @@ export function formatXml(raw: string): string {
   return formatted.trim()
 }
 
+/**
+ * Pretty-prints a JSON string. Returns the input unchanged when it is not valid
+ * JSON, so callers never have to guard against a thrown `SyntaxError`.
+ */
 export function beautifyJson(raw: string): string {
-  return JSON.stringify(JSON.parse(raw), null, 2)
+  try {
+    return JSON.stringify(JSON.parse(raw), null, 2)
+  } catch {
+    return raw
+  }
 }
