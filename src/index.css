@@ -1198,14 +1198,8 @@ body {
   flex-direction: column;
 }
 
-.xml-compare-tab__result {
-  flex-shrink: 0;
-  max-height: 280px;
-  display: flex;
-  flex-direction: column;
-}
-
-.xml-diff-lines {
+/* ── Side-by-side diff pane ── */
+.xml-sbs-pane {
   font-family: var(--font-mono);
   font-size: 12.5px;
   line-height: 1.6;
@@ -1213,7 +1207,7 @@ body {
   height: 100%;
 }
 
-.xml-diff-line {
+.xml-sbs-row {
   display: flex;
   align-items: baseline;
   padding: 1px 8px;
@@ -1221,34 +1215,41 @@ body {
   transition: background-color var(--duration-fast);
 }
 
-.xml-diff-line--unchanged {
+.xml-sbs-row--unchanged {
   color: var(--text-code);
 }
 
-.xml-diff-line--added {
-  background-color: var(--diff-added-bg);
-  color: var(--diff-added-text);
-}
-
-.xml-diff-line--removed {
+.xml-sbs-row--removed {
   background-color: var(--diff-removed-bg);
   color: var(--diff-removed-text);
 }
 
-.xml-diff-line--active {
+.xml-sbs-row--added {
+  background-color: var(--diff-added-bg);
+  color: var(--diff-added-text);
+}
+
+.xml-sbs-row--empty {
+  background-color: var(--bg-elevated);
+  min-height: calc(1.6em + 2px);
+  color: transparent;
+  user-select: none;
+}
+
+.xml-sbs-row--active {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
   border-radius: 2px;
 }
 
-.xml-diff-line__marker {
+.xml-sbs-row__marker {
   width: 16px;
   flex-shrink: 0;
   opacity: 0.7;
   user-select: none;
 }
 
-.xml-diff-line__content {
+.xml-sbs-row__content {
   flex: 1;
   min-width: 0;
   overflow: hidden;
