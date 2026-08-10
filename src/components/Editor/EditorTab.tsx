@@ -49,6 +49,14 @@ export function EditorTab() {
 
   const hasContent = state.editorRaw.trim().length > 0
 
+  // An edit made in the tree is written straight back to the document, so
+  // switching to Code view shows the change already applied. The parsed value
+  // is set alongside the raw text because SET_EDITOR_RAW invalidates it.
+  const handleTreeChange = useCallback((next: unknown) => {
+    dispatch({ type: 'SET_EDITOR_RAW', raw: JSON.stringify(next, null, 2) })
+    dispatch({ type: 'SET_EDITOR_PARSED', parsed: next, error: null })
+  }, [dispatch])
+
   // ── Actions ──────────────────────────────────
   function handleCopy() {
     if (!state.editorRaw) return
@@ -316,7 +324,12 @@ export function EditorTab() {
                 </div>
               </div>
             ) : editorParsed !== null ? (
-              <TreeView key={treeKey} data={editorParsed} forceOpen={treeForceOpen} />
+              <TreeView
+                key={treeKey}
+                data={editorParsed}
+                forceOpen={treeForceOpen}
+                onChange={handleTreeChange}
+              />
             ) : !hasContent ? (
               <div className="empty-state">
                 <div className="empty-state__icon">{ '{ }' }</div>

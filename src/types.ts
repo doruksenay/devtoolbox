@@ -2,12 +2,12 @@
 //  Shared type definitions across the app
 // ─────────────────────────────────────────────
 
-export type TabId = 'editor' | 'compare' | 'xml' | 'grid' | 'query' | 'har' | 'cron' | 'jwt' | 'draw' | 'yaml' | 'clean' | 'tax'
+export type TabId = 'editor' | 'compare' | 'xml' | 'grid' | 'query' | 'har' | 'cron' | 'jwt' | 'draw' | 'clean' | 'tax'
 
 /** Every tab id, for runtime validation of persisted state. */
 export const TAB_IDS: readonly TabId[] = [
   'editor', 'compare', 'xml', 'grid', 'query', 'har',
-  'cron', 'jwt', 'draw', 'yaml', 'clean', 'tax',
+  'cron', 'jwt', 'draw', 'clean', 'tax',
 ]
 
 export function isTabId(value: unknown): value is TabId {
@@ -115,12 +115,6 @@ export interface AppState {
   drawSelectedIds: string[]
   drawSelectedColor: string
 
-  // ── YAML ↔ JSON ───────────────────────────────
-  yamlInput: string
-  yamlOutput: string
-  yamlMode: 'yaml-to-json' | 'json-to-yaml'
-  yamlError: string | null
-
   // ── Text Cleaner ──────────────────────────────
   cleanInput: string
 
@@ -188,12 +182,6 @@ export type AppAction =
   | { type: 'SET_DRAW_SELECTED_IDS'; ids: string[] }
   | { type: 'SET_DRAW_SELECTED_COLOR'; color: string }
   | { type: 'CLEAR_DRAW' }
-  // YAML
-  | { type: 'SET_YAML_INPUT'; input: string }
-  | { type: 'SET_YAML_OUTPUT'; output: string; error: null }
-  | { type: 'SET_YAML_ERROR'; error: string }
-  | { type: 'SET_YAML_MODE'; mode: 'yaml-to-json' | 'json-to-yaml' }
-  | { type: 'CLEAR_YAML' }
   // UI
   | { type: 'TOGGLE_SIDEBAR' }
   | { type: 'TOGGLE_COMMAND_PALETTE' }

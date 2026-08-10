@@ -103,16 +103,6 @@ export function IconDraw(p: IconProps) {
   )
 }
 
-export function IconYaml(p: IconProps) {
-  return (
-    <Icon {...p}>
-      <path d="M3 4h12M3 8h8M3 12h10M3 16h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      <circle cx="14" cy="13" r="3" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M14 11v2l1 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-    </Icon>
-  )
-}
-
 export function IconClean(p: IconProps) {
   return (
     <Icon {...p}>

@@ -8,12 +8,11 @@ to sync your workspace.
 
 | Tool | Description |
 | --- | --- |
-| Editor | JSON editor with beautify, minify, validation, JSON Schema check and URL fetch |
+| Editor | JSON editor with beautify, minify, validation, JSON Schema check, URL fetch and an editable tree view |
 | Compare | Side-by-side JSON diff with line-level statistics |
 | XML | XML validator and formatter |
 | Grid | Tabular view of JSON arrays with sorting, filtering and CSV export |
 | Query | JSONPath query runner with examples |
-| YAML | YAML ↔ JSON conversion |
 | JWT | JWT decoder (header, payload, claims) |
 | HAR | HAR file viewer with request filtering |
 | Cron | Cron expression explainer |

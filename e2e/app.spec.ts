@@ -34,9 +34,6 @@ test.describe('Editor Tab', () => {
 
     await page.click('.sidebar__item[aria-label="JSONPath"]')
     await expect(page.locator('.sidebar__item--active')).toContainText('JSONPath')
-
-    await page.click('.sidebar__item[aria-label="YAML ↔ JSON"]')
-    await expect(page.locator('.sidebar__item--active')).toContainText('YAML ↔ JSON')
   })
 
   test('theme toggle works', async ({ page }) => {

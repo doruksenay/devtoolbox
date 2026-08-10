@@ -11,7 +11,6 @@ import { harReducer } from './harReducer'
 import { cronReducer } from './cronReducer'
 import { jwtReducer } from './jwtReducer'
 import { drawReducer } from './drawReducer'
-import { yamlReducer } from './yamlReducer'
 import { cleanReducer } from './cleanReducer'
 import { taxReducer } from './taxReducer'
 import { getRegion } from '../../utils/salesTaxCanada'
@@ -26,7 +25,6 @@ const featureReducers = [
   cronReducer,
   jwtReducer,
   drawReducer,
-  yamlReducer,
   cleanReducer,
   taxReducer,
 ]

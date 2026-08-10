@@ -4,7 +4,7 @@ import type { TabId } from '../../types'
 import {
   IconEditor, IconCompare, IconXml, IconGrid, IconQuery,
   IconHar, IconCron, IconJwt, IconDraw,
-  IconYaml, IconClean, IconTax,
+  IconClean, IconTax,
 } from '../icons/Icons'
 
 interface ToolEntry {
@@ -24,7 +24,6 @@ const TOOLS: ToolEntry[] = [
   { id: 'cron',    label: 'Cron',           description: 'Parse and explain cron expressions', icon: <IconCron /> },
   { id: 'jwt',     label: 'JWT Decoder',    description: 'Decode JWT tokens',                icon: <IconJwt /> },
   { id: 'draw',    label: 'Diagram',        description: 'Draw shapes and flow diagrams',    icon: <IconDraw /> },
-  { id: 'yaml',    label: 'YAML ↔ JSON',    description: 'Convert between YAML and JSON',    icon: <IconYaml /> },
   { id: 'clean',   label: 'Text Cleaner',   description: 'Decode HTML entities & strip invisible characters', icon: <IconClean /> },
   { id: 'tax',     label: 'Tax Calculator', description: 'Calculate Quebec (GST + QST) and Ontario (HST) sales tax', icon: <IconTax /> },
 ]

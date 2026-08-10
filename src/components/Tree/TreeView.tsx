@@ -1,16 +1,31 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import type { DiffType } from '../../utils/jsonDiff'
 import { pathHasDiff } from '../../utils/jsonDiff'
 import { computeTreeMatches, splitHighlight } from '../../utils/treeSearch'
 import type { EditorSyntaxTheme } from '../../utils/editorThemes'
 import { EDITOR_THEMES } from '../../utils/editorThemes'
+import type { PathSegment } from '../../utils/jsonEdit'
+import {
+  setAtPath,
+  renameKeyAtPath,
+  parseEditedValue,
+  valueToEditText,
+  valueToCopyText,
+} from '../../utils/jsonEdit'
 import { useApp } from '../../context/AppContext'
+import { useToast } from '../Toast/ToastProvider'
 
 interface SearchContext {
   query: string
   matchPaths: Set<string>
   expandPaths: Set<string>
   activePath?: string
+}
+
+/** Present only when the tree is editable; absent trees render read-only. */
+interface EditContext {
+  setValue: (segments: PathSegment[], value: unknown) => void
+  renameKey: (segments: PathSegment[], newKey: string) => void
 }
 
 interface TreeNodeProps {
@@ -20,9 +35,12 @@ interface TreeNodeProps {
   defaultExpanded?: boolean
   forceOpen?: boolean
   path?: string
+  segments: PathSegment[]
   diffs?: Map<string, DiffType> | null
   activeDiffPath?: string
   search?: SearchContext | null
+  edit?: EditContext | null
+  onCopy: (value: unknown) => void
 }
 
 const MAX_AUTO_EXPAND_DEPTH = 2
@@ -77,9 +95,116 @@ function getContainsDiffClass(diffs: Map<string, DiffType> | null | undefined, p
   return diffTypeToClass(pathHasDiff(diffs, path))
 }
 
+/** Copy button revealed when the pointer (or keyboard focus) is on a row. */
+function NodeActions({ value, onCopy }: { value: unknown; onCopy: (value: unknown) => void }) {
+  return (
+    <span className="tree-node__actions">
+      <button
+        type="button"
+        className="tree-node__action"
+        title="Copy value"
+        aria-label="Copy value"
+        onClick={() => onCopy(value)}
+      >
+        ⧉
+      </button>
+    </span>
+  )
+}
+
+/**
+ * The `"key":` part of a row. Editable when the tree is editable and the parent
+ * is an object — array indices are positional, so they are never renameable.
+ */
+function NodeKey({
+  nodeKey,
+  segments,
+  className,
+  search,
+  edit,
+}: {
+  nodeKey: string
+  segments: PathSegment[]
+  className: string
+  search?: SearchContext | null
+  edit?: EditContext | null
+}) {
+  const [draft, setDraft] = useState<string | null>(null)
+  const editable = !!edit && typeof segments[segments.length - 1] === 'string'
+  // See LeafValue: closing the editor can also fire a blur.
+  const handledRef = useRef(false)
+
+  function commit() {
+    if (draft === null) return
+    const next = draft
+    handledRef.current = true
+    setDraft(null)
+    if (next !== nodeKey) edit?.renameKey(segments, next)
+  }
+
+  if (draft !== null) {
+    return (
+      <>
+        <input
+          className="tree-edit-input tree-edit-input--key"
+          value={draft}
+          autoFocus
+          spellCheck={false}
+          size={Math.max(draft.length, 1)}
+          aria-label="Edit key"
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={() => {
+            if (handledRef.current) {
+              handledRef.current = false
+              return
+            }
+            commit()
+            handledRef.current = false
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              commit()
+            } else if (e.key === 'Escape') {
+              e.preventDefault()
+              handledRef.current = true
+              setDraft(null)
+            }
+          }}
+        />
+        <span className="tree-node__bracket">: </span>
+      </>
+    )
+  }
+
+  return (
+    <>
+      <span className={className}>
+        "
+        {editable ? (
+          <button
+            type="button"
+            className="tree-edit-target"
+            title="Click to rename"
+            onClick={() => setDraft(nodeKey)}
+          >
+            <Highlight text={nodeKey} query={search?.query} />
+          </button>
+        ) : (
+          <Highlight text={nodeKey} query={search?.query} />
+        )}
+        "
+      </span>
+      <span className="tree-node__bracket">: </span>
+    </>
+  )
+}
+
 const CHUNK_SIZE = 100
 
-function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs, activeDiffPath, search }: TreeNodeProps) {
+function CollapsibleNode({
+  nodeKey, data, depth, forceOpen, path = '$', segments, diffs, activeDiffPath, search, edit, onCopy,
+}: TreeNodeProps) {
   const [open, setOpen] = useState(forceOpen !== undefined ? forceOpen : depth < MAX_AUTO_EXPAND_DEPTH)
   const [visibleCount, setVisibleCount] = useState(CHUNK_SIZE)
 
@@ -124,27 +249,44 @@ function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs, a
       data-diff-path={diffClass ? path : undefined}
       data-search-path={dataSearchPath}
     >
-      <button className="tree-node__toggle" onClick={() => setOpen(!open)} type="button">
-        <span className={`tree-node__caret tree-node__caret--${open ? 'open' : 'closed'}`}>▾</span>
+      <div className="tree-node__row">
+        <button
+          className="tree-node__toggle"
+          onClick={() => setOpen(!open)}
+          type="button"
+          aria-expanded={open}
+          aria-label={open ? 'Collapse node' : 'Expand node'}
+        >
+          <span className={`tree-node__caret tree-node__caret--${open ? 'open' : 'closed'}`}>▾</span>
+        </button>
         {nodeKey !== null && (
-          <>
-            <span className="tree-node__key">"<Highlight text={nodeKey} query={search?.query} />"</span>
-            <span className="tree-node__bracket">: </span>
-          </>
+          <NodeKey
+            nodeKey={nodeKey}
+            segments={segments}
+            className="tree-node__key"
+            search={search}
+            edit={edit}
+          />
         )}
         {open ? (
           <span className="tree-node__bracket">{openBracket}</span>
         ) : (
           <>
-            <span className={`tree-node__count-badge tree-node__count-badge--${isArray ? 'array' : 'object'}`}>
+            <button
+              type="button"
+              className={`tree-node__count-badge tree-node__count-badge--${isArray ? 'array' : 'object'}`}
+              onClick={() => setOpen(true)}
+              aria-label="Expand node"
+            >
               {openBracket} … {count} {isArray ? (count === 1 ? 'item' : 'items') : (count === 1 ? 'prop' : 'props')} {closeBracket}
-            </span>
+            </button>
             {containsDiffClass && (
               <span className={`tree-node__diff-pill ${containsDiffClass.trim()}`} title="Contains differences">⇄</span>
             )}
           </>
         )}
-      </button>
+        <NodeActions value={data} onCopy={onCopy} />
+      </div>
 
       {open && (
         <>
@@ -159,9 +301,12 @@ function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs, a
                   depth={depth + 1}
                   forceOpen={forceOpen}
                   path={childPath}
+                  segments={[...segments, isArray ? Number(k) : k]}
                   diffs={diffs}
                   activeDiffPath={activeDiffPath}
                   search={search}
+                  edit={edit}
+                  onCopy={onCopy}
                 />
               )
             })}
@@ -182,7 +327,122 @@ function CollapsibleNode({ nodeKey, data, depth, forceOpen, path = '$', diffs, a
   )
 }
 
-function LeafNode({ nodeKey, data, path = '$', diffs, activeDiffPath, search }: { nodeKey: string | null; data: unknown; path?: string; diffs?: Map<string, DiffType> | null; activeDiffPath?: string; search?: SearchContext | null }) {
+/** The scalar value of a leaf row, editable in place when the tree is editable. */
+function LeafValue({
+  data,
+  className,
+  display,
+  segments,
+  search,
+  edit,
+}: {
+  data: unknown
+  className: string
+  display: string
+  segments: PathSegment[]
+  search?: SearchContext | null
+  edit?: EditContext | null
+}) {
+  const [draft, setDraft] = useState<string | null>(null)
+  const [rejected, setRejected] = useState(false)
+  // Closing the editor can also fire a blur; without this the same edit would
+  // be dispatched twice and cost the user two undo steps to reverse.
+  const handledRef = useRef(false)
+
+  function closeEditor() {
+    handledRef.current = true
+    setDraft(null)
+    setRejected(false)
+  }
+
+  function commit() {
+    if (draft === null) return
+    const parsed = parseEditedValue(data, draft)
+    if (!parsed.ok) {
+      setRejected(true)
+      return
+    }
+    closeEditor()
+    setValueIfChanged(parsed.value)
+  }
+
+  function setValueIfChanged(value: unknown) {
+    if (Object.is(value, data)) return
+    edit?.setValue(segments, value)
+  }
+
+  if (draft !== null) {
+    return (
+      <input
+        className={`tree-edit-input${rejected ? ' tree-edit-input--invalid' : ''}`}
+        value={draft}
+        autoFocus
+        spellCheck={false}
+        size={Math.max(draft.length, 1)}
+        aria-label="Edit value"
+        title={
+          typeof data === 'string'
+            ? 'Edited as plain text'
+            : 'Enter a JSON literal, e.g. 42, true, null, "text"'
+        }
+        onChange={(e) => {
+          setDraft(e.target.value)
+          setRejected(false)
+        }}
+        onBlur={() => {
+          if (handledRef.current) {
+            handledRef.current = false
+            return
+          }
+          // A blur cannot be "corrected" by the user, so an unparseable draft is
+          // discarded rather than left blocking focus.
+          const parsed = parseEditedValue(data, draft)
+          closeEditor()
+          handledRef.current = false
+          if (parsed.ok) setValueIfChanged(parsed.value)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            commit()
+          } else if (e.key === 'Escape') {
+            e.preventDefault()
+            closeEditor()
+          }
+        }}
+      />
+    )
+  }
+
+  if (!edit) {
+    return <span className={className}><Highlight text={display} query={search?.query} /></span>
+  }
+
+  return (
+    <button
+      type="button"
+      className={`tree-edit-target ${className}`}
+      title="Click to edit"
+      onClick={() => setDraft(valueToEditText(data))}
+    >
+      <Highlight text={display} query={search?.query} />
+    </button>
+  )
+}
+
+function LeafNode({
+  nodeKey, data, path = '$', segments, diffs, activeDiffPath, search, edit, onCopy,
+}: {
+  nodeKey: string | null
+  data: unknown
+  path?: string
+  segments: PathSegment[]
+  diffs?: Map<string, DiffType> | null
+  activeDiffPath?: string
+  search?: SearchContext | null
+  edit?: EditContext | null
+  onCopy: (value: unknown) => void
+}) {
   const type = getType(data)
   let display: string
   let className: string
@@ -221,17 +481,30 @@ function LeafNode({ nodeKey, data, path = '$', diffs, activeDiffPath, search }: 
       data-search-path={isSearchMatch ? path : undefined}
     >
       {nodeKey !== null && (
-        <>
-          <span className="tree-leaf__key">"<Highlight text={nodeKey} query={search?.query} />"</span>
-          <span className="tree-node__bracket">: </span>
-        </>
+        <NodeKey
+          nodeKey={nodeKey}
+          segments={segments}
+          className="tree-leaf__key"
+          search={search}
+          edit={edit}
+        />
       )}
-      <span className={className}><Highlight text={display} query={search?.query} /></span>
+      <LeafValue
+        data={data}
+        className={className}
+        display={display}
+        segments={segments}
+        search={search}
+        edit={edit}
+      />
+      <NodeActions value={data} onCopy={onCopy} />
     </div>
   )
 }
 
-function TreeNodeComponent({ nodeKey, data, depth, forceOpen, path = '$', diffs, activeDiffPath, search }: TreeNodeProps) {
+function TreeNodeComponent({
+  nodeKey, data, depth, forceOpen, path = '$', segments, diffs, activeDiffPath, search, edit, onCopy,
+}: TreeNodeProps) {
   const type = getType(data)
 
   if (type === 'object' || type === 'array') {
@@ -249,19 +522,34 @@ function TreeNodeComponent({ nodeKey, data, depth, forceOpen, path = '$', diffs,
           data-search-path={isSearchMatch ? path : undefined}
         >
           {nodeKey !== null && (
-            <>
-              <span className="tree-leaf__key">"<Highlight text={nodeKey} query={search?.query} />"</span>
-              <span className="tree-node__bracket">: </span>
-            </>
+            <NodeKey
+              nodeKey={nodeKey}
+              segments={segments}
+              className="tree-leaf__key"
+              search={search}
+              edit={edit}
+            />
           )}
           <span className="tree-node__bracket">{Array.isArray(obj) ? '[]' : '{}'}</span>
+          <NodeActions value={data} onCopy={onCopy} />
         </div>
       )
     }
-    return <CollapsibleNode nodeKey={nodeKey} data={data} depth={depth} forceOpen={forceOpen} path={path} diffs={diffs} activeDiffPath={activeDiffPath} search={search} />
+    return (
+      <CollapsibleNode
+        nodeKey={nodeKey} data={data} depth={depth} forceOpen={forceOpen} path={path}
+        segments={segments} diffs={diffs} activeDiffPath={activeDiffPath} search={search}
+        edit={edit} onCopy={onCopy}
+      />
+    )
   }
 
-  return <LeafNode nodeKey={nodeKey} data={data} path={path} diffs={diffs} activeDiffPath={activeDiffPath} search={search} />
+  return (
+    <LeafNode
+      nodeKey={nodeKey} data={data} path={path} segments={segments} diffs={diffs}
+      activeDiffPath={activeDiffPath} search={search} edit={edit} onCopy={onCopy}
+    />
+  )
 }
 
 interface TreeViewProps {
@@ -272,12 +560,18 @@ interface TreeViewProps {
   syntaxTheme?: EditorSyntaxTheme
   /** Show the built-in search bar. Defaults to true. */
   enableSearch?: boolean
+  /**
+   * Makes the tree editable. Receives the whole document with the edit applied;
+   * omit it to render a read-only tree.
+   */
+  onChange?: (next: unknown) => void
 }
 
 const SCROLL_TO_MATCH_DELAY_MS = 60
 
-export function TreeView({ data, forceOpen, diffs, activeDiffPath, syntaxTheme, enableSearch = true }: TreeViewProps) {
+export function TreeView({ data, forceOpen, diffs, activeDiffPath, syntaxTheme, enableSearch = true, onChange }: TreeViewProps) {
   const { state } = useApp()
+  const { addToast } = useToast()
   const theme: EditorSyntaxTheme = (syntaxTheme ?? state.editorSyntaxTheme ?? 'default') as EditorSyntaxTheme
   const colorMode = state.theme === 'dark' ? 'dark' : 'light'
   const colors = EDITOR_THEMES[theme][colorMode]
@@ -312,6 +606,29 @@ export function TreeView({ data, forceOpen, diffs, activeDiffPath, syntaxTheme, 
     }, SCROLL_TO_MATCH_DELAY_MS)
     return () => clearTimeout(timer)
   }, [activePath])
+
+  const handleCopy = useCallback((value: unknown) => {
+    navigator.clipboard.writeText(valueToCopyText(value)).then(
+      () => addToast('Copied to clipboard'),
+      () => addToast('Could not copy to clipboard', 'error')
+    )
+  }, [addToast])
+
+  const edit: EditContext | null = useMemo(() => {
+    if (!onChange) return null
+    return {
+      setValue: (segments, value) => onChange(setAtPath(data, segments, value)),
+      renameKey: (segments, newKey) => {
+        const result = renameKeyAtPath(data, segments, newKey)
+        if (result.ok) {
+          onChange(result.root)
+          return
+        }
+        if (result.reason === 'duplicate') addToast(`Key "${newKey}" already exists`, 'error')
+        else if (result.reason === 'empty') addToast('Key cannot be empty', 'error')
+      },
+    }
+  }, [onChange, data, addToast])
 
   const search: SearchContext | null = query.trim()
     ? { query, matchPaths, expandPaths, activePath }
@@ -380,8 +697,20 @@ export function TreeView({ data, forceOpen, diffs, activeDiffPath, syntaxTheme, 
           )}
         </div>
       )}
-      <div className="tree-view" ref={containerRef}>
-        <TreeNodeComponent nodeKey={null} data={data} depth={0} forceOpen={forceOpen} path="$" diffs={diffs} activeDiffPath={activeDiffPath} search={search} />
+      <div className={`tree-view${edit ? ' tree-view--editable' : ''}`} ref={containerRef}>
+        <TreeNodeComponent
+          nodeKey={null}
+          data={data}
+          depth={0}
+          forceOpen={forceOpen}
+          path="$"
+          segments={[]}
+          diffs={diffs}
+          activeDiffPath={activeDiffPath}
+          search={search}
+          edit={edit}
+          onCopy={handleCopy}
+        />
       </div>
     </div>
   )

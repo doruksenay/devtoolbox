@@ -25,7 +25,6 @@ const TAB_COMPONENTS: Record<TabId, ComponentType> = {
   cron: lazyTab(() => import('./components/Cron/CronTab'), 'CronTab'),
   jwt: lazyTab(() => import('./components/Jwt/JwtTab'), 'JwtTab'),
   draw: lazyTab(() => import('./components/Draw/DrawTab'), 'DrawTab'),
-  yaml: lazyTab(() => import('./components/Yaml/YamlTab'), 'YamlTab'),
   clean: lazyTab(() => import('./components/Clean/CleanTab'), 'CleanTab'),
   tax: lazyTab(() => import('./components/Tax/TaxTab'), 'TaxTab'),
 }
