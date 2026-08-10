@@ -45,7 +45,11 @@ export function getAtPath(root: unknown, segments: readonly PathSegment[]): unkn
 /**
  * Returns a copy of `root` with the value at `segments` replaced. Only the
  * containers along the path are cloned; untouched subtrees keep their identity.
- * An empty path replaces the root. A path that does not exist is a no-op.
+ * An empty path replaces the root.
+ *
+ * An edit that changes nothing — a missing key, an out-of-range index, or a
+ * value that is already there — returns `root` itself rather than a fresh copy,
+ * so a no-op never propagates as a document change.
  */
 export function setAtPath(root: unknown, segments: readonly PathSegment[], value: unknown): unknown {
   if (segments.length === 0) return value
@@ -56,16 +60,20 @@ export function setAtPath(root: unknown, segments: readonly PathSegment[], value
   if (Array.isArray(root)) {
     const index = Number(head)
     if (!Number.isInteger(index) || index < 0 || index >= root.length) return root
+    const nextChild = setAtPath(root[index], rest, value)
+    if (Object.is(nextChild, root[index])) return root
     const next = [...root]
-    next[index] = setAtPath(root[index], rest, value)
+    next[index] = nextChild
     return next
   }
 
   const obj = root as Record<string, unknown>
   const key = String(head)
   if (!Object.prototype.hasOwnProperty.call(obj, key)) return root
+  const nextChild = setAtPath(obj[key], rest, value)
+  if (Object.is(nextChild, obj[key])) return root
   const next = { ...obj }
-  defineOwn(next, key, setAtPath(obj[key], rest, value))
+  defineOwn(next, key, nextChild)
   return next
 }
 
@@ -106,6 +114,88 @@ export function renameKeyAtPath(
   }
 
   return { ok: true, root: setAtPath(root, parentSegments, renamed) }
+}
+
+/**
+ * Removes the object key or array element that `segments` points at. Array
+ * elements are spliced out, so the indices after them shift down. The root
+ * itself cannot be removed — there would be no document left.
+ */
+export function deleteAtPath(root: unknown, segments: readonly PathSegment[]): unknown {
+  if (segments.length === 0) return root
+
+  const parentSegments = segments.slice(0, -1)
+  const last = segments[segments.length - 1]
+  const parent = getAtPath(root, parentSegments)
+  if (!isContainer(parent)) return root
+
+  if (Array.isArray(parent)) {
+    const index = Number(last)
+    if (!Number.isInteger(index) || index < 0 || index >= parent.length) return root
+    return setAtPath(root, parentSegments, parent.filter((_, i) => i !== index))
+  }
+
+  const obj = parent as Record<string, unknown>
+  const key = String(last)
+  if (!Object.prototype.hasOwnProperty.call(obj, key)) return root
+
+  const next: Record<string, unknown> = {}
+  for (const existing of Object.keys(obj)) {
+    if (existing !== key) defineOwn(next, existing, obj[existing])
+  }
+  return setAtPath(root, parentSegments, next)
+}
+
+/** Base name for keys added to an object; numbered when it is already taken. */
+const NEW_KEY_BASE = 'newKey'
+
+function uniqueKey(obj: Record<string, unknown>): string {
+  if (!Object.prototype.hasOwnProperty.call(obj, NEW_KEY_BASE)) return NEW_KEY_BASE
+  let suffix = 2
+  while (Object.prototype.hasOwnProperty.call(obj, `${NEW_KEY_BASE}${suffix}`)) suffix++
+  return `${NEW_KEY_BASE}${suffix}`
+}
+
+/**
+ * Appends an empty entry to the container at `segments` — a `null` item for an
+ * array, a `null` under a fresh key for an object. Returns the new document
+ * along with the path of the entry, so the caller can open its editor.
+ * Returns `null` when the target is not a container.
+ */
+export function appendChildAtPath(
+  root: unknown,
+  segments: readonly PathSegment[]
+): { root: unknown; segments: PathSegment[] } | null {
+  const container = getAtPath(root, segments)
+  if (!isContainer(container)) return null
+
+  if (Array.isArray(container)) {
+    const next = [...container, null]
+    return {
+      root: setAtPath(root, segments, next),
+      segments: [...segments, container.length],
+    }
+  }
+
+  const obj = container as Record<string, unknown>
+  const key = uniqueKey(obj)
+  const next = { ...obj }
+  defineOwn(next, key, null)
+  return {
+    root: setAtPath(root, segments, next),
+    segments: [...segments, key],
+  }
+}
+
+/** True when both paths address the same node. */
+export function segmentsEqual(a: readonly PathSegment[], b: readonly PathSegment[]): boolean {
+  return a.length === b.length && segmentsStartWith(a, b)
+}
+
+/** True when `prefix` addresses `full` or one of its ancestors. */
+export function segmentsStartWith(prefix: readonly PathSegment[], full: readonly PathSegment[]): boolean {
+  if (prefix.length > full.length) return false
+  return prefix.every((segment, i) => String(segment) === String(full[i]))
 }
 
 /**

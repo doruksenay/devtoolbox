@@ -8,6 +8,10 @@ import type { PathSegment } from '../../utils/jsonEdit'
 import {
   setAtPath,
   renameKeyAtPath,
+  deleteAtPath,
+  appendChildAtPath,
+  segmentsEqual,
+  segmentsStartWith,
   parseEditedValue,
   valueToEditText,
   valueToCopyText,
@@ -22,10 +26,24 @@ interface SearchContext {
   activePath?: string
 }
 
+/**
+ * A freshly added entry whose editor should open by itself, so adding a field
+ * lands the cursor where the user is about to type. Objects open the key
+ * editor; array items have no key, so they open the value editor.
+ */
+interface PendingEdit {
+  segments: PathSegment[]
+  field: 'key' | 'value'
+}
+
 /** Present only when the tree is editable; absent trees render read-only. */
 interface EditContext {
   setValue: (segments: PathSegment[], value: unknown) => void
   renameKey: (segments: PathSegment[], newKey: string) => void
+  addChild: (segments: PathSegment[]) => void
+  remove: (segments: PathSegment[]) => void
+  pending: PendingEdit | null
+  clearPending: () => void
 }
 
 interface TreeNodeProps {
@@ -95,8 +113,22 @@ function getContainsDiffClass(diffs: Map<string, DiffType> | null | undefined, p
   return diffTypeToClass(pathHasDiff(diffs, path))
 }
 
-/** Copy button revealed when the pointer (or keyboard focus) is on a row. */
-function NodeActions({ value, onCopy }: { value: unknown; onCopy: (value: unknown) => void }) {
+/**
+ * Row buttons revealed on hover or keyboard focus. Copy is always available;
+ * add appears on containers and remove on everything but the root, and both
+ * only when the tree is editable.
+ */
+function NodeActions({
+  value,
+  onCopy,
+  onAdd,
+  onRemove,
+}: {
+  value: unknown
+  onCopy: (value: unknown) => void
+  onAdd?: () => void
+  onRemove?: () => void
+}) {
   return (
     <span className="tree-node__actions">
       <button
@@ -108,6 +140,28 @@ function NodeActions({ value, onCopy }: { value: unknown; onCopy: (value: unknow
       >
         ⧉
       </button>
+      {onAdd && (
+        <button
+          type="button"
+          className="tree-node__action"
+          title="Add entry"
+          aria-label="Add entry"
+          onClick={onAdd}
+        >
+          +
+        </button>
+      )}
+      {onRemove && (
+        <button
+          type="button"
+          className="tree-node__action tree-node__action--danger"
+          title="Remove"
+          aria-label="Remove"
+          onClick={onRemove}
+        >
+          ✕
+        </button>
+      )}
     </span>
   )
 }
@@ -134,6 +188,17 @@ function NodeKey({
   // See LeafValue: closing the editor can also fire a blur.
   const handledRef = useRef(false)
 
+  // A key that was just added opens its own editor, so adding a field puts the
+  // cursor straight on the placeholder name.
+  const isPending =
+    edit?.pending?.field === 'key' && segmentsEqual(edit.pending.segments, segments)
+  const clearPending = edit?.clearPending
+  useEffect(() => {
+    if (!isPending) return
+    setDraft(nodeKey)
+    clearPending?.()
+  }, [isPending, nodeKey, clearPending])
+
   function commit() {
     if (draft === null) return
     const next = draft
@@ -152,6 +217,9 @@ function NodeKey({
           spellCheck={false}
           size={Math.max(draft.length, 1)}
           aria-label="Edit key"
+          // Select on open so a placeholder key is replaced by typing, the way
+          // a rename works everywhere else.
+          onFocus={(e) => e.currentTarget.select()}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={() => {
             if (handledRef.current) {
@@ -225,6 +293,13 @@ function CollapsibleNode({
     if (search?.expandPaths.has(path)) setOpen(true)
   }, [search, path])
 
+  // Auto-expand so a freshly added entry is visible even when it landed inside
+  // a node that was collapsed — otherwise its editor would open out of sight.
+  const pending = edit?.pending
+  useEffect(() => {
+    if (pending && segmentsStartWith(segments, pending.segments)) setOpen(true)
+  }, [pending, segments])
+
   const isArray = Array.isArray(data)
   const entries = useMemo(() => isArray
     ? (data as unknown[]).map((v, i) => [String(i), v] as [string, unknown])
@@ -285,7 +360,18 @@ function CollapsibleNode({
             )}
           </>
         )}
-        <NodeActions value={data} onCopy={onCopy} />
+        <NodeActions
+          value={data}
+          onCopy={onCopy}
+          onAdd={edit ? () => {
+            // Reveal the new entry: open the node, and make sure the chunked
+            // list is long enough to reach the position it was appended at.
+            setOpen(true)
+            setVisibleCount((c) => Math.max(c, count + 1))
+            edit.addChild(segments)
+          } : undefined}
+          onRemove={edit && segments.length > 0 ? () => edit.remove(segments) : undefined}
+        />
       </div>
 
       {open && (
@@ -349,6 +435,17 @@ function LeafValue({
   // be dispatched twice and cost the user two undo steps to reverse.
   const handledRef = useRef(false)
 
+  // An array item that was just added opens its own editor — it has no key to
+  // name, so the value is where the user types.
+  const isPending =
+    edit?.pending?.field === 'value' && segmentsEqual(edit.pending.segments, segments)
+  const clearPending = edit?.clearPending
+  useEffect(() => {
+    if (!isPending) return
+    setDraft(valueToEditText(data))
+    clearPending?.()
+  }, [isPending, data, clearPending])
+
   function closeEditor() {
     handledRef.current = true
     setDraft(null)
@@ -380,6 +477,7 @@ function LeafValue({
         spellCheck={false}
         size={Math.max(draft.length, 1)}
         aria-label="Edit value"
+        onFocus={(e) => e.currentTarget.select()}
         title={
           typeof data === 'string'
             ? 'Edited as plain text'
@@ -497,7 +595,11 @@ function LeafNode({
         search={search}
         edit={edit}
       />
-      <NodeActions value={data} onCopy={onCopy} />
+      <NodeActions
+        value={data}
+        onCopy={onCopy}
+        onRemove={edit && segments.length > 0 ? () => edit.remove(segments) : undefined}
+      />
     </div>
   )
 }
@@ -531,7 +633,12 @@ function TreeNodeComponent({
             />
           )}
           <span className="tree-node__bracket">{Array.isArray(obj) ? '[]' : '{}'}</span>
-          <NodeActions value={data} onCopy={onCopy} />
+          <NodeActions
+            value={data}
+            onCopy={onCopy}
+            onAdd={edit ? () => edit.addChild(segments) : undefined}
+            onRemove={edit && segments.length > 0 ? () => edit.remove(segments) : undefined}
+          />
         </div>
       )
     }
@@ -578,6 +685,7 @@ export function TreeView({ data, forceOpen, diffs, activeDiffPath, syntaxTheme, 
 
   const [query, setQuery] = useState('')
   const [matchIndex, setMatchIndex] = useState(0)
+  const [pending, setPending] = useState<PendingEdit | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
   const { matches, expandPaths } = useMemo(
@@ -627,8 +735,25 @@ export function TreeView({ data, forceOpen, diffs, activeDiffPath, syntaxTheme, 
         if (result.reason === 'duplicate') addToast(`Key "${newKey}" already exists`, 'error')
         else if (result.reason === 'empty') addToast('Key cannot be empty', 'error')
       },
+      addChild: (segments) => {
+        const result = appendChildAtPath(data, segments)
+        if (!result) return
+        onChange(result.root)
+        // Objects get a placeholder key worth renaming immediately; array items
+        // have no key, so the value is what the user came to type.
+        setPending({
+          segments: result.segments,
+          field: typeof result.segments[result.segments.length - 1] === 'string' ? 'key' : 'value',
+        })
+      },
+      remove: (segments) => {
+        setPending(null)
+        onChange(deleteAtPath(data, segments))
+      },
+      pending,
+      clearPending: () => setPending(null),
     }
-  }, [onChange, data, addToast])
+  }, [onChange, data, addToast, pending])
 
   const search: SearchContext | null = query.trim()
     ? { query, matchPaths, expandPaths, activePath }

@@ -890,6 +890,11 @@ body {
   background: var(--bg-hover);
 }
 
+.tree-node__action--danger:hover {
+  color: var(--error);
+  background: var(--error-bg);
+}
+
 .tree-value--string  { color: var(--tree-string-color,  #86efac); }
 .tree-value--number  { color: var(--tree-number-color,  #93c5fd); }
 .tree-value--boolean { color: var(--tree-boolean-color, #fca5a5); }

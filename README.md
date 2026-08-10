@@ -8,7 +8,7 @@ to sync your workspace.
 
 | Tool | Description |
 | --- | --- |
-| Editor | JSON editor with beautify, minify, validation, JSON Schema check, URL fetch and an editable tree view |
+| Editor | JSON editor with beautify, minify, validation, JSON Schema check, URL fetch and a tree view you can edit, extend and copy from |
 | Compare | Side-by-side JSON diff with line-level statistics |
 | XML | XML validator and formatter |
 | Grid | Tabular view of JSON arrays with sorting, filtering and CSV export |
