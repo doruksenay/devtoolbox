@@ -700,6 +700,59 @@ body {
   background: var(--accent-bg);
 }
 
+/* ─────────────────────────────────────────────
+   Editor Toolbar Overflow Menu
+───────────────────────────────────────────── */
+.editor-more-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Anchored left, unlike the theme picker: this menu sits at the toolbar's
+   start-side, where a right-anchored panel would hang off the edge. */
+.editor-more-menu__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 200;
+  min-width: 180px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.editor-more-menu__option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
+}
+
+.editor-more-menu__option:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.editor-more-menu__option:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
 
 .tree-view {
   padding: 10px 12px;
@@ -1958,6 +2011,30 @@ body {
   gap: 6px;
   flex-shrink: 0;
   max-height: 160px;
+}
+
+/* Same strip pattern as the bars above, but it carries a change list, so it
+   gets a surface of its own: the user is reading a proposal, not typing. */
+.editor-tab__repair-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 10px 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  max-height: 180px;
+  overflow: auto;
+}
+
+.editor-tab__repair-list {
+  margin: 0;
+  padding-left: 18px;
+  list-style: disc;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-secondary);
 }
 
 /* ─────────────────────────────────────────────

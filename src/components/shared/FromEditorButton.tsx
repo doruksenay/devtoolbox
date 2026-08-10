@@ -47,6 +47,12 @@ export function FromEditorButton({ onPick, title = 'Copy JSON from Editor tab', 
       </button>
 
       {picking && (
+        // Escape-to-dismiss belongs on the dialog container that owns the focus.
+        // The rule's `dialog` allowance is keyed on the *element* name, so a real
+        // <dialog> passes but `role="dialog"` on a div does not; verified against
+        // the rule directly. Switching to <dialog> would bring modal semantics
+        // this inline picker bar does not want.
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
         <div
           ref={barRef}
           className="editor-picker-bar"

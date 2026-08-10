@@ -86,8 +86,15 @@ export function CommandPalette() {
   if (!open) return null
 
   return (
-    <div className="cmd-overlay" onClick={close} role="dialog" aria-modal="true" aria-label="Command palette">
-      <div className="cmd-palette" onClick={e => e.stopPropagation()}>
+    // The backdrop is presentational: it only closes the palette when the click
+    // lands on the backdrop itself, so clicks inside the panel fall through
+    // without needing to stop propagation. Escape is handled globally above.
+    <div
+      className="cmd-overlay"
+      role="presentation"
+      onClick={e => { if (e.target === e.currentTarget) close() }}
+    >
+      <div className="cmd-palette" role="dialog" aria-modal="true" aria-label="Command palette">
         <div className="cmd-palette__search">
           <svg width="16" height="16" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" className="cmd-palette__search-icon" aria-hidden="true">
             <circle cx="8" cy="8" r="5" stroke="currentColor" strokeWidth="1.5" />
@@ -96,6 +103,7 @@ export function CommandPalette() {
           <input
             ref={inputRef}
             className="cmd-palette__input"
+            aria-label="Search tools"
             placeholder="Search tools…"
             value={query}
             onChange={e => setQuery(e.target.value)}

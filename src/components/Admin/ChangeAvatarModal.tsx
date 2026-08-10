@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState, type MouseEvent } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import '../Auth/AuthModal.css'
 import './ChangeAvatarModal.css'
@@ -15,6 +15,21 @@ export function ChangeAvatarModal({ onClose, currentAvatar }: Props) {
   const [selected, setSelected] = useState(currentAvatar)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Escape closes the dialog, matching the click-outside affordance.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  // Only a click on the backdrop itself closes; clicks inside the dialog bubble
+  // up but keep `target` pointing at a descendant.
+  function handleOverlayClick(e: MouseEvent<HTMLDivElement>) {
+    if (e.target === e.currentTarget) onClose()
+  }
 
   async function handleSave() {
     setBusy(true)
@@ -34,11 +49,11 @@ export function ChangeAvatarModal({ onClose, currentAvatar }: Props) {
   }
 
   return (
-    <div className="auth-overlay" onClick={onClose}>
-      <div className="auth-modal" onClick={e => e.stopPropagation()}>
+    <div className="auth-overlay" role="presentation" onClick={handleOverlayClick}>
+      <div className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="avatar-modal-title">
         <button className="auth-modal__close btn btn-ghost" onClick={onClose} aria-label="Close">✕</button>
 
-        <h2 className="auth-modal__title">Choose Avatar</h2>
+        <h2 className="auth-modal__title" id="avatar-modal-title">Choose Avatar</h2>
         <p className="auth-modal__subtitle">Select an emoji to represent you.</p>
 
         <div className="avatar-grid">

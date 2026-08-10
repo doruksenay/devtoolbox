@@ -59,13 +59,15 @@ export function CleanTab() {
       <div className="converter-tab__toolbar">
         <div className="clean-options">
           {OPTION_LABELS.map(opt => (
-            <label key={opt.key} className="clean-options__item" title={opt.title}>
+            <label key={opt.key} className="clean-options__item" title={opt.title} htmlFor={`clean-opt-${opt.key}`}>
               <input
+                id={`clean-opt-${opt.key}`}
                 type="checkbox"
                 checked={options[opt.key]}
                 onChange={e => setOption(opt.key, e.target.checked)}
+                aria-labelledby={`clean-opt-label-${opt.key}`}
               />
-              <span>{opt.label}</span>
+              <span id={`clean-opt-label-${opt.key}`}>{opt.label}</span>
             </label>
           ))}
         </div>
@@ -97,7 +99,7 @@ export function CleanTab() {
       <div className="converter-tab__panels">
         <div className="panel converter-tab__pane">
           <div className="panel__header">
-            <span className="panel__label">Input (paste your code / text)</span>
+            <span className="panel__label" id="clean-input-label">Input (paste your code / text)</span>
             {hasInput && (
               <span className="text-xs text-muted mono">{state.cleanInput.length} chars</span>
             )}
@@ -109,13 +111,14 @@ export function CleanTab() {
               onChange={e => dispatch({ type: 'SET_CLEAN_INPUT', input: e.target.value })}
               placeholder="Paste text containing &amp;amp;, &amp;nbsp;, zero-width spaces, …"
               spellCheck={false}
+              aria-labelledby="clean-input-label"
             />
           </div>
         </div>
 
         <div className="panel converter-tab__pane">
           <div className="panel__header">
-            <span className="panel__label">Cleaned Output</span>
+            <span className="panel__label" id="clean-output-label">Cleaned Output</span>
             {result.output.length > 0 && (
               <span className="text-xs text-muted mono">{result.output.length} chars</span>
             )}
@@ -127,6 +130,7 @@ export function CleanTab() {
               readOnly
               placeholder="Cleaned text will appear here…"
               spellCheck={false}
+              aria-labelledby="clean-output-label"
             />
           </div>
         </div>
@@ -150,9 +154,9 @@ export function CleanTab() {
           <table className="url-params-table">
             <thead>
               <tr>
-                <th>Type</th>
-                <th>Code</th>
-                <th>Count</th>
+                <th scope="col">Type</th>
+                <th scope="col">Code</th>
+                <th scope="col">Count</th>
               </tr>
             </thead>
             <tbody>

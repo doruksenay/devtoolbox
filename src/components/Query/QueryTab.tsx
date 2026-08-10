@@ -70,6 +70,22 @@ export function QueryTab() {
     window.addEventListener('mouseup', onUp)
   }, [topHeight])
 
+  // Keyboard equivalents for the drag handles: the panes stay resizable
+  // without a pointer. Steps match the drag clamps above.
+  const onHResizeKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+    e.preventDefault()
+    const delta = e.key === 'ArrowLeft' ? 20 : -20
+    setExprWidth(w => Math.max(240, Math.min(520, w + delta)))
+  }, [])
+
+  const onVResizeKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
+    e.preventDefault()
+    const delta = e.key === 'ArrowDown' ? 20 : -20
+    setTopHeight(h => Math.max(120, Math.min(520, h + delta)))
+  }, [])
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault()
@@ -133,21 +149,39 @@ export function QueryTab() {
         </div>
 
         {/* Horizontal resize handle */}
-        <div className="query-tab__h-resize-handle" onMouseDown={onHResizeMouseDown} title="Drag to resize" />
+        <div
+          className="query-tab__h-resize-handle"
+          onMouseDown={onHResizeMouseDown}
+          onKeyDown={onHResizeKeyDown}
+          title="Drag to resize"
+          role="slider"
+          aria-orientation="vertical"
+          aria-label="Resize the expression pane"
+          aria-valuenow={exprWidth}
+          aria-valuemin={240}
+          aria-valuemax={520}
+          tabIndex={0}
+        />
 
         <div className="query-tab__expr-pane" style={{ width: exprWidth }}>
-          <div className="panel__label" style={{ marginBottom: 8 }}>JSONPath Expression</div>
-          <div className="expr-input-wrap" onKeyDown={handleKeyDown}>
+          <div className="panel__label" style={{ marginBottom: 8 }} id="query-expr-label">JSONPath Expression</div>
+          {/* Ctrl+Enter lives on the two focusable controls rather than on the
+              wrapper, so the shortcut keeps working without a static element
+              owning keyboard events. */}
+          <div className="expr-input-wrap">
             <input
               className="expr-input"
               value={state.queryExpression}
               onChange={(e) => dispatch({ type: 'SET_QUERY_EXPRESSION', expr: e.target.value })}
+              onKeyDown={handleKeyDown}
               placeholder="$.users[*].name"
               spellCheck={false}
+              aria-labelledby="query-expr-label"
             />
             <button
               className="btn btn-primary"
               onClick={runQuery}
+              onKeyDown={handleKeyDown}
               disabled={!state.queryRaw.trim() || !state.queryExpression.trim()}
             >
               Run
@@ -189,7 +223,19 @@ export function QueryTab() {
       </div>
 
       {/* Vertical resize handle */}
-      <div className="query-tab__v-resize-handle" onMouseDown={onVResizeMouseDown} title="Drag to resize" />
+      <div
+        className="query-tab__v-resize-handle"
+        onMouseDown={onVResizeMouseDown}
+        onKeyDown={onVResizeKeyDown}
+        title="Drag to resize"
+        role="slider"
+        aria-orientation="horizontal"
+        aria-label="Resize the results pane"
+        aria-valuenow={topHeight}
+        aria-valuemin={120}
+        aria-valuemax={520}
+        tabIndex={0}
+      />
 
       {/* Results */}
       <div className="query-tab__results panel">

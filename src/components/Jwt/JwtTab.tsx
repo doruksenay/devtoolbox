@@ -113,8 +113,9 @@ export function JwtTab() {
   return (
     <div className="jwt-tab">
       <div className="jwt-tab__input-section">
-        <div className="jwt-tab__label">Paste your JWT token</div>
+        <div className="jwt-tab__label" id="jwt-input-label">Paste your JWT token</div>
         <textarea
+          aria-labelledby="jwt-input-label"
           className="jwt-tab__textarea"
           placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature"
           value={state.jwtInput}

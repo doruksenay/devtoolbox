@@ -187,6 +187,14 @@ function NodeKey({
   const editable = !!edit && typeof segments[segments.length - 1] === 'string'
   // See LeafValue: closing the editor can also fire a blur.
   const handledRef = useRef(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // The editor is only mounted while renaming, so focus is moved
+  // programmatically on open rather than with `autoFocus`.
+  const editing = draft !== null
+  useEffect(() => {
+    if (editing) inputRef.current?.focus()
+  }, [editing])
 
   // A key that was just added opens its own editor, so adding a field puts the
   // cursor straight on the placeholder name.
@@ -211,9 +219,9 @@ function NodeKey({
     return (
       <>
         <input
+          ref={inputRef}
           className="tree-edit-input tree-edit-input--key"
           value={draft}
-          autoFocus
           spellCheck={false}
           size={Math.max(draft.length, 1)}
           aria-label="Edit key"
@@ -434,6 +442,14 @@ function LeafValue({
   // Closing the editor can also fire a blur; without this the same edit would
   // be dispatched twice and cost the user two undo steps to reverse.
   const handledRef = useRef(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // The editor is only mounted while editing, so focus is moved
+  // programmatically on open rather than with `autoFocus`.
+  const editing = draft !== null
+  useEffect(() => {
+    if (editing) inputRef.current?.focus()
+  }, [editing])
 
   // An array item that was just added opens its own editor — it has no key to
   // name, so the value is where the user types.
@@ -471,9 +487,9 @@ function LeafValue({
   if (draft !== null) {
     return (
       <input
+        ref={inputRef}
         className={`tree-edit-input${rejected ? ' tree-edit-input--invalid' : ''}`}
         value={draft}
-        autoFocus
         spellCheck={false}
         size={Math.max(draft.length, 1)}
         aria-label="Edit value"
@@ -782,6 +798,7 @@ function TreeViewImpl({ data, forceOpen, diffs, activeDiffPath, syntaxTheme, ena
             className="tree-search__input"
             type="text"
             value={query}
+            aria-label="Search keys and values"
             placeholder="Search keys and values…"
             spellCheck={false}
             onChange={(e) => setQuery(e.target.value)}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { PathSegment } from '../../utils/jsonEdit'
 import { parseEditedValue, valueToEditText } from '../../utils/jsonEdit'
 import { splitHighlight } from '../../utils/treeSearch'
@@ -101,6 +101,14 @@ function ScalarValue({
   const [draft, setDraft] = useState<string | null>(null)
   const [rejected, setRejected] = useState(false)
   const text = primitiveText(val)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // The editor only exists while the cell is being edited, so focus is moved
+  // programmatically on open rather than with `autoFocus`.
+  const editing = draft !== null
+  useEffect(() => {
+    if (editing) inputRef.current?.focus()
+  }, [editing])
 
   function commit(next: string): boolean {
     const parsed = parseEditedValue(val, next)
@@ -112,9 +120,9 @@ function ScalarValue({
   if (draft !== null) {
     return (
       <input
+        ref={inputRef}
         className={`tree-edit-input${rejected ? ' tree-edit-input--invalid' : ''}`}
         value={draft}
-        autoFocus
         spellCheck={false}
         size={Math.max(draft.length, 1)}
         aria-label="Edit value"
@@ -263,6 +271,7 @@ function TableHeader({
   rows: Record<string, unknown>[]
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const menuId = useId()
 
   return (
     <div className="jtg-table-bar">
@@ -279,9 +288,11 @@ function TableHeader({
         {menuOpen && (
           <div className="jtg-col-menu">
             {columns.map((c) => (
-              <label key={c} className="jtg-col-menu__item">
+              <label key={c} className="jtg-col-menu__item" htmlFor={`${menuId}-${c}`}>
                 <input
+                  id={`${menuId}-${c}`}
                   type="checkbox"
+                  aria-label={c}
                   checked={!view.hidden.includes(c)}
                   onChange={() => ctx.setView(path, toggleColumn(view, c))}
                 />

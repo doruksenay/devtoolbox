@@ -21,10 +21,16 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      // Accessibility findings are surfaced as warnings for now; hardening the
-      // existing components is tracked as a separate follow-up.
+      // Accessibility findings are surfaced as warnings rather than errors, but
+      // each rule keeps the options jsx-a11y recommends. Mapping over the rule
+      // *names* alone used to drop those options, which silently made several
+      // rules stricter than upstream intends — it is why `table` could not take
+      // `role="grid"` and a `dialog` could not own a key handler.
       ...Object.fromEntries(
-        Object.keys(jsxA11y.flatConfigs.recommended.rules).map((rule) => [rule, 'warn']),
+        Object.entries(jsxA11y.flatConfigs.recommended.rules).map(([rule, value]) => [
+          rule,
+          Array.isArray(value) ? ['warn', ...value.slice(1)] : 'warn',
+        ]),
       ),
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],

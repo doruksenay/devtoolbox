@@ -46,6 +46,7 @@ export function EditorDocTabs() {
               <input
                 ref={inputRef}
                 className="doc-tabs__rename"
+                aria-label={`Rename ${doc.name}`}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onBlur={commitRename}

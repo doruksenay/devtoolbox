@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react'
+import { useState, useEffect, useRef, type FormEvent, type ChangeEvent, type MouseEvent } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import './AuthModal.css'
 
@@ -37,6 +37,8 @@ export function AuthModal({ onClose }: Props) {
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
+  const emailRef = useRef<HTMLInputElement>(null)
+
   // Load remembered email on mount
   useEffect(() => {
     const saved = localStorage.getItem(REMEMBER_KEY)
@@ -45,6 +47,27 @@ export function AuthModal({ onClose }: Props) {
       setRememberMe(true)
     }
   }, [])
+
+  // Move focus into the dialog on open. Done programmatically rather than with
+  // the `autoFocus` prop so focus is only claimed while the modal is mounted.
+  useEffect(() => {
+    emailRef.current?.focus()
+  }, [])
+
+  // Escape closes the dialog, matching the click-outside affordance.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  // Only a click on the backdrop itself closes; clicks inside the dialog bubble
+  // up but keep `target` pointing at a descendant.
+  function handleOverlayClick(e: MouseEvent<HTMLDivElement>) {
+    if (e.target === e.currentTarget) onClose()
+  }
 
   function handleEmailChange(e: ChangeEvent<HTMLInputElement>) {
     setEmail(e.target.value)
@@ -110,11 +133,11 @@ export function AuthModal({ onClose }: Props) {
   }
 
   return (
-    <div className="auth-overlay" onClick={onClose}>
-      <div className="auth-modal" onClick={e => e.stopPropagation()}>
+    <div className="auth-overlay" role="presentation" onClick={handleOverlayClick}>
+      <div className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
         <button className="auth-modal__close btn btn-ghost" onClick={onClose} aria-label="Close">✕</button>
 
-        <h2 className="auth-modal__title">
+        <h2 className="auth-modal__title" id="auth-modal-title">
           {mode === 'login' ? 'Sign in' : 'Create account'}
         </h2>
         <p className="auth-modal__subtitle">
@@ -124,10 +147,15 @@ export function AuthModal({ onClose }: Props) {
         </p>
 
         <form className="auth-modal__form" onSubmit={handleSubmit} noValidate>
-          <div className="auth-modal__field">
-            <label className="auth-modal__label" htmlFor="auth-email">Email</label>
+          {/* The field wrapper is the <label> itself so the control is both
+              nested and referenced by id; the caption span carries the id the
+              input names, keeping the error/hint text out of its a11y name. */}
+          <label className="auth-modal__field" htmlFor="auth-email">
+            <span className="auth-modal__label" id="auth-email-label">Email</span>
             <input
               id="auth-email"
+              ref={emailRef}
+              aria-labelledby="auth-email-label"
               className={`auth-modal__input${emailError ? ' auth-modal__input--invalid' : ''}`}
               type="email"
               value={email}
@@ -135,15 +163,15 @@ export function AuthModal({ onClose }: Props) {
               onBlur={() => setEmailError(validateEmail(email))}
               placeholder="you@example.com"
               autoComplete="email"
-              autoFocus
             />
             {emailError && <span className="auth-modal__field-error">{emailError}</span>}
-          </div>
+          </label>
 
-          <div className="auth-modal__field">
-            <label className="auth-modal__label" htmlFor="auth-password">Password</label>
+          <label className="auth-modal__field" htmlFor="auth-password">
+            <span className="auth-modal__label" id="auth-password-label">Password</span>
             <input
               id="auth-password"
+              aria-labelledby="auth-password-label"
               className={`auth-modal__input${passwordError ? ' auth-modal__input--invalid' : ''}`}
               type="password"
               value={password}
@@ -156,16 +184,18 @@ export function AuthModal({ onClose }: Props) {
               ? <span className="auth-modal__field-error">{passwordError}</span>
               : mode === 'register' && <span className="auth-modal__field-hint">Minimum 8 characters</span>
             }
-          </div>
+          </label>
 
           {mode === 'login' && (
-            <label className="auth-modal__remember">
+            <label className="auth-modal__remember" htmlFor="auth-remember">
               <input
+                id="auth-remember"
+                aria-labelledby="auth-remember-label"
                 type="checkbox"
                 checked={rememberMe}
                 onChange={e => setRememberMe(e.target.checked)}
               />
-              Remember me
+              <span id="auth-remember-label">Remember me</span>
             </label>
           )}
 

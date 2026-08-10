@@ -3,6 +3,7 @@ import { useAppSelector } from './context/AppContext'
 import { Sidebar } from './components/Sidebar/Sidebar'
 import { Header } from './components/Layout/Header'
 import { CommandPalette } from './components/CommandPalette/CommandPalette'
+import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useLiveValidation } from './hooks/useLiveValidation'
 import { useUrlState } from './hooks/useUrlState'
@@ -52,9 +53,14 @@ export default function App() {
       <div className="app-shell__main">
         <Sidebar />
         <div className="tab-content">
-          <Suspense fallback={<div className="tab-loading">Loading…</div>}>
-            {ActiveTab ? <ActiveTab /> : null}
-          </Suspense>
+          {/* Keyed on the active tab so switching tools clears a previous
+              crash: the shell stays outside the boundary, so navigation keeps
+              working even while a pane is showing the recovery screen. */}
+          <ErrorBoundary key={activeTab}>
+            <Suspense fallback={<div className="tab-loading">Loading…</div>}>
+              {ActiveTab ? <ActiveTab /> : null}
+            </Suspense>
+          </ErrorBoundary>
         </div>
       </div>
       <CommandPalette />

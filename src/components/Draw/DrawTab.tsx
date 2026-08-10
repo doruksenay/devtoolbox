@@ -1,5 +1,7 @@
 import { useRef, useCallback, useEffect, useState } from 'react'
 import { useApp } from '../../context/AppContext'
+import { useToast } from '../Toast/ToastProvider'
+import { checkFileSize, MAX_DIAGRAM_FILE_BYTES } from '../../utils/limits'
 import type { DrawShape, DrawConnection, DrawTool } from '../../types'
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -127,6 +129,7 @@ interface UndoFrame {
 
 export function DrawTab() {
   const { state, dispatch } = useApp()
+  const { addToast } = useToast()
   const shapes = state.drawShapes
   const connections = state.drawConnections
   const tool = state.drawTool
@@ -156,19 +159,29 @@ export function DrawTab() {
   // Label editing
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingLabel, setEditingLabel] = useState('')
+  const labelInputRef = useRef<HTMLInputElement>(null)
 
-  function pushUndo() {
+  // The inline label editor only exists while a shape is being renamed, so the
+  // focus is moved programmatically instead of with `autoFocus`.
+  useEffect(() => {
+    if (editingId) labelInputRef.current?.focus()
+  }, [editingId])
+
+  // Both are memoised so the effects below can list them as dependencies: as
+  // plain function declarations they were recreated every render and the
+  // listeners kept calling the very first version, snapshotting stale shapes.
+  const pushUndo = useCallback(() => {
     undoStack.current.push({ shapes: [...shapes], connections: [...connections] })
     if (undoStack.current.length > 50) undoStack.current.shift()
-  }
+  }, [shapes, connections])
 
-  function undo() {
+  const undo = useCallback(() => {
     const frame = undoStack.current.pop()
     if (!frame) return
     dispatch({ type: 'SET_DRAW_SHAPES', shapes: frame.shapes })
     dispatch({ type: 'SET_DRAW_CONNECTIONS', connections: frame.connections })
     dispatch({ type: 'SET_DRAW_SELECTED_IDS', ids: [] })
-  }
+  }, [dispatch])
 
   function svgPoint(e: React.MouseEvent | MouseEvent): { x: number; y: number } {
     const svg = svgRef.current
@@ -297,7 +310,7 @@ export function DrawTab() {
       }
     }
     drag.current = { mode: 'none', startX: 0, startY: 0 }
-  }, [shapes, connections, dispatch])
+  }, [shapes, connections, dispatch, pushUndo])
 
   useEffect(() => {
     window.addEventListener('mousemove', onMouseMove)
@@ -331,7 +344,7 @@ export function DrawTab() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [selectedIds, shapes, connections, editingId, dispatch])
+  }, [selectedIds, shapes, connections, editingId, dispatch, pushUndo, undo])
 
   // ── Label editing ────────────────────────────────────────────────────────
 
@@ -383,7 +396,13 @@ export function DrawTab() {
 
   function importDiagram(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
+    e.target.value = '' // reset so the same file can be re-imported
     if (!file) return
+    const sizeError = checkFileSize(file, MAX_DIAGRAM_FILE_BYTES)
+    if (sizeError) {
+      addToast(sizeError, 'error')
+      return
+    }
     const reader = new FileReader()
     reader.onload = ev => {
       try {
@@ -437,6 +456,8 @@ export function DrawTab() {
               className={`draw-color-btn${selectedColor === c ? ' draw-color-btn--active' : ''}`}
               style={{ background: c }}
               title={c}
+              aria-label={`Color ${c}`}
+              aria-pressed={selectedColor === c}
               onClick={() => applyColor(c)}
             />
           ))}
@@ -464,7 +485,7 @@ export function DrawTab() {
           <button className="draw-action-btn" onClick={exportDiagram} title="Export as JSON">⬇ Export</button>
           <button className="draw-action-btn draw-action-btn--import" onClick={() => importRef.current?.click()} title="Import JSON">⬆ Import</button>
           <button className="draw-action-btn" onClick={() => { pushUndo(); dispatch({ type: 'CLEAR_DRAW' }) }} title="Clear canvas">✕ Clear</button>
-          <input ref={importRef} type="file" accept=".json" style={{ display: 'none' }} onChange={importDiagram} />
+          <input ref={importRef} type="file" accept=".json" aria-label="Import diagram JSON" style={{ display: 'none' }} onChange={importDiagram} />
         </div>
       </div>
 
@@ -543,7 +564,9 @@ export function DrawTab() {
           const containerRect = svgRef.current!.closest('.draw-canvas-wrap')!.getBoundingClientRect()
           return (
             <input
+              ref={labelInputRef}
               className="draw-label-input"
+              aria-label="Shape label"
               style={{
                 position: 'absolute',
                 left: shape.x + shape.w / 2 - 60 + (svgRect.left - containerRect.left),
@@ -554,7 +577,6 @@ export function DrawTab() {
               onChange={e => setEditingLabel(e.target.value)}
               onBlur={commitLabel}
               onKeyDown={e => { if (e.key === 'Enter') commitLabel(); if (e.key === 'Escape') setEditingId(null) }}
-              autoFocus
             />
           )
         })()}

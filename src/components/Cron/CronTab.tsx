@@ -293,7 +293,7 @@ export function CronTab() {
     <div className="cron-tab">
       {/* Main expression input */}
       <div className="cron-tab__section cron-expr-section">
-        <div className="cron-tab__section-title">Cron Expression</div>
+        <div className="cron-tab__section-title" id="cron-expr-label">Cron Expression</div>
         <div className="cron-expr-section__main">
           <input
             className={`cron-expr-input${error ? ' cron-expr-input--error' : ''}`}
@@ -301,6 +301,7 @@ export function CronTab() {
             onChange={e => dispatch({ type: 'SET_CRON_EXPRESSION', expression: e.target.value })}
             spellCheck={false}
             placeholder="* * * * *"
+            aria-labelledby="cron-expr-label"
           />
           {error && <div className="cron-error">{error}</div>}
           {!error && human && <div className="cron-human">{human}</div>}
@@ -310,11 +311,12 @@ export function CronTab() {
         <div className="cron-expr-section__field-labels">
           {FIELDS.map((f, i) => (
             <div className="cron-field" key={f.key}>
-              <div className="cron-field__label">{f.label}</div>
+              <div className="cron-field__label" id={`cron-field-label-${f.key}`}>{f.label}</div>
               <input
                 className="cron-field__editor"
                 value={fields[i]}
                 onChange={e => setField(i, e.target.value)}
+                aria-labelledby={`cron-field-label-${f.key}`}
               />
               <div className="cron-field__hint">{f.min}–{f.max}{f.names ? ` or ${f.names.join(',')}` : ''}</div>
             </div>

@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback } from 'react'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../Toast/ToastProvider'
+import { checkFileSize, MAX_TEXT_FILE_BYTES } from '../../utils/limits'
 
 interface HarEntry {
   request: {
@@ -166,6 +167,14 @@ export function HarTab() {
   const resizeStartX = useRef(0)
   const resizeStartWidth = useRef(0)
 
+  // Keyboard equivalent for the drag handle, using the same clamps as the drag.
+  const onResizeKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+    e.preventDefault()
+    const delta = e.key === 'ArrowLeft' ? 20 : -20
+    setDetailWidth(w => Math.max(280, Math.min(800, w + delta)))
+  }, [])
+
   const onResizeMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     resizeDragging.current = true
@@ -196,21 +205,27 @@ export function HarTab() {
     }
   }
 
-  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
+  // Shared by the picker and the drop target: HAR captures are the biggest
+  // files this app sees, so the size check has to happen before FileReader.
+  function readFile(file: File | undefined) {
     if (!file) return
+    const sizeError = checkFileSize(file, MAX_TEXT_FILE_BYTES)
+    if (sizeError) {
+      addToast(sizeError, 'error')
+      return
+    }
     const reader = new FileReader()
     reader.onload = ev => loadHar(ev.target?.result as string)
     reader.readAsText(file)
   }
 
+  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    readFile(e.target.files?.[0])
+  }
+
   function onDrop(e: React.DragEvent) {
     e.preventDefault()
-    const file = e.dataTransfer.files[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = ev => loadHar(ev.target?.result as string)
-    reader.readAsText(file)
+    readFile(e.dataTransfer.files[0])
   }
 
   function openInEditor(text: string | undefined) {
@@ -253,28 +268,70 @@ export function HarTab() {
 
   const selectedEntry = state.harSelectedEntry !== null ? filtered[state.harSelectedEntry] ?? null : null
 
+  function toggleEntry(i: number) {
+    dispatch({ type: 'SET_HAR_SELECTED_ENTRY', index: state.harSelectedEntry === i ? null : i })
+  }
+
+  // Rows stay rows (turning them into buttons would break table semantics),
+  // so they get the grid keyboard contract instead: Enter/Space toggles the
+  // detail panel, Up/Down walks the list with a roving tabindex.
+  function onRowKeyDown(e: React.KeyboardEvent<HTMLTableRowElement>, i: number) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      toggleEntry(i)
+      return
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      const sibling = e.key === 'ArrowDown'
+        ? e.currentTarget.nextElementSibling
+        : e.currentTarget.previousElementSibling
+      if (sibling instanceof HTMLElement) sibling.focus()
+    }
+  }
+
   if (!state.harRaw) {
     return (
       <div className="har-tab">
         {state.harError && <div className="har-error-banner">⚠ {state.harError}</div>}
+        {/* Kept as a div: `.har-dropzone` styles a plain block (and its :hover
+            background would be clobbered by the inline reset a native <button>
+            needs here), so it gets full button semantics instead. */}
         <div
           className="har-dropzone"
+          role="button"
+          tabIndex={0}
+          aria-label="Drop a .har file here or press Enter to browse"
           onDrop={onDrop}
           onDragOver={e => e.preventDefault()}
           onClick={() => fileRef.current?.click()}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              fileRef.current?.click()
+            }
+          }}
         >
           <span className="har-dropzone__icon">📂</span>
           <span className="har-dropzone__title">Drop a .har file here or click to browse</span>
           <span className="har-dropzone__sub">
             Export from Chrome DevTools → Network → ⬇ (Save all as HAR with content)
           </span>
-          <input ref={fileRef} type="file" accept=".har,application/json" style={{ display: 'none' }} onChange={onFile} />
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".har,application/json"
+            style={{ display: 'none' }}
+            onChange={onFile}
+            aria-label="Choose a .har file"
+          />
         </div>
-        <p className="har-hint">You can also paste HAR JSON directly below:</p>
+        <p className="har-hint" id="har-paste-hint">You can also paste HAR JSON directly below:</p>
         <textarea
           className="har-paste-area"
           placeholder='{"log": {"entries": [...]}}'
           onBlur={e => { if (e.target.value.trim()) loadHar(e.target.value) }}
+          aria-labelledby="har-paste-hint"
         />
       </div>
     )
@@ -292,6 +349,7 @@ export function HarTab() {
         <div className="har-filters">
           <select
             className="har-filters__pills"
+            aria-label="Filter by HTTP method"
             value={state.harMethodFilter}
             onChange={e => dispatch({ type: 'SET_HAR_METHOD_FILTER', method: e.target.value })}
           >
@@ -302,6 +360,7 @@ export function HarTab() {
           </select>
           <input
             className="har-filters__search"
+            aria-label="Filter by URL or status"
             placeholder="Filter by URL or status…"
             value={state.harFilter}
             onChange={e => dispatch({ type: 'SET_HAR_FILTER', filter: e.target.value })}
@@ -325,15 +384,16 @@ export function HarTab() {
 
       <div className="har-body">
         <div className="har-table-wrap">
-          <table className="har-table">
+          {/* role="grid" is what makes the rows' aria-selected meaningful. */}
+          <table className="har-table" role="grid" aria-label="Captured requests">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Method</th>
-                <th className="har-table__url-col">URL</th>
-                <th>Status</th>
-                <th>Size</th>
-                <th>Time</th>
+                <th scope="col">#</th>
+                <th scope="col">Method</th>
+                <th scope="col" className="har-table__url-col">URL</th>
+                <th scope="col">Status</th>
+                <th scope="col">Size</th>
+                <th scope="col">Time</th>
               </tr>
             </thead>
             <tbody>
@@ -344,7 +404,10 @@ export function HarTab() {
                 <tr
                   key={i}
                   className={`har-table__row${state.harSelectedEntry === i ? ' har-table__row--active' : ''}`}
-                  onClick={() => dispatch({ type: 'SET_HAR_SELECTED_ENTRY', index: state.harSelectedEntry === i ? null : i })}
+                  aria-selected={state.harSelectedEntry === i}
+                  tabIndex={state.harSelectedEntry === i || (state.harSelectedEntry === null && i === 0) ? 0 : -1}
+                  onClick={() => toggleEntry(i)}
+                  onKeyDown={e => onRowKeyDown(e, i)}
                 >
                   <td className="har-table__num">{i + 1}</td>
                   <td>
@@ -371,7 +434,19 @@ export function HarTab() {
         {selectedEntry && (
           <>
             {/* Resize handle */}
-            <div className="har-resize-handle" onMouseDown={onResizeMouseDown} title="Drag to resize" />
+            <div
+              className="har-resize-handle"
+              onMouseDown={onResizeMouseDown}
+              onKeyDown={onResizeKeyDown}
+              title="Drag to resize"
+              role="slider"
+              aria-orientation="vertical"
+              aria-label="Resize the request detail panel"
+              aria-valuenow={detailWidth}
+              aria-valuemin={280}
+              aria-valuemax={800}
+              tabIndex={0}
+            />
 
             {/* Detail panel */}
             <div className="har-detail" style={{ width: detailWidth, minWidth: detailWidth, maxWidth: detailWidth }}>

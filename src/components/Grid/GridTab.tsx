@@ -8,6 +8,8 @@ import { useWorkerParse } from '../../hooks/useWorkerParse'
 import { computeTreeMatches } from '../../utils/treeSearch'
 import { locatePath } from '../../utils/jsonLocate'
 import { toCsv, downloadCsv } from '../../utils/csv'
+import { parseCsv } from '../../utils/csvImport'
+import { checkFileSize, MAX_TEXT_FILE_BYTES } from '../../utils/limits'
 import type { PathSegment } from '../../utils/jsonEdit'
 import { setAtPath, deleteAtPath, valueToCopyText } from '../../utils/jsonEdit'
 import type { ExpansionState, TableView } from './gridModel'
@@ -43,6 +45,7 @@ export function GridTab() {
   const resizeStartWidth = useRef(0)
   const containerRef = useRef<HTMLDivElement>(null)
   const editorApi = useRef<CodeEditorApi | null>(null)
+  const csvInputRef = useRef<HTMLInputElement>(null)
 
   const onResizeMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
@@ -65,6 +68,25 @@ export function GridTab() {
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
   }, [leftWidth])
+
+  // Keyboard equivalent of the drag: the handle is focusable, so the split can
+  // be moved without a pointer.
+  const onResizeKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const step = e.shiftKey ? 10 : 2
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault()
+      setLeftWidth((w) => Math.max(20, w - step))
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault()
+      setLeftWidth((w) => Math.min(80, w + step))
+    } else if (e.key === 'Home') {
+      e.preventDefault()
+      setLeftWidth(20)
+    } else if (e.key === 'End') {
+      e.preventDefault()
+      setLeftWidth(80)
+    }
+  }, [])
 
   // ── Debounced parse ───────────────────────────
   useEffect(() => {
@@ -169,6 +191,36 @@ export function GridTab() {
     onExportCsv: handleExportCsv,
   }
 
+  // The inverse of the per-table CSV export: rows come back as an array of
+  // objects, which is exactly the shape the grid renders as a table.
+  function handleImportCsv(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // reset so same file can be re-uploaded
+    if (!file) return
+    const sizeError = checkFileSize(file, MAX_TEXT_FILE_BYTES)
+    if (sizeError) {
+      addToast(sizeError, 'error')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const { rows, columns, error } = parseCsv(ev.target?.result as string)
+      // Leave the current document alone on failure — a bad pick should not
+      // cost the user what they were already looking at.
+      if (error) {
+        addToast(error, 'error')
+        return
+      }
+      dispatch({ type: 'SET_GRID_RAW', raw: JSON.stringify(rows, null, 2) })
+      setFocusedPath(null)
+      addToast(
+        `Imported ${rows.length} row${rows.length === 1 ? '' : 's'} × ${columns.length} column${columns.length === 1 ? '' : 's'}`
+      )
+    }
+    reader.onerror = () => addToast('Could not read the file', 'error')
+    reader.readAsText(file)
+  }
+
   function handleClear() {
     dispatch({ type: 'SET_GRID_RAW', raw: '' })
     setFocusedPath(null)
@@ -187,6 +239,22 @@ export function GridTab() {
           <span className="panel__label">JSON Input</span>
           <div className="flex-row">
             <FromEditorButton onPick={(raw) => dispatch({ type: 'SET_GRID_RAW', raw })} />
+            <button
+              className="btn btn-ghost"
+              style={{ fontSize: 11 }}
+              onClick={() => csvInputRef.current?.click()}
+              title="Load a CSV file as a table"
+            >
+              Import CSV
+            </button>
+            <input
+              ref={csvInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              aria-label="Import CSV file"
+              style={{ display: 'none' }}
+              onChange={handleImportCsv}
+            />
             <button className="btn btn-ghost" style={{ fontSize: 11 }} onClick={handleClear}>
               Clear
             </button>
@@ -203,7 +271,20 @@ export function GridTab() {
       </div>
 
       {/* Resize handle */}
-      <div className="grid-tab__resize-handle" onMouseDown={onResizeMouseDown} title="Drag to resize" />
+      <div
+        className="grid-tab__resize-handle"
+        role="slider"
+        tabIndex={0}
+        aria-label="Resize panes"
+        aria-orientation="vertical"
+        aria-valuemin={20}
+        aria-valuemax={80}
+        aria-valuenow={Math.round(leftWidth)}
+        aria-valuetext={`JSON input pane ${Math.round(leftWidth)}% wide`}
+        onMouseDown={onResizeMouseDown}
+        onKeyDown={onResizeKeyDown}
+        title="Drag to resize"
+      />
 
       {/* Right: Tree grid */}
       <div className="grid-tab__right panel">
@@ -238,6 +319,7 @@ export function GridTab() {
               className="tree-search__input"
               type="text"
               value={query}
+              aria-label="Search keys and values"
               placeholder="Search keys and values…"
               spellCheck={false}
               onChange={(e) => setQuery(e.target.value)}

@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ChangeEvent } from 'react'
+import { useState, useEffect, useRef, type FormEvent, type ChangeEvent, type MouseEvent } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import '../Auth/AuthModal.css'
 
@@ -21,6 +21,29 @@ export function ChangePasswordModal({ onClose }: Props) {
   const [formError, setFormError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [busy, setBusy] = useState(false)
+
+  const newPasswordRef = useRef<HTMLInputElement>(null)
+
+  // Move focus into the dialog on open. Done programmatically rather than with
+  // the `autoFocus` prop so focus is only claimed while the modal is mounted.
+  useEffect(() => {
+    newPasswordRef.current?.focus()
+  }, [])
+
+  // Escape closes the dialog, matching the click-outside affordance.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  // Only a click on the backdrop itself closes; clicks inside the dialog bubble
+  // up but keep `target` pointing at a descendant.
+  function handleOverlayClick(e: MouseEvent<HTMLDivElement>) {
+    if (e.target === e.currentTarget) onClose()
+  }
 
   function handleNewPasswordChange(e: ChangeEvent<HTMLInputElement>) {
     setNewPassword(e.target.value)
@@ -54,11 +77,11 @@ export function ChangePasswordModal({ onClose }: Props) {
   }
 
   return (
-    <div className="auth-overlay" onClick={onClose}>
-      <div className="auth-modal" onClick={e => e.stopPropagation()}>
+    <div className="auth-overlay" role="presentation" onClick={handleOverlayClick}>
+      <div className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="cp-title">
         <button className="auth-modal__close btn btn-ghost" onClick={onClose} aria-label="Close">✕</button>
 
-        <h2 className="auth-modal__title">Change Password</h2>
+        <h2 className="auth-modal__title" id="cp-title">Change Password</h2>
         <p className="auth-modal__subtitle">Enter a new password for your account.</p>
 
         {success ? (
@@ -70,10 +93,15 @@ export function ChangePasswordModal({ onClose }: Props) {
           </>
         ) : (
           <form className="auth-modal__form" onSubmit={handleSubmit} noValidate>
-            <div className="auth-modal__field">
-              <label className="auth-modal__label" htmlFor="cp-new">New Password</label>
+            {/* The field wrapper is the <label> itself so the control is both
+                nested and referenced by id; the caption span carries the id the
+                input names, keeping the error/hint text out of its a11y name. */}
+            <label className="auth-modal__field" htmlFor="cp-new">
+              <span className="auth-modal__label" id="cp-new-label">New Password</span>
               <input
                 id="cp-new"
+                ref={newPasswordRef}
+                aria-labelledby="cp-new-label"
                 className={`auth-modal__input${newPasswordError ? ' auth-modal__input--invalid' : ''}`}
                 type="password"
                 value={newPassword}
@@ -81,18 +109,18 @@ export function ChangePasswordModal({ onClose }: Props) {
                 onBlur={() => setNewPasswordError(validatePassword(newPassword))}
                 placeholder="••••••••"
                 autoComplete="new-password"
-                autoFocus
               />
               {newPasswordError
                 ? <span className="auth-modal__field-error">{newPasswordError}</span>
                 : <span className="auth-modal__field-hint">Minimum 8 characters</span>
               }
-            </div>
+            </label>
 
-            <div className="auth-modal__field">
-              <label className="auth-modal__label" htmlFor="cp-confirm">Confirm Password</label>
+            <label className="auth-modal__field" htmlFor="cp-confirm">
+              <span className="auth-modal__label" id="cp-confirm-label">Confirm Password</span>
               <input
                 id="cp-confirm"
+                aria-labelledby="cp-confirm-label"
                 className={`auth-modal__input${confirmError ? ' auth-modal__input--invalid' : ''}`}
                 type="password"
                 value={confirm}
@@ -102,7 +130,7 @@ export function ChangePasswordModal({ onClose }: Props) {
                 autoComplete="new-password"
               />
               {confirmError && <span className="auth-modal__field-error">{confirmError}</span>}
-            </div>
+            </label>
 
             {formError && <p className="auth-modal__error">{formError}</p>}
 

@@ -72,6 +72,7 @@ export function SimpleTextarea({ value, onChange, placeholder, readOnly }: Props
       onChange={handleChange}
       onKeyDown={handleKeyDown}
       placeholder={placeholder ?? 'Paste JSON here...'}
+      aria-label={placeholder ?? 'Paste JSON here...'}
       spellCheck={false}
       autoCapitalize="off"
       autoCorrect="off"

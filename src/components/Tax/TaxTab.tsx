@@ -59,8 +59,11 @@ export function TaxTab() {
       <div className="cron-tab__section">
         <div className="cron-tab__section-title">Amount &amp; Region ({SALES_TAX_YEAR} rates)</div>
         <div className="tax-inputs">
-          <div className="tax-field">
-            <label className="tax-field__label" htmlFor="tax-amount">Amount (CAD)</label>
+          {/* The field wrapper is the <label> itself so the control is both
+              nested and referenced by id — clicking anywhere in the field
+              focuses the control, and the layout classes are unchanged. */}
+          <label className="tax-field" htmlFor="tax-amount">
+            <span className="tax-field__label" id="tax-amount-label">Amount (CAD)</span>
             <input
               id="tax-amount"
               className="tax-field__input"
@@ -69,30 +72,34 @@ export function TaxTab() {
               onChange={e => dispatch({ type: 'SET_TAX_AMOUNT', amount: e.target.value })}
               placeholder="e.g. 100"
               spellCheck={false}
+              aria-labelledby="tax-amount-label"
             />
-          </div>
-          <div className="tax-field">
-            <label className="tax-field__label" htmlFor="tax-province">Province</label>
+          </label>
+          <label className="tax-field" htmlFor="tax-province">
+            <span className="tax-field__label" id="tax-province-label">Province</span>
             <select
               id="tax-province"
               className="tax-field__input"
               value={state.taxProvince}
               onChange={e => dispatch({ type: 'SET_TAX_PROVINCE', province: e.target.value })}
+              aria-labelledby="tax-province-label"
             >
               {SALES_TAX_REGIONS.map(r => (
                 <option key={r.code} value={r.code}>{r.name}</option>
               ))}
             </select>
-          </div>
+          </label>
           <div className="tax-field">
             <span className="tax-field__label">Amount type</span>
-            <label className="tax-toggle">
+            <label className="tax-toggle" htmlFor="tax-includes-tax">
               <input
+                id="tax-includes-tax"
                 type="checkbox"
                 checked={state.taxIncludesTax}
                 onChange={e => dispatch({ type: 'SET_TAX_INCLUDES_TAX', included: e.target.checked })}
+                aria-labelledby="tax-includes-tax-label"
               />
-              <span>Amount already includes tax</span>
+              <span id="tax-includes-tax-label">Amount already includes tax</span>
             </label>
           </div>
           <button
@@ -172,11 +179,11 @@ export function TaxTab() {
           <table className="url-params-table tax-breakdown__table">
             <thead>
               <tr>
-                <th>Region</th>
-                <th>Taxes</th>
-                <th>Subtotal</th>
-                <th>Tax</th>
-                <th>Total</th>
+                <th scope="col">Region</th>
+                <th scope="col">Taxes</th>
+                <th scope="col">Subtotal</th>
+                <th scope="col">Tax</th>
+                <th scope="col">Total</th>
               </tr>
             </thead>
             <tbody>

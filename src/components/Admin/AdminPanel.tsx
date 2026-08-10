@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type MouseEvent } from 'react'
 import { getSupabase } from '../../lib/supabase'
 import './AdminPanel.css'
 
@@ -62,12 +62,27 @@ export function AdminPanel({ onClose }: Props) {
     })()
   }, [])
 
+  // Escape closes the dialog, matching the click-outside affordance.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  // Only a click on the backdrop itself closes; clicks inside the dialog bubble
+  // up but keep `target` pointing at a descendant.
+  function handleOverlayClick(e: MouseEvent<HTMLDivElement>) {
+    if (e.target === e.currentTarget) onClose()
+  }
+
   return (
-    <div className="auth-overlay" onClick={onClose}>
-      <div className="admin-panel" onClick={e => e.stopPropagation()}>
+    <div className="auth-overlay" role="presentation" onClick={handleOverlayClick}>
+      <div className="admin-panel" role="dialog" aria-modal="true" aria-labelledby="admin-panel-title">
         <button className="auth-modal__close btn btn-ghost" onClick={onClose} aria-label="Close">✕</button>
 
-        <h2 className="auth-modal__title">Admin Panel</h2>
+        <h2 className="auth-modal__title" id="admin-panel-title">Admin Panel</h2>
         <p className="auth-modal__subtitle">Usage stats and deployment info</p>
 
         <div className="admin-panel__grid">

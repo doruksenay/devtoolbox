@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { useApp } from '../../context/AppContext'
 import { useToast } from '../Toast/ToastProvider'
 import { XmlCodeEditor } from '../shared/XmlCodeEditor'
+import { checkFileSize, MAX_TEXT_FILE_BYTES } from '../../utils/limits'
 
 export function XmlTab() {
   const { state, dispatch, validateXml, formatXmlAction } = useApp()
@@ -28,14 +29,21 @@ export function XmlTab() {
 
   function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
+    e.target.value = ''
     if (!file) return
+    const sizeError = checkFileSize(file, MAX_TEXT_FILE_BYTES)
+    if (sizeError) {
+      // A rejected upload leaves the document untouched, so this is reported as
+      // a toast rather than through the validation state of the current XML.
+      addToast(sizeError, 'error')
+      return
+    }
     const reader = new FileReader()
     reader.onload = (ev) => {
       const text = ev.target?.result as string
       dispatch({ type: 'SET_XML_RAW', raw: text })
     }
     reader.readAsText(file)
-    e.target.value = ''
   }
 
   return (
@@ -66,6 +74,7 @@ export function XmlTab() {
           accept=".xml,application/xml,text/xml,text/plain"
           style={{ display: 'none' }}
           onChange={handleUpload}
+          aria-label="Upload XML file"
         />
         <button className="btn btn-ghost" onClick={handleDownload} disabled={!hasContent}>
           Download

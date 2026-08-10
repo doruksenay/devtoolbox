@@ -60,7 +60,7 @@ export function Sidebar() {
             {group.tabs.map((tab) => (
               <button
                 key={tab.id}
-                role="button"
+                type="button"
                 aria-label={tab.label}
                 aria-current={activeTab === tab.id ? 'page' : undefined}
                 className={`sidebar__item${activeTab === tab.id ? ' sidebar__item--active' : ''}`}
