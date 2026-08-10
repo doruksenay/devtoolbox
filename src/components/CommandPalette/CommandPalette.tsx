@@ -31,7 +31,7 @@ const TOOLS: ToolEntry[] = [
 export function CommandPalette() {
   const dispatch = useAppDispatch()
   const activeTab = useAppSelector((state) => state.activeTab)
-  const open = useAppSelector((state) => open)
+  const open = useAppSelector((state) => state.commandPaletteOpen)
   const [query, setQuery] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const [activeIdx, setActiveIdx] = useState(0)
