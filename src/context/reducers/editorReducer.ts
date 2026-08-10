@@ -125,6 +125,23 @@ export function editorReducer(state: AppState, action: AppAction): AppState | nu
       }
     }
 
+    // Schema validation and URL fetch are Editor-tab side panels; they lived in
+    // convertReducer until the Convert tool was removed.
+    case 'SET_SCHEMA_INPUT':
+      return { ...state, schemaInput: action.raw, schemaError: null, schemaValid: null }
+
+    case 'SET_SCHEMA_RESULT':
+      return { ...state, schemaValid: action.valid, schemaError: action.error }
+
+    case 'SET_FETCH_URL':
+      return { ...state, fetchUrl: action.url, fetchError: null }
+
+    case 'SET_FETCH_LOADING':
+      return { ...state, fetchLoading: action.loading }
+
+    case 'SET_FETCH_ERROR':
+      return { ...state, fetchError: action.error, fetchLoading: false }
+
     default:
       return null
   }
