@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback, memo } from 'react'
 import type { DiffType } from '../../utils/jsonDiff'
 import { pathHasDiff } from '../../utils/jsonDiff'
 import { computeTreeMatches, splitHighlight } from '../../utils/treeSearch'
@@ -16,7 +16,7 @@ import {
   valueToEditText,
   valueToCopyText,
 } from '../../utils/jsonEdit'
-import { useApp } from '../../context/AppContext'
+import { useAppSelector } from '../../context/AppContext'
 import { useToast } from '../Toast/ToastProvider'
 
 interface SearchContext {
@@ -676,11 +676,12 @@ interface TreeViewProps {
 
 const SCROLL_TO_MATCH_DELAY_MS = 60
 
-export function TreeView({ data, forceOpen, diffs, activeDiffPath, syntaxTheme, enableSearch = true, onChange }: TreeViewProps) {
-  const { state } = useApp()
+function TreeViewImpl({ data, forceOpen, diffs, activeDiffPath, syntaxTheme, enableSearch = true, onChange }: TreeViewProps) {
+  const editorSyntaxTheme = useAppSelector((state) => state.editorSyntaxTheme)
+  const appTheme = useAppSelector((state) => state.theme)
   const { addToast } = useToast()
-  const theme: EditorSyntaxTheme = (syntaxTheme ?? state.editorSyntaxTheme ?? 'default') as EditorSyntaxTheme
-  const colorMode = state.theme === 'dark' ? 'dark' : 'light'
+  const theme: EditorSyntaxTheme = (syntaxTheme ?? editorSyntaxTheme ?? 'default') as EditorSyntaxTheme
+  const colorMode = appTheme === 'dark' ? 'dark' : 'light'
   const colors = EDITOR_THEMES[theme][colorMode]
 
   const [query, setQuery] = useState('')
@@ -840,3 +841,10 @@ export function TreeView({ data, forceOpen, diffs, activeDiffPath, syntaxTheme, 
     </div>
   )
 }
+
+/**
+ * Memoized: the editor re-renders on every keystroke, but the tree only needs
+ * to change when the parsed document does — re-rendering thousands of nodes
+ * for text that has not been re-parsed yet is pure waste.
+ */
+export const TreeView = memo(TreeViewImpl)

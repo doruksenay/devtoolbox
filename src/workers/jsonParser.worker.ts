@@ -1,11 +1,21 @@
-// Web Worker for parsing large JSON files without blocking main thread
+// Web Worker for parsing large JSON files without blocking main thread.
+//
+// The worker is long-lived and handles many requests, so every message carries
+// an id and the reply echoes it back: callers can discard results belonging to
+// a request they have already superseded.
 
-self.onmessage = function (e: MessageEvent<string>) {
+interface ParseRequest {
+  id: number
+  raw: string
+}
+
+self.onmessage = function (e: MessageEvent<ParseRequest>) {
+  const { id, raw } = e.data
   try {
-    const parsed = JSON.parse(e.data)
-    self.postMessage({ success: true, data: parsed })
+    const parsed = JSON.parse(raw)
+    self.postMessage({ id, success: true, data: parsed })
   } catch (err) {
-    self.postMessage({ success: false, error: (err as Error).message })
+    self.postMessage({ id, success: false, error: (err as Error).message })
   }
 }
 

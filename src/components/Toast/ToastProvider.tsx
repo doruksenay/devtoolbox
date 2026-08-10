@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react'
 
 export type ToastType = 'success' | 'error' | 'info'
 
@@ -27,8 +27,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     }, 2500)
   }, [])
 
+  // Stable identity: a fresh object here would re-render every consumer each
+  // time a toast appears or expires, including memoized ones.
+  const value = useMemo<ToastContextValue>(() => ({ addToast }), [addToast])
+
   return (
-    <ToastContext.Provider value={{ addToast }}>
+    <ToastContext.Provider value={value}>
       {children}
       <div className="toast-container" aria-live="polite">
         {toasts.map(t => (
