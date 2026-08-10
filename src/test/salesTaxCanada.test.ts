@@ -4,12 +4,12 @@ import {
   calculateAllRegions,
   combinedRate,
   getRegion,
+  DEFAULT_TAX_REGION,
   SALES_TAX_REGIONS,
 } from '../utils/salesTaxCanada'
 
 const ON = getRegion('ON')!
 const QC = getRegion('QC')!
-const AB = getRegion('AB')!
 
 describe('calculateSalesTax', () => {
   it('applies HST in Ontario', () => {
@@ -25,11 +25,6 @@ describe('calculateSalesTax', () => {
     expect(r.gstAmount).toBeCloseTo(5, 6)
     expect(r.pstAmount).toBeCloseTo(9.975, 6)
     expect(r.total).toBeCloseTo(114.975, 6)
-  })
-
-  it('applies GST only in Alberta', () => {
-    const r = calculateSalesTax(100, AB)
-    expect(r.totalTax).toBeCloseTo(5, 6)
   })
 
   it('reverses tax when the amount already includes it', () => {
@@ -67,8 +62,18 @@ describe('region data', () => {
   })
 
   it('getRegion resolves known codes only', () => {
-    expect(getRegion('BC')?.name).toBe('British Columbia')
+    expect(getRegion('ON')?.name).toBe('Ontario')
+    expect(getRegion('BC')).toBeUndefined()
     expect(getRegion('zz')).toBeUndefined()
+  })
+
+  it('only supports Quebec and Ontario', () => {
+    expect(SALES_TAX_REGIONS.map(r => r.code)).toEqual(['QC', 'ON'])
+  })
+
+  it('defaults to Quebec, which is also the first-listed fallback region', () => {
+    expect(DEFAULT_TAX_REGION).toBe('QC')
+    expect(SALES_TAX_REGIONS[0].code).toBe(DEFAULT_TAX_REGION)
   })
 
   it('calculateAllRegions covers every region', () => {

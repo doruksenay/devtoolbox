@@ -6,10 +6,15 @@
 - **Project documentation**: A `README.md` covering the tool catalogue, setup, environment variables, scripts, architecture and contribution steps.
 - **Linting and formatting**: ESLint (typescript-eslint, react-hooks, react-refresh, jsx-a11y) and Prettier with `lint`, `lint:fix`, `format`, `format:check` and `typecheck` scripts.
 - **Continuous integration**: A `CI` workflow that runs lint, type-check, unit tests, build and the Playwright end-to-end suite on every pull request, plus Dependabot updates for npm and GitHub Actions.
-- **Canada Tax Calculator tool**: New utility that calculates Canadian sales tax (GST / HST / PST / QST / RST) on an amount. Enter a price and choose a province/territory to see the per-tax breakdown, total tax and total price, plus a comparison table across every province and territory. Supports reverse calculation when the amount already includes tax.
+- **Canada Tax Calculator tool**: New utility that calculates Canadian sales tax on an amount. Enter a price and choose a province to see the per-tax breakdown, total tax and total price, plus a Quebec/Ontario comparison table. Supports reverse calculation when the amount already includes tax.
 - **Text Cleaner tool**: New utility that decodes HTML entities (`&amp;`, `&#10;`, `&nbsp;`, …) and detects/removes invisible or "problematic" characters — non-breaking spaces, zero-width spaces, BOM, soft hyphens, and more. Shows a live report of everything found in the pasted text, with toggle options for each cleaning pass.
 
+### Removed
+- **Five tools retired**: XML Compare, Convert (XML ↔ JSON), SOAP / WSDL, Base64 and URL Encoder have been removed along with their state, reducers, icons and styles. The toolbox is now 12 focused tools.
+
 ### Changed
+- **Tax Calculator scope**: Now covers Quebec (GST + QST) and Ontario (HST) only, and defaults to Quebec. Persisted state referencing a removed tool or province falls back to the JSON Editor and Quebec instead of leaving the app with nothing to render.
+- **Sidebar**: YAML ↔ JSON is now listed under *Transform* — previously it was only reachable through the command palette.
 - **Code splitting**: Tool panes are now loaded on demand with `React.lazy`, so the initial download contains only the app shell and the active tool.
 - **State layer**: `AppProvider` memoizes its context value and exposes a separate `useAppDispatch()` hook, so dispatch-only components no longer re-render on unrelated state changes.
 - **Parsing helpers**: `parseJson`, `parseXml` and `formatXml` moved to `src/utils/parsers.ts` (still re-exported from `AppContext` for compatibility).

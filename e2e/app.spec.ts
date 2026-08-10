@@ -35,8 +35,8 @@ test.describe('Editor Tab', () => {
     await page.click('.sidebar__item[aria-label="JSONPath"]')
     await expect(page.locator('.sidebar__item--active')).toContainText('JSONPath')
 
-    await page.click('.sidebar__item[aria-label="Convert"]')
-    await expect(page.locator('.sidebar__item--active')).toContainText('Convert')
+    await page.click('.sidebar__item[aria-label="YAML ↔ JSON"]')
+    await expect(page.locator('.sidebar__item--active')).toContainText('YAML ↔ JSON')
   })
 
   test('theme toggle works', async ({ page }) => {
@@ -65,18 +65,30 @@ test.describe('Editor Tab', () => {
   })
 })
 
-test.describe('Convert Tab', () => {
-  test('converts XML to JSON', async ({ page }) => {
+test.describe('Tax Calculator', () => {
+  test('defaults to Quebec', async ({ page }) => {
     await page.goto('/')
-    await page.click('.sidebar__item[aria-label="Convert"]')
+    await page.click('.sidebar__item[aria-label="Tax Calculator"]')
 
-    const input = page.locator('.convert-tab__panels .panel:first-child textarea')
-    await input.fill('<root><item>hello</item></root>')
+    await expect(page.locator('#tax-province')).toHaveValue('QC')
+    await expect(page.locator('#tax-province option')).toHaveCount(2)
+  })
+})
 
-    await page.click('.convert-tab .btn-primary')
+test.describe('Persisted state migration', () => {
+  // Rows written before tools/regions were removed must not blank the app.
+  test('falls back to defaults for values that no longer exist', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        'devtoolbox_state_v1',
+        JSON.stringify({ activeTab: 'soap', taxProvince: 'BC', theme: 'dark' }),
+      )
+    })
+    await page.goto('/')
 
-    const output = page.locator('.convert-tab__panels .panel:last-child textarea')
-    await expect(output).toHaveValue(/root/)
-    await expect(output).toHaveValue(/hello/)
+    await expect(page.locator('.sidebar__item--active')).toContainText('JSON Editor')
+
+    await page.click('.sidebar__item[aria-label="Tax Calculator"]')
+    await expect(page.locator('#tax-province')).toHaveValue('QC')
   })
 })

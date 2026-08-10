@@ -72,7 +72,7 @@ export function TaxTab() {
             />
           </div>
           <div className="tax-field">
-            <label className="tax-field__label" htmlFor="tax-province">Province / Territory</label>
+            <label className="tax-field__label" htmlFor="tax-province">Province</label>
             <select
               id="tax-province"
               className="tax-field__input"
@@ -120,7 +120,7 @@ export function TaxTab() {
       <div className="cron-tab__section">
         <div className="cron-tab__section-title">{selected.region.name} — {taxLabel(selected)}</div>
         {!hasInput ? (
-          <div className="cron-runs-empty">Enter an amount above to see the sales tax in each region.</div>
+          <div className="cron-runs-empty">Enter an amount above to see the sales tax in Quebec and Ontario.</div>
         ) : (
           <>
             <div className="tax-cards">
@@ -168,7 +168,7 @@ export function TaxTab() {
       {/* All regions */}
       {hasInput && (
         <div className="cron-tab__section">
-          <div className="cron-tab__section-title">All Provinces &amp; Territories</div>
+          <div className="cron-tab__section-title">Quebec vs Ontario</div>
           <table className="url-params-table tax-breakdown__table">
             <thead>
               <tr>
@@ -195,7 +195,7 @@ export function TaxTab() {
       )}
 
       <p className="tax-disclaimer">
-        GST / HST / PST / QST rates as published for {SALES_TAX_YEAR}. Some goods and services are
+        GST / HST / QST rates as published for {SALES_TAX_YEAR}. Some goods and services are
         zero-rated or exempt. For informational purposes only — not tax advice.
       </p>
     </div>

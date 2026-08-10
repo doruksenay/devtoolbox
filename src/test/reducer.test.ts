@@ -22,11 +22,6 @@ const emptyState: AppState = {
   xmlRaw: '',
   xmlValid: null,
   xmlError: null,
-  xmlCompareLeft: '',
-  xmlCompareRight: '',
-  xmlCompareLines: null,
-  xmlCompareEqual: null,
-  xmlCompareError: null,
   gridRaw: '',
   gridParsed: null,
   gridError: null,
@@ -40,10 +35,6 @@ const emptyState: AppState = {
   queryRunError: null,
   theme: 'dark',
   editorSyntaxTheme: 'default',
-  convertInput: '',
-  convertOutput: '',
-  convertMode: 'xml-to-json',
-  convertError: null,
   schemaInput: '',
   schemaError: null,
   schemaValid: null,
@@ -68,19 +59,9 @@ const emptyState: AppState = {
   yamlOutput: '',
   yamlMode: 'yaml-to-json',
   yamlError: null,
-  base64Input: '',
-  base64Output: '',
-  base64Mode: 'encode',
-  base64Error: null,
-  urlInput: '',
-  urlOutput: '',
-  urlMode: 'encode',
-  urlError: null,
-  soapInput: '',
-  soapError: null,
   cleanInput: '',
   taxAmount: '',
-  taxProvince: 'ON',
+  taxProvince: 'QC',
   taxIncludesTax: false,
   sidebarCollapsed: false,
   commandPaletteOpen: false,
@@ -102,6 +83,36 @@ describe('rootReducer', () => {
       const state = { ...emptyState, theme: 'light' as const }
       const result = rootReducer(state, { type: 'TOGGLE_THEME' })
       expect(result.theme).toBe('dark')
+    })
+  })
+
+  describe('LOAD_PERSISTED_STATE', () => {
+    it('restores recognised values', () => {
+      const result = rootReducer(emptyState, {
+        type: 'LOAD_PERSISTED_STATE',
+        payload: { activeTab: 'jwt', taxProvince: 'ON', theme: 'light' },
+      })
+      expect(result.activeTab).toBe('jwt')
+      expect(result.taxProvince).toBe('ON')
+      expect(result.theme).toBe('light')
+    })
+
+    // Rows persisted before a tool or region was removed must not leave the
+    // app pointing at something that no longer renders.
+    it('ignores a tab id that no longer exists', () => {
+      const result = rootReducer(emptyState, {
+        type: 'LOAD_PERSISTED_STATE',
+        payload: { activeTab: 'soap' as never },
+      })
+      expect(result.activeTab).toBe('editor')
+    })
+
+    it('ignores a province that is no longer supported', () => {
+      const result = rootReducer(emptyState, {
+        type: 'LOAD_PERSISTED_STATE',
+        payload: { taxProvince: 'BC' },
+      })
+      expect(result.taxProvince).toBe('QC')
     })
   })
 
@@ -267,39 +278,6 @@ describe('rootReducer', () => {
       const result = rootReducer(state, { type: 'SET_QUERY_RUN_ERROR', error: 'fail' })
       expect(result.queryResults).toBeNull()
       expect(result.queryRunError).toBe('fail')
-    })
-  })
-
-  describe('convert actions', () => {
-    it('SET_CONVERT_INPUT updates input', () => {
-      const result = rootReducer(emptyState, { type: 'SET_CONVERT_INPUT', raw: '<root/>' })
-      expect(result.convertInput).toBe('<root/>')
-      expect(result.convertError).toBeNull()
-    })
-
-    it('SET_CONVERT_MODE changes mode and clears output', () => {
-      const state = { ...emptyState, convertOutput: 'something' }
-      const result = rootReducer(state, { type: 'SET_CONVERT_MODE', mode: 'json-to-xml' })
-      expect(result.convertMode).toBe('json-to-xml')
-      expect(result.convertOutput).toBe('')
-    })
-
-    it('SET_CONVERT_OUTPUT stores output', () => {
-      const result = rootReducer(emptyState, { type: 'SET_CONVERT_OUTPUT', output: '{"a":1}', error: null })
-      expect(result.convertOutput).toBe('{"a":1}')
-    })
-
-    it('SET_CONVERT_ERROR stores error', () => {
-      const result = rootReducer(emptyState, { type: 'SET_CONVERT_ERROR', error: 'invalid XML' })
-      expect(result.convertError).toBe('invalid XML')
-      expect(result.convertOutput).toBe('')
-    })
-
-    it('CLEAR_CONVERT resets convert state', () => {
-      const state = { ...emptyState, convertInput: 'xml', convertOutput: 'json' }
-      const result = rootReducer(state, { type: 'CLEAR_CONVERT' })
-      expect(result.convertInput).toBe('')
-      expect(result.convertOutput).toBe('')
     })
   })
 

@@ -1,4 +1,5 @@
-import type { AppState, AppAction, TabId } from '../../types'
+import type { AppState, AppAction } from '../../types'
+import { isTabId } from '../../types'
 import type { EditorSyntaxTheme } from '../../utils/editorThemes'
 import { editorReducer } from './editorReducer'
 import { restoreEditorDocs } from './editorDocs'
@@ -6,18 +7,14 @@ import { compareReducer } from './compareReducer'
 import { xmlReducer } from './xmlReducer'
 import { gridReducer } from './gridReducer'
 import { queryReducer } from './queryReducer'
-import { convertReducer } from './convertReducer'
 import { harReducer } from './harReducer'
 import { cronReducer } from './cronReducer'
 import { jwtReducer } from './jwtReducer'
 import { drawReducer } from './drawReducer'
 import { yamlReducer } from './yamlReducer'
-import { base64Reducer } from './base64Reducer'
-import { urlReducer } from './urlReducer'
-import { soapReducer } from './soapReducer'
 import { cleanReducer } from './cleanReducer'
-import { xmlCompareReducer } from './xmlCompareReducer'
 import { taxReducer } from './taxReducer'
+import { getRegion } from '../../utils/salesTaxCanada'
 
 const featureReducers = [
   editorReducer,
@@ -25,17 +22,12 @@ const featureReducers = [
   xmlReducer,
   gridReducer,
   queryReducer,
-  convertReducer,
   harReducer,
   cronReducer,
   jwtReducer,
   drawReducer,
   yamlReducer,
-  base64Reducer,
-  urlReducer,
-  soapReducer,
   cleanReducer,
-  xmlCompareReducer,
   taxReducer,
 ]
 
@@ -56,9 +48,12 @@ export function rootReducer(state: AppState, action: AppAction): AppState {
       return { ...state, commandPaletteOpen: action.open }
     case 'LOAD_PERSISTED_STATE': {
       const s = action.payload
+      // Persisted rows can predate tool/region removals, so anything that maps
+      // onto a fixed set is validated before it is restored — an unknown value
+      // would otherwise leave the app rendering nothing.
       return {
         ...state,
-        activeTab: (s.activeTab as TabId) ?? state.activeTab,
+        activeTab: isTabId(s.activeTab) ? s.activeTab : state.activeTab,
         ...restoreEditorDocs(state, s),
         compareLeft: s.compareLeft ?? state.compareLeft,
         compareRight: s.compareRight ?? state.compareRight,
@@ -68,7 +63,7 @@ export function rootReducer(state: AppState, action: AppAction): AppState {
         queryRaw: s.queryRaw ?? state.queryRaw,
         queryExpression: s.queryExpression ?? state.queryExpression,
         taxAmount: s.taxAmount ?? state.taxAmount,
-        taxProvince: s.taxProvince ?? state.taxProvince,
+        taxProvince: s.taxProvince && getRegion(s.taxProvince) ? s.taxProvince : state.taxProvince,
         taxIncludesTax: s.taxIncludesTax ?? state.taxIncludesTax,
         theme: (s.theme as 'dark' | 'light') ?? state.theme,
         editorSyntaxTheme: (s.editorSyntaxTheme as EditorSyntaxTheme) ?? state.editorSyntaxTheme,

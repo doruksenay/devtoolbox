@@ -1,9 +1,9 @@
 import { useApp } from '../../context/AppContext'
 import type { TabId } from '../../types'
 import {
-  IconEditor, IconCompare, IconXml, IconXmlCompare, IconGrid, IconQuery,
-  IconConvert, IconHar, IconCron, IconJwt, IconDraw,
-  IconBase64, IconUrlEnc, IconSoap, IconClean, IconTax, IconChevronLeft, IconChevronRight,
+  IconEditor, IconCompare, IconXml, IconGrid, IconQuery,
+  IconHar, IconCron, IconJwt, IconDraw, IconYaml,
+  IconClean, IconTax, IconChevronLeft, IconChevronRight,
 } from '../icons/Icons'
 
 interface TabDef {
@@ -30,9 +30,8 @@ const GROUPS: TabGroup[] = [
   {
     label: 'Transform',
     tabs: [
-      { id: 'compare',    label: 'JSON Compare', icon: <IconCompare /> },
-      { id: 'xmlcompare', label: 'XML Compare',  icon: <IconXmlCompare /> },
-      { id: 'convert',    label: 'Convert',      icon: <IconConvert /> },
+      { id: 'compare', label: 'JSON Compare', icon: <IconCompare /> },
+      { id: 'yaml',    label: 'YAML ↔ JSON',  icon: <IconYaml /> },
     ],
   },
   {
@@ -40,14 +39,11 @@ const GROUPS: TabGroup[] = [
     tabs: [
       { id: 'query', label: 'JSONPath',    icon: <IconQuery /> },
       { id: 'har',   label: 'HAR Viewer',  icon: <IconHar /> },
-      { id: 'soap',  label: 'SOAP / WSDL', icon: <IconSoap /> },
     ],
   },
   {
     label: 'Utilities',
     tabs: [
-      { id: 'base64', label: 'Base64',      icon: <IconBase64 /> },
-      { id: 'urlenc', label: 'URL Encoder', icon: <IconUrlEnc /> },
       { id: 'cron',   label: 'Cron',        icon: <IconCron /> },
       { id: 'jwt',    label: 'JWT Decoder', icon: <IconJwt /> },
       { id: 'clean',  label: 'Text Cleaner', icon: <IconClean /> },

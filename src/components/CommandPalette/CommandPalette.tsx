@@ -3,8 +3,8 @@ import { useApp } from '../../context/AppContext'
 import type { TabId } from '../../types'
 import {
   IconEditor, IconCompare, IconXml, IconGrid, IconQuery,
-  IconConvert, IconHar, IconCron, IconJwt, IconDraw,
-  IconYaml, IconBase64, IconUrlEnc, IconSoap, IconClean, IconTax,
+  IconHar, IconCron, IconJwt, IconDraw,
+  IconYaml, IconClean, IconTax,
 } from '../icons/Icons'
 
 interface ToolEntry {
@@ -20,17 +20,13 @@ const TOOLS: ToolEntry[] = [
   { id: 'xml',     label: 'XML',            description: 'Validate and format XML',          icon: <IconXml /> },
   { id: 'grid',    label: 'Grid View',      description: 'Tabular JSON grid viewer',         icon: <IconGrid /> },
   { id: 'query',   label: 'JSONPath Query', description: 'Query JSON with JSONPath',          icon: <IconQuery /> },
-  { id: 'convert', label: 'Convert',        description: 'XML ↔ JSON conversion',            icon: <IconConvert /> },
   { id: 'har',     label: 'HAR Viewer',     description: 'Inspect HTTP Archive files',       icon: <IconHar /> },
   { id: 'cron',    label: 'Cron',           description: 'Parse and explain cron expressions', icon: <IconCron /> },
   { id: 'jwt',     label: 'JWT Decoder',    description: 'Decode JWT tokens',                icon: <IconJwt /> },
   { id: 'draw',    label: 'Diagram',        description: 'Draw shapes and flow diagrams',    icon: <IconDraw /> },
   { id: 'yaml',    label: 'YAML ↔ JSON',    description: 'Convert between YAML and JSON',    icon: <IconYaml /> },
-  { id: 'base64',  label: 'Base64',         description: 'Encode and decode Base64',         icon: <IconBase64 /> },
-  { id: 'urlenc',  label: 'URL Encoder',    description: 'URL encode and decode strings',    icon: <IconUrlEnc /> },
-  { id: 'soap',    label: 'SOAP / WSDL',    description: 'Parse WSDL services and SOAP envelopes', icon: <IconSoap /> },
   { id: 'clean',   label: 'Text Cleaner',   description: 'Decode HTML entities & strip invisible characters', icon: <IconClean /> },
-  { id: 'tax',     label: 'Tax Calculator', description: 'Calculate Canadian GST / HST / PST / QST sales tax', icon: <IconTax /> },
+  { id: 'tax',     label: 'Tax Calculator', description: 'Calculate Quebec (GST + QST) and Ontario (HST) sales tax', icon: <IconTax /> },
 ]
 
 export function CommandPalette() {

@@ -17,6 +17,7 @@ import { rootReducer } from './reducers'
 import { makeDoc } from './reducers/editorDocs'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { parseJson, parseXml, formatXml, beautifyJson } from '../utils/parsers'
+import { DEFAULT_TAX_REGION } from '../utils/salesTaxCanada'
 
 export { parseJson, parseXml, formatXml }
 
@@ -62,11 +63,6 @@ const initialState: AppState = {
   xmlRaw: '',
   xmlValid: null,
   xmlError: null,
-  xmlCompareLeft: '',
-  xmlCompareRight: '',
-  xmlCompareLines: null,
-  xmlCompareEqual: null,
-  xmlCompareError: null,
   gridRaw: '',
   gridParsed: null,
   gridError: null,
@@ -80,10 +76,6 @@ const initialState: AppState = {
   queryRunError: null,
   theme: 'dark',
   editorSyntaxTheme: 'default' as EditorSyntaxTheme,
-  convertInput: '',
-  convertOutput: '',
-  convertMode: 'xml-to-json',
-  convertError: null,
   schemaInput: '',
   schemaError: null,
   schemaValid: null,
@@ -108,19 +100,9 @@ const initialState: AppState = {
   yamlOutput: '',
   yamlMode: 'yaml-to-json',
   yamlError: null,
-  base64Input: '',
-  base64Output: '',
-  base64Mode: 'encode',
-  base64Error: null,
-  urlInput: '',
-  urlOutput: '',
-  urlMode: 'encode',
-  urlError: null,
-  soapInput: '',
-  soapError: null,
   cleanInput: '',
   taxAmount: '',
-  taxProvince: 'ON',
+  taxProvince: DEFAULT_TAX_REGION,
   taxIncludesTax: false,
   sidebarCollapsed: false,
   commandPaletteOpen: false,
@@ -162,7 +144,6 @@ interface AppContextValue {
   beautifyEditor: () => void
   minifyEditor: () => void
   runCompare: () => void
-  runXmlCompare: () => void
   validateXml: () => void
   formatXmlAction: () => void
   runQuery: () => void
@@ -332,31 +313,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SET_COMPARE_RESULT', lines, equal })
   }, [state.compareLeft, state.compareRight])
 
-  const runXmlCompare = useCallback(() => {
-    const leftRaw = state.xmlCompareLeft
-    const rightRaw = state.xmlCompareRight
-
-    if (!leftRaw.trim() && !rightRaw.trim()) {
-      dispatch({ type: 'CLEAR_XML_COMPARE' })
-      return
-    }
-
-    const rawChanges = Diff.diffLines(leftRaw, rightRaw)
-    const lines: DiffLine[] = []
-    for (const part of rawChanges) {
-      const partLines = part.value.split('\n')
-      const cleaned = partLines[partLines.length - 1] === '' ? partLines.slice(0, -1) : partLines
-      for (const line of cleaned) {
-        lines.push({
-          type: part.added ? 'added' : part.removed ? 'removed' : 'unchanged',
-          value: line,
-        })
-      }
-    }
-    const equal = leftRaw === rightRaw
-    dispatch({ type: 'SET_XML_COMPARE_RESULT', lines, equal })
-  }, [state.xmlCompareLeft, state.xmlCompareRight])
-
   const validateXml = useCallback(() => {
     const result = parseXml(state.xmlRaw)
     if (!result.valid || result.error) {
@@ -414,7 +370,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       beautifyEditor,
       minifyEditor,
       runCompare,
-      runXmlCompare,
       validateXml,
       formatXmlAction,
       runQuery,
@@ -425,7 +380,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       beautifyEditor,
       minifyEditor,
       runCompare,
-      runXmlCompare,
       validateXml,
       formatXmlAction,
       runQuery,

@@ -11,20 +11,15 @@ to sync your workspace.
 | Editor | JSON editor with beautify, minify, validation, JSON Schema check and URL fetch |
 | Compare | Side-by-side JSON diff with line-level statistics |
 | XML | XML validator and formatter |
-| XML Compare | Side-by-side XML diff |
 | Grid | Tabular view of JSON arrays with sorting, filtering and CSV export |
 | Query | JSONPath query runner with examples |
-| Convert | XML ↔ JSON conversion |
 | YAML | YAML ↔ JSON conversion |
-| Base64 | Base64 encode/decode, including files |
-| URL Encode | URL encode/decode with query parameter table |
 | JWT | JWT decoder (header, payload, claims) |
 | HAR | HAR file viewer with request filtering |
 | Cron | Cron expression explainer |
-| SOAP | SOAP envelope inspector |
 | Draw | Lightweight diagram sketching canvas |
 | Clean | HTML entity decoder and invisible character cleaner |
-| Tax | Canadian sales tax (GST/HST/PST/QST/RST) calculator |
+| Tax | Quebec (GST + QST) and Ontario (HST) sales tax calculator |
 
 Extras: command palette (`Ctrl+K`), keyboard shortcuts (`Ctrl+B` beautify, `Ctrl+M` minify,
 `Ctrl+S` copy, `Ctrl+Z`/`Ctrl+Y` undo/redo), dark/light themes, toast notifications and

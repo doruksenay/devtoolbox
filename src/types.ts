@@ -2,7 +2,17 @@
 //  Shared type definitions across the app
 // ─────────────────────────────────────────────
 
-export type TabId = 'editor' | 'compare' | 'xml' | 'xmlcompare' | 'grid' | 'query' | 'convert' | 'har' | 'cron' | 'jwt' | 'draw' | 'yaml' | 'base64' | 'urlenc' | 'soap' | 'clean' | 'tax'
+export type TabId = 'editor' | 'compare' | 'xml' | 'grid' | 'query' | 'har' | 'cron' | 'jwt' | 'draw' | 'yaml' | 'clean' | 'tax'
+
+/** Every tab id, for runtime validation of persisted state. */
+export const TAB_IDS: readonly TabId[] = [
+  'editor', 'compare', 'xml', 'grid', 'query', 'har',
+  'cron', 'jwt', 'draw', 'yaml', 'clean', 'tax',
+]
+
+export function isTabId(value: unknown): value is TabId {
+  return typeof value === 'string' && (TAB_IDS as readonly string[]).includes(value)
+}
 
 export type { EditorSyntaxTheme } from './utils/editorThemes'
 import type { EditorSyntaxTheme } from './utils/editorThemes'
@@ -54,13 +64,6 @@ export interface AppState {
   xmlValid: boolean | null
   xmlError: string | null
 
-  // ── XML Compare tab ──────────────────────────
-  xmlCompareLeft: string
-  xmlCompareRight: string
-  xmlCompareLines: DiffLine[] | null
-  xmlCompareEqual: boolean | null
-  xmlCompareError: string | null
-
   // ── Grid tab ────────────────────────────────
   gridRaw: string
   gridParsed: unknown | null
@@ -79,12 +82,6 @@ export interface AppState {
   // ── Global preferences ──────────────────────
   theme: 'dark' | 'light'
   editorSyntaxTheme: EditorSyntaxTheme
-
-  // ── Convert tab ─────────────────────────────
-  convertInput: string
-  convertOutput: string
-  convertMode: 'xml-to-json' | 'json-to-xml'
-  convertError: string | null
 
   // ── JSON Schema validation ──────────────────
   schemaInput: string
@@ -124,28 +121,12 @@ export interface AppState {
   yamlMode: 'yaml-to-json' | 'json-to-yaml'
   yamlError: string | null
 
-  // ── Base64 ────────────────────────────────────
-  base64Input: string
-  base64Output: string
-  base64Mode: 'encode' | 'decode'
-  base64Error: string | null
-
-  // ── URL Encoder ───────────────────────────────
-  urlInput: string
-  urlOutput: string
-  urlMode: 'encode' | 'decode'
-  urlError: string | null
-
-  // ── SOAP / WSDL Viewer ────────────────────────
-  soapInput: string
-  soapError: string | null
-
   // ── Text Cleaner ──────────────────────────────
   cleanInput: string
 
   // ── Canada Sales Tax Calculator ───────────────
   taxAmount: string          // raw amount input (string to allow empty/partial entry)
-  taxProvince: string        // province/territory code, e.g. 'ON'
+  taxProvince: string        // province code, 'QC' or 'ON'
   taxIncludesTax: boolean    // true when the entered amount already includes tax
 
   // ── UI state ──────────────────────────────────
@@ -173,12 +154,6 @@ export type AppAction =
   | { type: 'SET_XML_VALID' }
   | { type: 'SET_XML_ERROR'; error: string }
   | { type: 'CLEAR_XML' }
-  // XML Compare tab
-  | { type: 'SET_XML_COMPARE_LEFT'; raw: string }
-  | { type: 'SET_XML_COMPARE_RIGHT'; raw: string }
-  | { type: 'SET_XML_COMPARE_RESULT'; lines: DiffLine[]; equal: boolean }
-  | { type: 'SET_XML_COMPARE_ERROR'; error: string }
-  | { type: 'CLEAR_XML_COMPARE' }
   | { type: 'SET_GRID_RAW'; raw: string }
   | { type: 'SET_GRID_PATH'; path: string }
   | { type: 'SET_QUERY_RAW'; raw: string }
@@ -187,12 +162,6 @@ export type AppAction =
   | { type: 'SET_QUERY_RUN_ERROR'; error: string }
   | { type: 'TOGGLE_THEME' }
   | { type: 'SET_EDITOR_SYNTAX_THEME'; theme: EditorSyntaxTheme }
-  // Convert tab
-  | { type: 'SET_CONVERT_INPUT'; raw: string }
-  | { type: 'SET_CONVERT_OUTPUT'; output: string; error: null }
-  | { type: 'SET_CONVERT_MODE'; mode: 'xml-to-json' | 'json-to-xml' }
-  | { type: 'SET_CONVERT_ERROR'; error: string }
-  | { type: 'CLEAR_CONVERT' }
   // JSON Schema
   | { type: 'SET_SCHEMA_INPUT'; raw: string }
   | { type: 'SET_SCHEMA_RESULT'; valid: boolean; error: string | null }
@@ -225,26 +194,10 @@ export type AppAction =
   | { type: 'SET_YAML_ERROR'; error: string }
   | { type: 'SET_YAML_MODE'; mode: 'yaml-to-json' | 'json-to-yaml' }
   | { type: 'CLEAR_YAML' }
-  // Base64
-  | { type: 'SET_BASE64_INPUT'; input: string }
-  | { type: 'SET_BASE64_OUTPUT'; output: string; error: null }
-  | { type: 'SET_BASE64_ERROR'; error: string }
-  | { type: 'SET_BASE64_MODE'; mode: 'encode' | 'decode' }
-  | { type: 'CLEAR_BASE64' }
-  // URL Encoder
-  | { type: 'SET_URL_INPUT'; input: string }
-  | { type: 'SET_URL_OUTPUT'; output: string; error: null }
-  | { type: 'SET_URL_ERROR'; error: string }
-  | { type: 'SET_URL_MODE'; mode: 'encode' | 'decode' }
-  | { type: 'CLEAR_URL' }
   // UI
   | { type: 'TOGGLE_SIDEBAR' }
   | { type: 'TOGGLE_COMMAND_PALETTE' }
   | { type: 'SET_COMMAND_PALETTE_OPEN'; open: boolean }
-  // SOAP / WSDL
-  | { type: 'SET_SOAP_INPUT'; input: string }
-  | { type: 'SET_SOAP_ERROR'; error: string }
-  | { type: 'CLEAR_SOAP' }
   // Text Cleaner
   | { type: 'SET_CLEAN_INPUT'; input: string }
   | { type: 'CLEAR_CLEAN' }
