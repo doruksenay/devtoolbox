@@ -213,6 +213,12 @@ export function GridTab() {
       }
       dispatch({ type: 'SET_GRID_RAW', raw: JSON.stringify(rows, null, 2) })
       setFocusedPath(null)
+      if (rows.length === 0) {
+        // A header with no data rows parses cleanly but leaves an empty grid;
+        // say so, or the blank table reads as a failed import.
+        addToast('The file has a header row but no data — nothing to show', 'info')
+        return
+      }
       addToast(
         `Imported ${rows.length} row${rows.length === 1 ? '' : 's'} × ${columns.length} column${columns.length === 1 ? '' : 's'}`
       )

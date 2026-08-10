@@ -1,0 +1,53 @@
+/* ─────────────────────────────────────────────
+   Reset & Base
+───────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  transition: background-color var(--duration-slow) var(--ease), color 0.2s var(--ease);
+}
+
+/* Theme transition for all major elements */
+.app-shell,
+.app-header,
+.panel,
+.json-textarea,
+.btn,
+.filter-input,
+.expr-input {
+  transition: background-color var(--duration-slow) var(--ease), border-color var(--duration-base) var(--ease), color 0.15s var(--ease);
+}
+
+/* Focus-visible: accessible, clean */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Selection */
+::selection {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border); }

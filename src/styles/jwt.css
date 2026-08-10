@@ -1,0 +1,130 @@
+/* ─────────────────────────────────────────────
+   JWT Tab
+───────────────────────────────────────────── */
+.jwt-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px;
+  overflow-y: auto;
+  max-width: 960px;
+}
+.jwt-tab__label { font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; }
+.jwt-tab__textarea {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  padding: 10px 12px;
+  resize: vertical;
+  transition: border-color var(--duration-base) var(--ease), box-shadow var(--duration-base) var(--ease);
+  word-break: break-all;
+}
+.jwt-tab__textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59, 158, 255, 0.12);
+}
+.jwt-tab__clear { margin-top: 4px; }
+.jwt-tab__error {
+  background: #f4433622;
+  border: 1px solid #f44336;
+  color: #f44336;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+}
+
+.jwt-tab__status {
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+.jwt-tab__status--valid    { background: #4caf5022; color: #4caf50; border: 1px solid #4caf50; }
+.jwt-tab__status--expired  { background: #f4433622; color: #f44336; border: 1px solid #f44336; }
+.jwt-tab__status--no-expiry{ background: var(--surface-2); color: var(--text-secondary); border: 1px solid var(--border); }
+
+.jwt-tab__panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 700px) { .jwt-tab__panels { grid-template-columns: 1fr; } }
+
+.jwt-tab__panel {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.jwt-tab__panel-title {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.jwt-tab__claims { display: flex; flex-direction: column; gap: 6px; }
+.jwt-tab__claim {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.82rem;
+  border-bottom: 1px solid var(--border-subtle, rgba(128,128,128,0.12));
+  padding-bottom: 6px;
+}
+.jwt-tab__claim-key {
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 0.78rem;
+}
+.jwt-tab__claim-desc { font-weight: 400; color: var(--text-secondary); font-size: 0.75rem; }
+.jwt-tab__claim-val  { font-family: var(--font-mono); font-size: 0.8rem; word-break: break-all; }
+.jwt-tab__claim-sub  { font-size: 0.72rem; color: var(--text-secondary); display: block; }
+
+.jwt-tab__json {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 200px;
+  overflow-y: auto;
+  margin: 0;
+  color: var(--text-secondary);
+}
+.jwt-tab__sig-note {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.jwt-tab__sig-raw {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  word-break: break-all;
+  color: var(--text-secondary);
+  display: block;
+}
+.jwt-tab__empty {
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+.jwt-tab__note { font-size: 0.8rem; }
+.jwt-tab__sample-wrap summary { cursor: pointer; font-size: 0.82rem; color: var(--accent); }

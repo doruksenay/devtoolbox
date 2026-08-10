@@ -1,0 +1,111 @@
+/* ─────────────────────────────────────────────
+   Draw / Diagram Tab
+───────────────────────────────────────────── */
+.draw-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.draw-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  background: var(--surface-2);
+}
+.draw-toolbar__group { display: flex; gap: 4px; align-items: center; }
+.draw-toolbar__sep   { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
+.draw-toolbar__colors { gap: 5px; }
+
+.draw-tool-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.8rem;
+  padding: 5px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, background 0.15s;
+}
+.draw-tool-btn:hover { border-color: var(--accent); }
+.draw-tool-btn--active { border-color: var(--accent); background: var(--accent-dim, rgba(99,102,241,0.15)); color: var(--accent); }
+
+.draw-color-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+}
+.draw-color-btn:hover  { transform: scale(1.2); }
+.draw-color-btn--active{ border-color: #fff; box-shadow: 0 0 0 1px var(--border); }
+
+.draw-action-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.8rem;
+  padding: 5px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s;
+}
+.draw-action-btn:hover { border-color: var(--accent); }
+.draw-action-btn--active { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
+
+.draw-status {
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.draw-canvas-wrap {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  background: var(--surface);
+}
+
+.draw-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.draw-label-input {
+  position: absolute;
+  background: var(--surface-2);
+  border: 1.5px solid var(--accent);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 13px;
+  padding: 2px 6px;
+  z-index: 10;
+  text-align: center;
+}
+.draw-label-input:focus { outline: none; }
+
+.draw-hint {
+  padding: 10px 16px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-align: center;
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  max-width: 500px;
+  pointer-events: none;
+}

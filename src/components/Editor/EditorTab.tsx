@@ -195,10 +195,9 @@ export function EditorTab() {
 
   function handleApplyRepair() {
     if (!repairPreview?.text) return
-    const count = repairPreview.changes.length
     dispatch({ type: 'SET_EDITOR_RAW', raw: repairPreview.text })
     setRepairPreview(null)
-    addToast(`Applied ${count} ${count === 1 ? 'fix' : 'fixes'}`)
+    addToast('Repaired the JSON')
   }
 
   function handleUnescape() {
@@ -510,9 +509,9 @@ export function EditorTab() {
             </div>
           ) : (
             <>
-              <div className="text-xs">
-                {repairPreview.changes.length} {repairPreview.changes.length === 1 ? 'fix' : 'fixes'} will be applied:
-              </div>
+              {/* No count here: an entry can stand for several fixes of the
+                  same kind, so its own "(×n)" is the honest number. */}
+              <div className="text-xs">Repairs to apply:</div>
               <ul className="editor-tab__repair-list">
                 {repairPreview.changes.map((change) => (
                   <li key={change}>{change}</li>

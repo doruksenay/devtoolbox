@@ -1,0 +1,418 @@
+/* ─────────────────────────────────────────────
+   Grid Tab
+───────────────────────────────────────────── */
+.grid-tab {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  padding: 16px;
+  gap: 0;
+  overflow: hidden;
+}
+
+.grid-tab__left {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.grid-tab__right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.grid-tab__resize-handle {
+  width: 6px;
+  margin: 0 4px;
+  background: var(--border);
+  cursor: col-resize;
+  flex-shrink: 0;
+  border-radius: 3px;
+  transition: background 0.15s;
+}
+.grid-tab__resize-handle:hover { background: var(--accent); }
+
+/* ── JSON Tree Grid ───────────────────────────────────────────────────── */
+.jtg-root {
+  padding: 8px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  width: max-content;
+  min-width: 100%;
+}
+
+.jtg-block {
+  margin-bottom: 1px;
+}
+
+.jtg-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 220px) minmax(280px, 1fr);
+  min-height: 28px;
+  align-items: start;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.jtg-row--parent {
+  align-items: center;
+}
+
+.jtg-key {
+  padding: 5px 10px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  border-right: 1px solid var(--border-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+}
+
+.jtg-val {
+  padding: 5px 10px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+.jtg-val--type {
+  color: var(--text-muted);
+}
+
+.jtg-children {
+  margin-left: 20px;
+  border-left: 2px solid var(--border);
+}
+
+.jtg-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  transition: color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease);
+}
+
+.jtg-toggle:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.jtg-type-tag {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* Value syntax colours */
+.jtg-string  { color: var(--success); }
+.jtg-number  { color: var(--accent); }
+.jtg-bool    { color: #fca5a5; }
+.jtg-null    { color: var(--text-muted); font-style: italic; }
+
+[data-theme='light'] .jtg-bool { color: #dc2626; }
+
+/* Mini table for arrays of objects */
+.jtg-table {
+  border-collapse: collapse;
+  table-layout: auto;
+  font-size: 12px;
+  width: auto;
+  min-width: 300px;
+  margin: 4px 0 4px 4px;
+}
+
+.jtg-th {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.jtg-th--index {
+  width: 32px;
+  text-align: center;
+}
+
+.jtg-td {
+  padding: 4px 10px;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-code);
+  min-width: 120px;
+  max-width: 360px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jtg-td--index {
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 11px;
+}
+
+.jtg-tr:hover .jtg-td { background: var(--bg-hover); }
+
+/* Nested object/array inside a table cell — expandable drill-in */
+.jtg-td:has(.jtg-cell-nested) {
+  max-width: none;
+  min-width: 320px;
+  white-space: normal;
+  vertical-align: top;
+}
+
+.jtg-cell-nested__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.jtg-cell-nested__body {
+  margin-top: 4px;
+  padding-left: 4px;
+  border-left: 2px solid var(--border);
+  min-width: 320px;
+  width: max-content;
+}
+
+/* ── Grid: keys and rows as focus targets ────── */
+
+/* The key doubles as the "reveal this in the JSON on the left" control, so it
+   is a button that has to look exactly like the plain key it replaced. */
+.jtg-key--btn {
+  background: none;
+  border: none;
+  border-right: 1px solid var(--border-subtle);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+
+.jtg-key--btn:hover { color: var(--accent); }
+
+.jtg-row--focused,
+.jtg-tr--focused .jtg-td {
+  background: var(--accent-bg);
+}
+
+.jtg-row--match,
+.jtg-td--match {
+  background: var(--warning-bg);
+}
+
+.jtg-td--focused {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.jtg-index-btn {
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.jtg-index-btn:hover { color: var(--accent); }
+
+/* A key that is absent from this row, as opposed to present-but-null. */
+.jtg-absent {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.jtg-td--spanned {
+  max-width: none;
+  white-space: normal;
+}
+
+/* ── Grid: row actions ───────────────────────── */
+.jtg-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 6px;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease);
+}
+
+.jtg-row:hover .jtg-actions,
+.jtg-td:hover .jtg-actions,
+.jtg-actions:focus-within {
+  opacity: 1;
+}
+
+.jtg-action {
+  background: none;
+  border: none;
+  padding: 0 3px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.jtg-action:hover { color: var(--accent); background: var(--bg-hover); }
+.jtg-action--danger:hover { color: var(--error); background: var(--error-bg); }
+
+/* ── Grid: table controls ────────────────────── */
+.jtg-table-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+}
+
+.jtg-table-bar__btn {
+  font-size: 11px;
+  padding: 2px 8px;
+  height: 22px;
+}
+
+.jtg-table-bar__col-menu {
+  position: relative;
+}
+
+.jtg-col-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  margin-top: 2px;
+  min-width: 180px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.jtg-col-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.jtg-col-menu__item:hover { background: var(--bg-hover); }
+
+.jtg-col-menu__reset {
+  width: 100%;
+  margin-top: 4px;
+  font-size: 11px;
+}
+
+/* The table scrolls inside its own box so a wide array never makes the whole
+   panel scroll sideways. */
+.jtg-table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.jtg-th__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  width: 100%;
+}
+
+.jtg-th__sort:hover { color: var(--accent); }
+
+.jtg-th--sorted { color: var(--accent); }
+
+.jtg-th__arrow {
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+.jtg-load-more {
+  font-size: 11px;
+  padding: 2px 8px;
+  margin: 4px 0 4px 8px;
+  color: var(--accent);
+}
+
+/* ── Grid: breadcrumb ────────────────────────── */
+.jtg-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 5px 10px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-elevated);
+  font-size: 11.5px;
+}
+
+.jtg-breadcrumb__label {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-size: 10px;
+}
+
+.jtg-breadcrumb__path {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+/* Filter bar */
+.filter-input {
+  padding: 7px 12px;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  outline: none;
+  width: 100%;
+  transition: border-color var(--duration-base) var(--ease), box-shadow var(--duration-base) var(--ease);
+}
+.filter-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59, 158, 255, 0.12);
+}
+.filter-input::placeholder { color: var(--text-muted); }

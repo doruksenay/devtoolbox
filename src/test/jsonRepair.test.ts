@@ -85,8 +85,9 @@ describe('repairJson comments', () => {
 describe('repairJson quoting', () => {
   it('converts single-quoted strings', () => {
     expect(repairJson("{'a': 'b'}").text).toBe('{"a": "b"}')
+    // Both the key and the value were single-quoted, hence the multiplier.
     expect(repairJson("{'a': 'b'}").changes).toContain(
-      'converted a single-quoted string to double quotes',
+      'converted a single-quoted string to double quotes (×2)',
     )
   })
 
@@ -270,9 +271,13 @@ describe('repairJson failure', () => {
 })
 
 describe('repairJson change list', () => {
-  it('mentions each distinct fix exactly once', () => {
+  it('mentions each distinct fix once, counting repeats', () => {
     const changes = repairJson('{a: 1, b: 2, c: 3,}').changes as string[]
-    expect(changes).toEqual(['quoted an unquoted key', 'removed a trailing comma'])
+    expect(changes).toEqual(['quoted an unquoted key (×3)', 'removed a trailing comma'])
+  })
+
+  it('leaves a one-off fix without a multiplier', () => {
+    expect(repairJson('{"a": 1,}').changes).toEqual(['removed a trailing comma'])
   })
 
   it('handles everything wrong at once', () => {

@@ -1,0 +1,137 @@
+/* ─────────────────────────────────────────────
+   Editor URL Bar & Schema Bar
+───────────────────────────────────────────── */
+.editor-tab__url-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.editor-tab__schema-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+  max-height: 160px;
+}
+
+/* Same strip pattern as the bars above, but it carries a change list, so it
+   gets a surface of its own: the user is reading a proposal, not typing. */
+.editor-tab__repair-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 10px 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  max-height: 180px;
+  overflow: auto;
+}
+
+.editor-tab__repair-list {
+  margin: 0;
+  padding-left: 18px;
+  list-style: disc;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+/* ─────────────────────────────────────────────
+   Keyboard Shortcut Hints
+───────────────────────────────────────────── */
+.shortcut-hint {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  padding: 2px 5px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  letter-spacing: 0.1px;
+}
+
+/* ─────────────────────────────────────────────
+   CodeMirror Editor Wrapper
+───────────────────────────────────────────── */
+.code-editor-wrap {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.code-editor-wrap .cm-editor {
+  height: 100%;
+}
+
+.code-editor-wrap .cm-scroller {
+  overflow: auto;
+}
+
+/* Search panel — anchored to the top of the editor */
+.code-editor-wrap .cm-panels.cm-panels-top {
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+
+.code-editor-wrap .cm-panel.cm-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+}
+
+.code-editor-wrap .cm-panel.cm-search input,
+.code-editor-wrap .cm-panel.cm-search button {
+  background: var(--bg-input);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.code-editor-wrap .cm-panel.cm-search button:hover {
+  background: var(--bg-hover);
+  cursor: pointer;
+}
+
+.code-editor-wrap .cm-panel.cm-search label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--text-muted);
+}
+
+/* Live match counter injected next to the search input */
+.code-editor-wrap .cm-search-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Make search matches clearly visible */
+.code-editor-wrap .cm-searchMatch {
+  background-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  border-radius: 2px;
+}
+
+.code-editor-wrap .cm-searchMatch.cm-searchMatch-selected {
+  background-color: var(--accent);
+  color: #fff;
+  outline: 1px solid var(--accent);
+}

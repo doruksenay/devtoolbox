@@ -1,0 +1,453 @@
+/* ─────────────────────────────────────────────
+   Editor Tab Layout
+───────────────────────────────────────────── */
+.editor-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.editor-tab__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.editor-tab__split {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  min-height: 0;
+}
+
+.editor-tab__pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* view toggle */
+.view-toggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-elevated);
+}
+
+.view-toggle__btn {
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
+}
+.view-toggle__btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.view-toggle__btn--active { background: var(--bg-hover); color: var(--accent); font-weight: 600; }
+
+/* ─────────────────────────────────────────────
+   Editor Theme Picker
+───────────────────────────────────────────── */
+.editor-theme-picker {
+  position: relative;
+  display: inline-flex;
+}
+
+.editor-theme-picker__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0 8px 0 8px;
+  height: 28px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  transition: border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
+  white-space: nowrap;
+}
+
+.editor-theme-picker__btn:hover {
+  border-color: var(--text-muted);
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.editor-theme-picker__icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.editor-theme-picker__chevron {
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.editor-theme-picker__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 200;
+  min-width: 120px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.editor-theme-picker__option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
+}
+
+.editor-theme-picker__option:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.editor-theme-picker__option--active {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+/* ─────────────────────────────────────────────
+   Editor Toolbar Overflow Menu
+───────────────────────────────────────────── */
+.editor-more-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Anchored left, unlike the theme picker: this menu sits at the toolbar's
+   start-side, where a right-anchored panel would hang off the edge. */
+.editor-more-menu__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 200;
+  min-width: 180px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.editor-more-menu__option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
+}
+
+.editor-more-menu__option:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.editor-more-menu__option:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+
+.tree-view {
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+.tree-node {
+  position: relative;
+}
+
+/* The row holds the caret, key, brackets and hover actions side by side. The
+   key and value are interactive on their own when the tree is editable, so
+   they cannot live inside the toggle button. */
+.tree-node__row {
+  /* inline-flex so the diff/search highlight hugs the row content, the way it
+     did when the whole row was a single inline-flex button */
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.tree-node__toggle {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  color: var(--text-primary);
+  background: none;
+  border: none;
+  padding: 0;
+  flex-shrink: 0;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.tree-node__toggle:hover { color: var(--accent); }
+
+.tree-node__caret {
+  font-size: 14px;
+  color: var(--text-secondary);
+  width: 16px;
+  display: inline-block;
+  text-align: center;
+  transition: transform 0.15s;
+}
+
+.tree-node__caret--open { transform: rotate(0deg); }
+.tree-node__caret--closed { transform: rotate(-90deg); }
+
+.tree-node__key {
+  color: var(--tree-key-color, var(--accent));
+}
+
+.tree-node__bracket {
+  color: var(--text-muted);
+}
+
+.tree-node__count-badge {
+  display: inline-block;
+  font-size: 10.5px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 4px;
+  line-height: 1.65;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.tree-node__count-badge--object {
+  color: var(--warning);
+  background: var(--warning-bg);
+}
+
+.tree-node__count-badge--array {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.tree-node__children {
+  padding-left: 20px;
+  border-left: 1px solid var(--border-subtle);
+  margin-left: 6px;
+}
+
+.tree-node__load-more {
+  font-size: 11px;
+  padding: 2px 8px;
+  margin-top: 2px;
+  color: var(--accent);
+}
+
+.tree-leaf {
+  padding-left: 16px;
+}
+
+.tree-leaf__key {
+  color: var(--tree-key-color, var(--accent));
+}
+
+/* ── Inline editing & per-node copy ──────────── */
+
+/* A key or value that can be clicked to edit. Styled to look like the plain
+   text it replaces, so the tree reads the same until you interact with it. */
+.tree-edit-target {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: text;
+  border-radius: 3px;
+  /* Long string values must keep wrapping the way the plain span did */
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.tree-view--editable .tree-edit-target:hover {
+  background: var(--bg-hover);
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+.tree-edit-target:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.tree-edit-input {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  padding: 0 4px;
+  min-width: 40px;
+  max-width: 100%;
+}
+
+.tree-edit-input:focus { outline: none; }
+
+.tree-edit-input--key { color: var(--tree-key-color, var(--accent)); }
+
+/* An unparseable draft — the value stays in edit mode until it is valid,
+   cancelled with Escape, or abandoned by clicking away. */
+.tree-edit-input--invalid {
+  border-color: var(--error);
+  background: var(--error-bg);
+}
+
+.tree-node__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 6px;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease);
+}
+
+.tree-node__row:hover .tree-node__actions,
+.tree-leaf:hover .tree-node__actions,
+.tree-node__actions:focus-within {
+  opacity: 1;
+}
+
+.tree-node__action {
+  background: none;
+  border: none;
+  padding: 0 3px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.tree-node__action:hover {
+  color: var(--accent);
+  background: var(--bg-hover);
+}
+
+.tree-node__action--danger:hover {
+  color: var(--error);
+  background: var(--error-bg);
+}
+
+.tree-value--string  { color: var(--tree-string-color,  #86efac); }
+.tree-value--number  { color: var(--tree-number-color,  #93c5fd); }
+.tree-value--boolean { color: var(--tree-boolean-color, #fca5a5); }
+.tree-value--null    { color: var(--tree-null-color,    var(--text-muted)); font-style: italic; }
+
+/* Collapsed node diff indicator pill */
+.tree-node__diff-pill {
+  display: inline-block;
+  font-size: 10px;
+  padding: 0 5px;
+  border-radius: 3px;
+  margin-left: 5px;
+  font-weight: 600;
+  line-height: 1.7;
+  vertical-align: middle;
+}
+
+.tree-node__diff-pill.tree-node--added {
+  background: var(--diff-added-bg);
+  color: var(--diff-added-text);
+}
+
+.tree-node__diff-pill.tree-node--removed {
+  background: var(--diff-removed-bg);
+  color: var(--diff-removed-text);
+}
+
+.tree-node__diff-pill.tree-node--changed {
+  background: var(--warning);
+  color: #000;
+}
+
+/* Tree diff highlighting — only the node's own row is shaded, never the
+   whole nested subtree, so deeply nested diffs stay readable. */
+.tree-node--added > .tree-node__row,
+.tree-leaf.tree-node--added {
+  background: var(--diff-added-bg);
+  border-radius: var(--radius-sm);
+}
+
+.tree-node--removed > .tree-node__row,
+.tree-leaf.tree-node--removed {
+  background: var(--diff-removed-bg);
+  border-radius: var(--radius-sm);
+}
+
+.tree-node--changed > .tree-node__row,
+.tree-leaf.tree-node--changed {
+  background: var(--warning-bg);
+  border-radius: var(--radius-sm);
+}
+
+.tree-node--active-diff > .tree-node__row,
+.tree-leaf.tree-node--active-diff {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 1px;
+  border-radius: var(--radius-sm);
+}
+
+.tree-node--modified {
+  background: var(--warning-bg);
+  border-radius: var(--radius-sm);
+}

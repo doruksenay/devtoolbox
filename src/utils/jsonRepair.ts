@@ -204,15 +204,21 @@ function scanBareToken(src: string, start: number): number {
   return i
 }
 
-/** Collects the change log, keeping the first mention of each distinct fix. */
+/**
+ * Collects the change log, folding repeats of the same fix into one entry.
+ * Repeat counts are kept: "removed a trailing comma" reads very differently
+ * when it happened once than when it happened forty times.
+ */
 class ChangeLog {
-  private readonly seen = new Set<string>()
-  readonly entries: string[] = []
+  private readonly counts = new Map<string, number>()
 
   note(message: string): void {
-    if (this.seen.has(message)) return
-    this.seen.add(message)
-    this.entries.push(message)
+    this.counts.set(message, (this.counts.get(message) ?? 0) + 1)
+  }
+
+  /** First-mention order, with a multiplier on anything fixed more than once. */
+  get entries(): string[] {
+    return [...this.counts].map(([message, n]) => (n > 1 ? `${message} (×${n})` : message))
   }
 }
 

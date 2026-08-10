@@ -1,0 +1,119 @@
+/* ─────────────────────────────────────────────
+   Design Tokens — dark theme (default)
+───────────────────────────────────────────── */
+:root,
+[data-theme='dark'] {
+  --bg-base:     #0d0f1a;
+  --bg-surface:  #13162a;
+  --bg-elevated: #1a1e35;
+  --bg-input:    #0f1120;
+  --bg-hover:    #1e2340;
+
+  --border:        #252b48;
+  --border-subtle: #1c2038;
+
+  --text-primary:   #eceef6;
+  --text-secondary: #8a90b4;
+  --text-muted:     #4e5470;
+  --text-code:      #c4ccee;
+
+  --accent:       #3b9eff;
+  --accent-dim:   #1a4a80;
+  --accent-bg:    #0a1e38;
+
+  --success:      #34d399;
+  --success-bg:   #082419;
+  --error:        #ff7777;
+  --error-bg:     #2a1212;
+  --warning:      #fbbf24;
+  --warning-bg:   #251c08;
+
+  --diff-added-bg:   #082419;
+  --diff-added-text: #34d399;
+  --diff-removed-bg: #2a1212;
+  --diff-removed-text: #ff7777;
+
+  --tab-active-bg:  #1a1e35;
+  --tab-active-border: #3b9eff;
+
+  --scrollbar-track: #13162a;
+  --scrollbar-thumb: #252b48;
+
+  --surface:   #13162a;
+  --surface-2: #1a1e35;
+  --text:      #eceef6;
+
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  --shadow-sm:  0 1px 4px rgba(0,0,0,0.35);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.45);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,0.55);
+  --shadow-xl:  0 20px 60px rgba(0,0,0,0.65);
+  --shadow:     0 4px 16px rgba(0,0,0,0.45);
+
+  --ease:         cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring:  cubic-bezier(0.34, 1.5, 0.64, 1);
+  --duration-fast: 0.1s;
+  --duration-base: 0.18s;
+  --duration-slow: 0.3s;
+}
+
+[data-theme='light'] {
+  --bg-base:     #f0f2f8;
+  --bg-surface:  #ffffff;
+  --bg-elevated: #f5f7fc;
+  --bg-input:    #fafbff;
+  --bg-hover:    #ebeef7;
+
+  --border:        #ced3e8;
+  --border-subtle: #e2e6f2;
+
+  --text-primary:   #18192e;
+  --text-secondary: #545880;
+  --text-muted:     #9096b8;
+  --text-code:      #28305a;
+
+  --accent:       #0070f3;
+  --accent-dim:   #80b8f9;
+  --accent-bg:    #ddeeff;
+
+  --success:      #059669;
+  --success-bg:   #d1fae5;
+  --error:        #dc2626;
+  --error-bg:     #fee2e2;
+  --warning:      #d97706;
+  --warning-bg:   #fef3c7;
+
+  --diff-added-bg:   #d1fae5;
+  --diff-added-text: #065f46;
+  --diff-removed-bg: #fee2e2;
+  --diff-removed-text: #991b1b;
+
+  --tab-active-bg:  #ffffff;
+  --tab-active-border: #0070f3;
+
+  --scrollbar-track: #f0f2f8;
+  --scrollbar-thumb: #c4cbe0;
+
+  --surface:   #ffffff;
+  --surface-2: #f5f7fc;
+  --text:      #18192e;
+
+  --shadow-sm:  0 1px 4px rgba(0,0,0,0.06);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,0.12);
+  --shadow-xl:  0 20px 60px rgba(0,0,0,0.16);
+  --shadow:     0 4px 16px rgba(0,0,0,0.08);
+
+  --ease:         cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring:  cubic-bezier(0.34, 1.5, 0.64, 1);
+  --duration-fast: 0.1s;
+  --duration-base: 0.18s;
+  --duration-slow: 0.3s;
+}

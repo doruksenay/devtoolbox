@@ -1,0 +1,125 @@
+/* ─────────────────────────────────────────────
+   Empty state
+───────────────────────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  text-align: center;
+  padding: 32px 24px;
+}
+
+.empty-state__icon {
+  font-size: 32px;
+  margin-bottom: 6px;
+  opacity: 0.6;
+}
+
+.empty-state__title {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 15px;
+  letter-spacing: -0.2px;
+}
+
+/* ─────────────────────────────────────────────
+   Misc utilities
+───────────────────────────────────────────── */
+.flex-row { display: flex; align-items: center; gap: 8px; }
+.flex-col { display: flex; flex-direction: column; gap: 8px; }
+.grow { flex: 1; }
+.overflow-auto { overflow: auto; }
+.text-xs { font-size: 11.5px; }
+.text-muted { color: var(--text-muted); }
+.text-success { color: var(--success); }
+.text-error { color: var(--error); }
+.mono { font-family: var(--font-mono); }
+
+@media (max-width: 980px) {
+  .compare-tab__inputs,
+  .compare-tab__trees,
+  .query-tab__top,
+  .grid-tab {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .query-tab__expr-pane {
+    width: 100% !important;
+  }
+
+  .query-tab__h-resize-handle,
+  .query-tab__v-resize-handle,
+  .grid-tab__resize-handle {
+    display: none;
+  }
+
+  .grid-tab__left {
+    width: 100% !important;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   Item 4: Enhanced Mobile Responsive
+───────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .app-header {
+    padding: 0 10px;
+    height: 42px;
+  }
+
+  .app-header__brand {
+    font-size: 13px;
+  }
+
+  .editor-tab,
+  .compare-tab,
+  .xml-tab,
+  .grid-tab,
+  .query-tab {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .editor-tab__toolbar,
+  .xml-tab__toolbar {
+    gap: 4px;
+  }
+
+  .btn {
+    padding: 8px 10px;
+    font-size: 12px;
+    min-height: 36px;
+  }
+
+  .compare-tab__inputs {
+    height: auto;
+    flex-direction: column;
+  }
+
+  .compare-tab__trees {
+    flex-direction: column;
+  }
+
+  .query-tab__top {
+    flex-direction: column;
+    height: auto !important;
+  }
+
+  .query-tab__expr-pane {
+    width: 100% !important;
+  }
+
+  .grid-tab {
+    flex-direction: column;
+  }
+
+  .toolbar-sep {
+    display: none;
+  }
+}

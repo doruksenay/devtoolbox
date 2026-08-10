@@ -1,0 +1,124 @@
+/* ─────────────────────────────────────────────
+   Shared Converter Tab Layout (Text Cleaner)
+───────────────────────────────────────────── */
+.converter-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.converter-tab__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.converter-tab__panels {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  min-height: 0;
+}
+
+.converter-tab__pane {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.converter-tab__error {
+  padding: 14px 16px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  white-space: pre-wrap;
+}
+
+/* URL Params table */
+.url-params-section {
+  flex-shrink: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.url-params-section__title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  padding: 7px 12px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+}
+
+.url-params-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  font-family: var(--font-mono);
+}
+
+.url-params-table th {
+  text-align: left;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+}
+
+.url-params-table td {
+  padding: 5px 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.url-params-table__key { color: var(--accent); width: 35%; }
+.url-params-table__val { color: var(--text-code); }
+
+/* Text Cleaner options + report */
+.clean-options {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.clean-options__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.clean-options__item input { cursor: pointer; }
+.clean-options__item:hover { color: var(--text-primary); }
+
+.clean-report__badge {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.clean-report__empty {
+  padding: 10px 12px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}

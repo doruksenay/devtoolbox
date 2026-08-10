@@ -1,0 +1,105 @@
+/* ─────────────────────────────────────────────
+   Tree search
+───────────────────────────────────────────── */
+.tree-view-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.tree-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.tree-search__icon {
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.tree-search__input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 4px 8px;
+  outline: none;
+}
+
+.tree-search__input:focus {
+  border-color: var(--accent);
+}
+
+.tree-search__count {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  min-width: 44px;
+  text-align: center;
+}
+
+.tree-search__nav {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  line-height: 1;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.tree-search__nav:hover:not(:disabled) {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.tree-search__nav:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.tree-view-wrapper .tree-view {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Search highlighting */
+.tree-search__mark {
+  background: var(--warning);
+  color: #000;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.tree-node--search-match > .tree-node__row,
+.tree-leaf.tree-node--search-match {
+  border-radius: var(--radius-sm);
+}
+
+.tree-node--search-active {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: var(--radius-sm);
+}

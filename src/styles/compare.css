@@ -1,0 +1,138 @@
+/* ─────────────────────────────────────────────
+   Compare Tab
+───────────────────────────────────────────── */
+.compare-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.compare-tab__inputs {
+  display: flex;
+  gap: 10px;
+  height: 260px;
+  flex-shrink: 0;
+}
+
+.compare-tab__pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.compare-tab__result {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.compare-tab__trees {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 10px;
+}
+
+/* Compare diff navigation */
+.compare-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 2px 6px;
+}
+.compare-nav__btn {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 2px 7px;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: background var(--duration-fast) var(--ease);
+}
+.compare-nav__btn:hover { background: var(--bg-hover); }
+.compare-nav__count {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  min-width: 44px;
+  text-align: center;
+}
+
+/* Compare panel mode toggle (text / tree) */
+.compare-mode-toggle {
+  display: flex;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.compare-mode-toggle__btn {
+  padding: 3px 9px;
+  font-size: 11.5px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
+  line-height: 1.6;
+}
+.compare-mode-toggle__btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.compare-mode-toggle__btn--active {
+  background: var(--bg-elevated);
+  color: var(--accent);
+}
+.compare-mode-toggle__btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.diff-view {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  padding: 8px 0;
+}
+
+.diff-line {
+  display: flex;
+  padding: 1px 14px;
+  white-space: pre;
+}
+
+.diff-line--added {
+  background: var(--diff-added-bg);
+  color: var(--diff-added-text);
+}
+
+.diff-line--removed {
+  background: var(--diff-removed-bg);
+  color: var(--diff-removed-text);
+}
+
+.diff-line--unchanged {
+  color: var(--text-code);
+}
+
+.diff-line__gutter {
+  width: 18px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  user-select: none;
+  margin-right: 8px;
+  font-size: 11px;
+}
