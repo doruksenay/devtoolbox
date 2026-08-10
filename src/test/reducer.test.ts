@@ -16,7 +16,6 @@ const emptyState: AppState = {
   compareRight: '',
   compareRightParsed: null,
   compareRightError: null,
-  compareLines: null,
   compareEqual: null,
   compareError: null,
   xmlRaw: '',

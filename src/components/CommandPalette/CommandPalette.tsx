@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useApp } from '../../context/AppContext'
+import { useAppDispatch, useAppSelector } from '../../context/AppContext'
 import type { TabId } from '../../types'
 import {
   IconEditor, IconCompare, IconXml, IconGrid, IconQuery,
@@ -29,7 +29,9 @@ const TOOLS: ToolEntry[] = [
 ]
 
 export function CommandPalette() {
-  const { state, dispatch } = useApp()
+  const dispatch = useAppDispatch()
+  const activeTab = useAppSelector((state) => state.activeTab)
+  const open = useAppSelector((state) => open)
   const [query, setQuery] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const [activeIdx, setActiveIdx] = useState(0)
@@ -46,10 +48,10 @@ export function CommandPalette() {
   }, [dispatch])
 
   useEffect(() => {
-    if (state.commandPaletteOpen) {
+    if (open) {
       setTimeout(() => inputRef.current?.focus(), 50)
     }
-  }, [state.commandPaletteOpen])
+  }, [open])
 
   useEffect(() => {
     setActiveIdx(0)
@@ -62,7 +64,7 @@ export function CommandPalette() {
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (!state.commandPaletteOpen) return
+      if (!open) return
       if (e.key === 'Escape') { close(); return }
       if (e.key === 'ArrowDown') {
         e.preventDefault()
@@ -79,9 +81,9 @@ export function CommandPalette() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [state.commandPaletteOpen, filtered, activeIdx, close, select])
+  }, [open, filtered, activeIdx, close, select])
 
-  if (!state.commandPaletteOpen) return null
+  if (!open) return null
 
   return (
     <div className="cmd-overlay" onClick={close} role="dialog" aria-modal="true" aria-label="Command palette">
@@ -121,7 +123,7 @@ export function CommandPalette() {
                 <span className="cmd-palette__item-label">{tool.label}</span>
                 <span className="cmd-palette__item-desc">{tool.description}</span>
               </span>
-              {state.activeTab === tool.id && (
+              {activeTab === tool.id && (
                 <span className="cmd-palette__item-current">current</span>
               )}
             </button>

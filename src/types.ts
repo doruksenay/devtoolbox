@@ -23,11 +23,6 @@ export interface ParseResult {
   error: string | null
 }
 
-export interface DiffLine {
-  type: 'added' | 'removed' | 'unchanged'
-  value: string
-}
-
 export interface EditorDoc {
   id: string
   name: string
@@ -55,7 +50,6 @@ export interface AppState {
   compareRightParsed: unknown | null
   compareRightError: string | null
 
-  compareLines: DiffLine[] | null
   compareEqual: boolean | null
   compareError: string | null  // general compare error
 
@@ -138,7 +132,7 @@ export type AppAction =
   | { type: 'SET_COMPARE_LEFT'; raw: string }
   | { type: 'SET_COMPARE_RIGHT'; raw: string }
   | { type: 'SET_COMPARE_PARSED'; compareLeftParsed: unknown; compareRightParsed: unknown }
-  | { type: 'SET_COMPARE_RESULT'; lines: DiffLine[]; equal: boolean }
+  | { type: 'SET_COMPARE_RESULT'; equal: boolean }
   | { type: 'SET_COMPARE_ERROR'; error: string }
   | { type: 'CLEAR_COMPARE' }
   | { type: 'SET_XML_RAW'; raw: string }

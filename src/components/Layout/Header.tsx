@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { useApp } from '../../context/AppContext'
+import { useAppDispatch, useAppSelector } from '../../context/AppContext'
 import { useAuth } from '../../context/AuthContext'
 import { IconSun, IconMoon, IconGithub, IconSearch } from '../icons/Icons'
 import { AuthModal } from '../Auth/AuthModal'
@@ -19,7 +19,8 @@ function pickAvatar(uid: string): string {
 }
 
 export function Header() {
-  const { state, dispatch } = useApp()
+  const dispatch = useAppDispatch()
+  const theme = useAppSelector((state) => state.theme)
   const { user, signOut, loading, isAdmin } = useAuth()
   const [showAuth, setShowAuth] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
@@ -96,7 +97,7 @@ export function Header() {
           onClick={() => dispatch({ type: 'TOGGLE_THEME' })}
           aria-label="Toggle theme"
         >
-          {state.theme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
+          {theme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
         </button>
 
         {loading ? null : user ? (

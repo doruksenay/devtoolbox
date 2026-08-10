@@ -1,4 +1,4 @@
-import { useApp } from '../../context/AppContext'
+import { useAppDispatch, useAppSelector } from '../../context/AppContext'
 import type { TabId } from '../../types'
 import {
   IconEditor, IconCompare, IconXml, IconGrid, IconQuery,
@@ -47,8 +47,9 @@ const GROUPS: TabGroup[] = [
 ]
 
 export function Sidebar() {
-  const { state, dispatch } = useApp()
-  const collapsed = state.sidebarCollapsed
+  const dispatch = useAppDispatch()
+  const activeTab = useAppSelector((state) => state.activeTab)
+  const collapsed = useAppSelector((state) => state.sidebarCollapsed)
 
   return (
     <aside className={`sidebar${collapsed ? ' sidebar--collapsed' : ''}`} aria-label="Tool navigation">
@@ -61,8 +62,8 @@ export function Sidebar() {
                 key={tab.id}
                 role="button"
                 aria-label={tab.label}
-                aria-current={state.activeTab === tab.id ? 'page' : undefined}
-                className={`sidebar__item${state.activeTab === tab.id ? ' sidebar__item--active' : ''}`}
+                aria-current={activeTab === tab.id ? 'page' : undefined}
+                className={`sidebar__item${activeTab === tab.id ? ' sidebar__item--active' : ''}`}
                 onClick={() => dispatch({ type: 'SET_TAB', tab: tab.id })}
                 title={collapsed ? tab.label : undefined}
               >

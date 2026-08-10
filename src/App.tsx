@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ComponentType } from 'react'
-import { useApp } from './context/AppContext'
+import { useAppSelector } from './context/AppContext'
 import { Sidebar } from './components/Sidebar/Sidebar'
 import { Header } from './components/Layout/Header'
 import { CommandPalette } from './components/CommandPalette/CommandPalette'
@@ -29,18 +29,25 @@ const TAB_COMPONENTS: Record<TabId, ComponentType> = {
   tax: lazyTab(() => import('./components/Tax/TaxTab'), 'TaxTab'),
 }
 
-export default function App() {
-  const { state } = useApp()
-
+// These hooks subscribe to editor state, so they live in their own render-free
+// component: keeping them out of App means a keystroke no longer re-renders the
+// shell and everything under it.
+function AppEffects() {
   useKeyboardShortcuts()
   useLiveValidation()
   useUrlState()
   useUndoRedo()
+  return null
+}
 
-  const ActiveTab = TAB_COMPONENTS[state.activeTab]
+export default function App() {
+  const activeTab = useAppSelector((state) => state.activeTab)
+
+  const ActiveTab = TAB_COMPONENTS[activeTab]
 
   return (
     <div className="app-shell">
+      <AppEffects />
       <Header />
       <div className="app-shell__main">
         <Sidebar />

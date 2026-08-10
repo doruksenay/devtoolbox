@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
-import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { getSupabase, isSupabaseConfigured } from '../lib/supabase'
 
 // ─────────────────────────────────────────────
 //  Types
@@ -43,52 +43,72 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    // Get existing session on mount
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setUser(data.session?.user ?? null)
-      setLoading(false)
-    }).catch(() => {
-      setLoading(false)
-    })
+    // The client is loaded on demand, so both subscriptions are wired up once
+    // it resolves; the effect may already have been torn down by then.
+    let cancelled = false
+    let unsubscribe: (() => void) | undefined
 
-    // Listen for auth state changes
-    const { data: listener } = supabase.auth.onAuthStateChange((event, sess) => {
-      setSession(sess)
-      setUser(sess?.user ?? null)
-      setLoading(false)
+    void getSupabase()
+      .then((supabase) => {
+        if (cancelled) return
 
-      // Log a login event whenever the user signs in
-      if (event === 'SIGNED_IN' && sess?.user?.id) {
-        void supabase
-          .from('login_events')
-          .insert({ user_id: sess.user.id })
-          .then(({ error }) => {
-            if (error) console.error('[DevToolbox] Failed to log login event:', error.message)
-          })
-      }
-    })
+        // Get existing session on mount
+        supabase.auth.getSession().then(({ data }) => {
+          setSession(data.session)
+          setUser(data.session?.user ?? null)
+          setLoading(false)
+        }).catch(() => {
+          setLoading(false)
+        })
+
+        // Listen for auth state changes
+        const { data: listener } = supabase.auth.onAuthStateChange((event, sess) => {
+          setSession(sess)
+          setUser(sess?.user ?? null)
+          setLoading(false)
+
+          // Log a login event whenever the user signs in
+          if (event === 'SIGNED_IN' && sess?.user?.id) {
+            void supabase
+              .from('login_events')
+              .insert({ user_id: sess.user.id })
+              .then(({ error }) => {
+                if (error) console.error('[DevToolbox] Failed to log login event:', error.message)
+              })
+          }
+        })
+
+        unsubscribe = () => listener.subscription.unsubscribe()
+      })
+      .catch(() => {
+        setLoading(false)
+      })
 
     return () => {
-      listener.subscription.unsubscribe()
+      cancelled = true
+      unsubscribe?.()
     }
   }, [])
 
   const signIn = useCallback(async (email: string, password: string): Promise<string | null> => {
+    const supabase = await getSupabase()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     return error?.message ?? null
   }, [])
 
   const signUp = useCallback(async (email: string, password: string): Promise<{ error: string | null; autoSignedIn: boolean }> => {
+    const supabase = await getSupabase()
     const { data, error } = await supabase.auth.signUp({ email, password })
     return { error: error?.message ?? null, autoSignedIn: !!data.session }
   }, [])
 
   const signOut = useCallback(async () => {
+    const supabase = await getSupabase()
     await supabase.auth.signOut()
   }, [])
 
   const changePassword = useCallback(async (newPassword: string): Promise<string | null> => {
+    const supabase = await getSupabase()
     const { error } = await supabase.auth.updateUser({ password: newPassword })
     return error?.message ?? null
   }, [])
@@ -113,7 +133,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Background sync to Supabase – we intentionally don't await this.
-    void supabase.auth.updateUser({ data: { avatar: emoji } })
+    void getSupabase()
+      .then((supabase) => supabase.auth.updateUser({ data: { avatar: emoji } }))
       .then(({ data }) => {
         if (data.user) {
           setUser(data.user)

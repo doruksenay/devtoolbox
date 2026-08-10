@@ -72,6 +72,10 @@ export function CodeEditor({ value, onChange, readOnly = false, theme = 'dark', 
   const viewRef = useRef<EditorView | null>(null)
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
+  // Last string this editor emitted upward. When it comes straight back in as
+  // `value`, the sync effect can bail on pointer equality instead of
+  // re-serialising the whole document.
+  const lastEmittedRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -109,7 +113,9 @@ export function CodeEditor({ value, onChange, readOnly = false, theme = 'dark', 
       ]),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
-          onChangeRef.current(update.state.doc.toString())
+          const next = update.state.doc.toString()
+          lastEmittedRef.current = next
+          onChangeRef.current(next)
         }
       }),
       EditorState.readOnly.of(readOnly),
@@ -129,6 +135,8 @@ export function CodeEditor({ value, onChange, readOnly = false, theme = 'dark', 
     })
 
     viewRef.current = view
+    // Fresh view, so nothing has been emitted from it yet.
+    lastEmittedRef.current = null
 
     return () => {
       view.destroy()
@@ -160,6 +168,10 @@ export function CodeEditor({ value, onChange, readOnly = false, theme = 'dark', 
 
   // Sync external value changes
   useEffect(() => {
+    // Echo of our own keystroke: the same string instance is coming back, so
+    // the document is already up to date and serialising it would be wasted
+    // work on every key press.
+    if (value === lastEmittedRef.current) return
     const view = viewRef.current
     if (!view) return
     const currentDoc = view.state.doc.toString()

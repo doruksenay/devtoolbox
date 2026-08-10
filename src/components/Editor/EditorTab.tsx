@@ -6,13 +6,10 @@ import { TreeView } from '../Tree/TreeView'
 import { useToast } from '../Toast/ToastProvider'
 import { EDITOR_THEMES, EDITOR_THEME_ORDER } from '../../utils/editorThemes'
 import { IconPalette } from '../icons/Icons'
-import Ajv from 'ajv'
-import addFormats from 'ajv-formats'
+// Type-only: erased at build time, so ajv stays out of the initial bundle.
+import type Ajv from 'ajv'
 
 type ViewMode = 'code' | 'tree'
-
-const ajv = new Ajv({ allErrors: true })
-addFormats(ajv)
 
 export function EditorTab() {
   const { state, dispatch, validateEditor, beautifyEditor, minifyEditor } = useApp()
@@ -25,6 +22,8 @@ export function EditorTab() {
   const [showUrlInput, setShowUrlInput] = useState(false)
   const [themePickerOpen, setThemePickerOpen] = useState(false)
   const themePickerRef = useRef<HTMLDivElement>(null)
+  // Cached across validations so the lazy chunk is only fetched and wired up once.
+  const ajvRef = useRef<Ajv | null>(null)
 
   useEffect(() => {
     if (!themePickerOpen) return
@@ -101,11 +100,24 @@ export function EditorTab() {
   }
 
   // ── JSON Schema Validation ────────────────────
-  const handleSchemaValidate = useCallback(() => {
+  // ajv + ajv-formats are pulled in on demand: this is the default tab, so most
+  // sessions never open the Schema panel and shouldn't pay for the bundle.
+  const getAjv = useCallback(async () => {
+    if (ajvRef.current) return ajvRef.current
+    const { default: Ajv } = await import('ajv')
+    const { default: addFormats } = await import('ajv-formats')
+    const instance = new Ajv({ allErrors: true })
+    addFormats(instance)
+    ajvRef.current = instance
+    return instance
+  }, [])
+
+  const handleSchemaValidate = useCallback(async () => {
     if (!state.schemaInput.trim() || !state.editorRaw.trim()) return
     try {
       const schema = JSON.parse(state.schemaInput)
       const data = JSON.parse(state.editorRaw)
+      const ajv = await getAjv()
       const validate = ajv.compile(schema)
       const valid = validate(data)
       if (valid) {
@@ -117,7 +129,7 @@ export function EditorTab() {
     } catch (e) {
       dispatch({ type: 'SET_SCHEMA_RESULT', valid: false, error: (e as Error).message })
     }
-  }, [state.schemaInput, state.editorRaw, dispatch])
+  }, [state.schemaInput, state.editorRaw, dispatch, getAjv])
 
   // ── URL Fetch ─────────────────────────────────
   const handleFetchUrl = useCallback(async () => {

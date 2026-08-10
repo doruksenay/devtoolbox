@@ -6,16 +6,15 @@ import {
   useMemo,
   useEffect,
   useRef,
+  useSyncExternalStore,
   type ReactNode,
   type Dispatch,
 } from 'react'
-import { JSONPath } from 'jsonpath-plus'
-import * as Diff from 'diff'
-import type { AppState, AppAction, DiffLine } from '../types'
+import type { AppState, AppAction } from '../types'
 import type { EditorSyntaxTheme } from '../utils/editorThemes'
 import { rootReducer } from './reducers'
 import { makeDoc } from './reducers/editorDocs'
-import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { getSupabase, isSupabaseConfigured } from '../lib/supabase'
 import { parseJson, parseXml, formatXml, beautifyJson } from '../utils/parsers'
 import { DEFAULT_TAX_REGION } from '../utils/salesTaxCanada'
 
@@ -26,6 +25,9 @@ export { parseJson, parseXml, formatXml }
 // ─────────────────────────────────────────────
 
 const STORAGE_KEY = 'devtoolbox_state_v1'
+
+/** How long the app must be idle before persisted state is written out. */
+const PERSIST_DEBOUNCE_MS = 800
 
 // ─────────────────────────────────────────────
 //  Initial state (loaded from localStorage)
@@ -57,7 +59,6 @@ const initialState: AppState = {
   compareRight: '',
   compareRightParsed: null,
   compareRightError: null,
-  compareLines: null,
   compareEqual: null,
   compareError: null,
   xmlRaw: '',
@@ -138,10 +139,18 @@ interface AppContextValue {
   runCompare: () => void
   validateXml: () => void
   formatXmlAction: () => void
-  runQuery: () => void
+  runQuery: () => Promise<void>
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
+
+/** Minimal store surface backing `useAppSelector`. */
+interface AppStore {
+  getState: () => AppState
+  subscribe: (listener: () => void) => () => void
+}
+
+const AppStoreContext = createContext<AppStore | null>(null)
 
 // Dispatch is exposed through its own context because it is referentially stable.
 // Components that only dispatch actions can subscribe to it without re-rendering
@@ -155,6 +164,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Prevent writing back state that we just loaded from Supabase
   const suppressNextPersistRef = useRef(false)
 
+  // Latest state, reachable from callbacks that must not re-subscribe on every
+  // change (the debounced writer below and the slice store).
+  const stateRef = useRef(state)
+  stateRef.current = state
+
+  // ── Slice subscription store ─────────────────────────────────────────
+  // `useApp()` hands out the whole state, so every consumer re-renders on each
+  // keystroke. This store lets a component subscribe to one field instead.
+  const listenersRef = useRef<Set<() => void>>(new Set())
+  const store = useMemo<AppStore>(
+    () => ({
+      getState: () => stateRef.current,
+      subscribe: (listener) => {
+        listenersRef.current.add(listener)
+        return () => {
+          listenersRef.current.delete(listener)
+        }
+      },
+    }),
+    [],
+  )
+
+  useEffect(() => {
+    for (const listener of listenersRef.current) listener()
+  }, [state])
+
   // ── Load state for logged-in user on mount / auth change ──────────────
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -167,65 +202,114 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const uid = session?.user?.id ?? null
-      userIdRef.current = uid
+    // The client is loaded on demand, so the subscription is wired up once it
+    // resolves; the effect may already have been torn down by then.
+    let cancelled = false
+    let unsubscribe: (() => void) | undefined
 
-      if (uid) {
-        // Load persisted state from Supabase
-        const { data } = await supabase
-          .from('user_states')
-          .select('state')
-          .eq('user_id', uid)
-          .maybeSingle()
+    void getSupabase().then((supabase) => {
+      if (cancelled) return
 
-        if (data?.state) {
-          suppressNextPersistRef.current = true
-          dispatch({ type: 'LOAD_PERSISTED_STATE', payload: data.state as Partial<AppState> })
+      const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        const uid = session?.user?.id ?? null
+        userIdRef.current = uid
+
+        if (uid) {
+          // Load persisted state from Supabase
+          const { data } = await supabase
+            .from('user_states')
+            .select('state')
+            .eq('user_id', uid)
+            .maybeSingle()
+
+          if (data?.state) {
+            suppressNextPersistRef.current = true
+            dispatch({ type: 'LOAD_PERSISTED_STATE', payload: data.state as Partial<AppState> })
+          }
+        } else {
+          // Anonymous — restore from localStorage (preferences like theme)
+          const saved = loadPersistedState()
+          if (Object.keys(saved).length > 0) {
+            suppressNextPersistRef.current = true
+            dispatch({ type: 'LOAD_PERSISTED_STATE', payload: saved })
+          }
         }
-      } else {
-        // Anonymous — restore from localStorage (preferences like theme)
-        const saved = loadPersistedState()
-        if (Object.keys(saved).length > 0) {
-          suppressNextPersistRef.current = true
-          dispatch({ type: 'LOAD_PERSISTED_STATE', payload: saved })
-        }
-      }
+      })
+
+      unsubscribe = () => listener.subscription.unsubscribe()
     })
 
-    return () => { listener.subscription.unsubscribe() }
+    return () => {
+      cancelled = true
+      unsubscribe?.()
+    }
   }, [])
 
-  // ── Persist on every state change ────────────────────────────────────
-  useEffect(() => {
-    if (suppressNextPersistRef.current) {
-      suppressNextPersistRef.current = false
-      return
+  // ── Persist state changes, debounced ─────────────────────────────────
+  // Typing produces a new state object per keystroke. Writing on each one meant
+  // a full serialize plus a Supabase round-trip per character, so the write is
+  // delayed until the user pauses.
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const flushPersist = useCallback(() => {
+    if (persistTimerRef.current) {
+      clearTimeout(persistTimerRef.current)
+      persistTimerRef.current = null
     }
 
-    const payload = buildSavePayload(state)
+    const current = stateRef.current
     const uid = userIdRef.current
 
     if (uid) {
       // Logged-in: upsert into Supabase (fire-and-forget)
-      supabase
-        .from('user_states')
-        .upsert({ user_id: uid, state: payload, updated_at: new Date().toISOString() })
-        .then(() => undefined)
+      const payload = buildSavePayload(current)
+      void getSupabase().then((supabase) =>
+        supabase
+          .from('user_states')
+          .upsert({ user_id: uid, state: payload, updated_at: new Date().toISOString() })
+          .then(() => undefined),
+      )
     } else {
       // Anonymous: only persist preferences (theme, sidebar), NOT content
       try {
         const prefsOnly: Partial<AppState> = {
-          theme: state.theme,
-          editorSyntaxTheme: state.editorSyntaxTheme,
-          sidebarCollapsed: state.sidebarCollapsed,
+          theme: current.theme,
+          editorSyntaxTheme: current.editorSyntaxTheme,
+          sidebarCollapsed: current.sidebarCollapsed,
         }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(prefsOnly))
       } catch {
         // ignore quota errors
       }
     }
-  }, [state])
+  }, [])
+
+  useEffect(() => {
+    if (suppressNextPersistRef.current) {
+      suppressNextPersistRef.current = false
+      // A write queued before the load would only echo what we just read back.
+      if (persistTimerRef.current) {
+        clearTimeout(persistTimerRef.current)
+        persistTimerRef.current = null
+      }
+      return
+    }
+
+    if (persistTimerRef.current) clearTimeout(persistTimerRef.current)
+    persistTimerRef.current = setTimeout(flushPersist, PERSIST_DEBOUNCE_MS)
+  }, [state, flushPersist])
+
+  // A pending write must not be lost when the tab is hidden or the app unmounts.
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'hidden' && persistTimerRef.current) flushPersist()
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      if (persistTimerRef.current) flushPersist()
+    }
+  }, [flushPersist])
 
   // Apply theme class to <html>
   useEffect(() => {
@@ -288,21 +372,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const leftPretty = JSON.stringify(leftResult.parsed, null, 2)
     const rightPretty = JSON.stringify(rightResult.parsed, null, 2)
 
-    const rawChanges = Diff.diffLines(leftPretty, rightPretty)
-    const lines: DiffLine[] = []
-    for (const part of rawChanges) {
-      const partLines = part.value.split('\n')
-      // trailing empty string from split
-      const cleaned = partLines[partLines.length - 1] === '' ? partLines.slice(0, -1) : partLines
-      for (const line of cleaned) {
-        lines.push({
-          type: part.added ? 'added' : part.removed ? 'removed' : 'unchanged',
-          value: line,
-        })
-      }
-    }
     const equal = leftPretty === rightPretty
-    dispatch({ type: 'SET_COMPARE_RESULT', lines, equal })
+    dispatch({ type: 'SET_COMPARE_RESULT', equal })
   }, [state.compareLeft, state.compareRight])
 
   const validateXml = useCallback(() => {
@@ -325,7 +396,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SET_XML_VALID' })
   }, [state.xmlRaw])
 
-  const runQuery = useCallback(() => {
+  const runQuery = useCallback(async () => {
     const result = parseJson(state.queryRaw)
     if (!result.valid) {
       dispatch({ type: 'SET_QUERY_RUN_ERROR', error: `JSON parse error: ${result.error}` })
@@ -336,6 +407,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return
     }
     try {
+      // Loaded on demand: only the JSONPath tab needs it, and AppContext sits on
+      // the app's critical path.
+      const { JSONPath } = await import('jsonpath-plus')
+
       const results = JSONPath({
         path: state.queryExpression,
         json: result.parsed as object,
@@ -379,9 +454,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   )
 
   return (
-    <AppDispatchContext.Provider value={dispatch}>
-      <AppContext.Provider value={value}>{children}</AppContext.Provider>
-    </AppDispatchContext.Provider>
+    <AppStoreContext.Provider value={store}>
+      <AppDispatchContext.Provider value={dispatch}>
+        <AppContext.Provider value={value}>{children}</AppContext.Provider>
+      </AppDispatchContext.Provider>
+    </AppStoreContext.Provider>
   )
 }
 
@@ -399,4 +476,19 @@ export function useAppDispatch(): Dispatch<AppAction> {
   const dispatch = useContext(AppDispatchContext)
   if (!dispatch) throw new Error('useAppDispatch must be used inside AppProvider')
   return dispatch
+}
+
+/**
+ * Subscribe to a single slice of the state. The component re-renders only when
+ * the selected value actually changes, so editor keystrokes no longer repaint
+ * unrelated chrome.
+ *
+ * The selector must return a primitive or an otherwise stable reference —
+ * building a fresh object or array on each call defeats the `Object.is` check
+ * React uses to decide whether to re-render.
+ */
+export function useAppSelector<T>(selector: (state: AppState) => T): T {
+  const store = useContext(AppStoreContext)
+  if (!store) throw new Error('useAppSelector must be used inside AppProvider')
+  return useSyncExternalStore(store.subscribe, () => selector(store.getState()))
 }

@@ -8,7 +8,6 @@ export function compareReducer(state: AppState, action: AppAction): AppState | n
         compareLeft: action.raw,
         compareLeftParsed: null,
         compareLeftError: null,
-        compareLines: null,
         compareEqual: null,
         compareError: null,
       }
@@ -19,7 +18,6 @@ export function compareReducer(state: AppState, action: AppAction): AppState | n
         compareRight: action.raw,
         compareRightParsed: null,
         compareRightError: null,
-        compareLines: null,
         compareEqual: null,
         compareError: null,
       }
@@ -27,7 +25,6 @@ export function compareReducer(state: AppState, action: AppAction): AppState | n
     case 'SET_COMPARE_RESULT':
       return {
         ...state,
-        compareLines: action.lines,
         compareEqual: action.equal,
         compareError: null,
       }
@@ -52,7 +49,6 @@ export function compareReducer(state: AppState, action: AppAction): AppState | n
         compareRightParsed: null,
         compareLeftError: null,
         compareRightError: null,
-        compareLines: null,
         compareEqual: null,
         compareError: null,
       }

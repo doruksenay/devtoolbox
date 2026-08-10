@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../../lib/supabase'
+import { getSupabase } from '../../lib/supabase'
 import './AdminPanel.css'
 
 interface LoginStats {
@@ -42,6 +42,7 @@ export function AdminPanel({ onClose }: Props) {
 
   useEffect(() => {
     void (async () => {
+      const supabase = await getSupabase()
       try {
         const { data, error } = await supabase.rpc('get_login_stats')
         if (error) setStatsError(error.message)
