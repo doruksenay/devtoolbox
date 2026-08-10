@@ -66,9 +66,6 @@ export interface AppState {
 
   // ── Grid tab ────────────────────────────────
   gridRaw: string
-  gridParsed: unknown | null
-  gridError: string | null
-  gridPath: string            // JSONPath to select the array, default '$'
 
   // ── Query tab ───────────────────────────────
   queryRaw: string
@@ -149,7 +146,6 @@ export type AppAction =
   | { type: 'SET_XML_ERROR'; error: string }
   | { type: 'CLEAR_XML' }
   | { type: 'SET_GRID_RAW'; raw: string }
-  | { type: 'SET_GRID_PATH'; path: string }
   | { type: 'SET_QUERY_RAW'; raw: string }
   | { type: 'SET_QUERY_EXPRESSION'; expr: string }
   | { type: 'SET_QUERY_RESULTS'; results: unknown[]; paths: string[] }

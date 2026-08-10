@@ -1,5 +1,5 @@
 import type { ChangeEvent, KeyboardEvent } from 'react'
-import { CodeEditor } from './CodeEditor'
+import { CodeEditor, type CodeEditorApi } from './CodeEditor'
 import { useApp } from '../../context/AppContext'
 
 interface Props {
@@ -7,9 +7,11 @@ interface Props {
   onChange: (val: string) => void
   placeholder?: string
   readOnly?: boolean
+  /** Forwarded to the underlying editor; see {@link CodeEditorApi}. */
+  apiRef?: React.MutableRefObject<CodeEditorApi | null>
 }
 
-export function JsonTextarea({ value, onChange, placeholder, readOnly }: Props) {
+export function JsonTextarea({ value, onChange, placeholder, readOnly, apiRef }: Props) {
   const { state } = useApp()
 
   // Use CodeMirror for the editor
@@ -21,6 +23,7 @@ export function JsonTextarea({ value, onChange, placeholder, readOnly }: Props) 
         readOnly={readOnly}
         theme={state.theme}
         syntaxTheme={state.editorSyntaxTheme}
+        apiRef={apiRef}
       />
       {!value && placeholder && (
         <div

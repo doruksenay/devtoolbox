@@ -11,7 +11,7 @@ to sync your workspace.
 | Editor | JSON editor with beautify, minify, validation, JSON Schema check, URL fetch and a tree view you can edit, extend and copy from |
 | Compare | Side-by-side JSON diff with line-level statistics |
 | XML | XML validator and formatter |
-| Grid | Tabular view of JSON arrays with sorting, filtering and CSV export |
+| Grid | Tabular view of JSON arrays with search, sorting, column show/hide, inline editing, CSV export and click-to-reveal in the source |
 | Query | JSONPath query runner with examples |
 | JWT | JWT decoder (header, payload, claims) |
 | HAR | HAR file viewer with request filtering |

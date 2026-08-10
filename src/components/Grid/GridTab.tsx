@@ -1,202 +1,48 @@
-import { useState, useMemo, useRef, useCallback } from 'react'
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { useApp } from '../../context/AppContext'
 import { JsonTextarea } from '../shared/JsonTextarea'
+import type { CodeEditorApi } from '../shared/CodeEditor'
 import { FromEditorButton } from '../shared/FromEditorButton'
-import { parseJson } from '../../context/AppContext'
+import { useToast } from '../Toast/ToastProvider'
+import { useWorkerParse } from '../../hooks/useWorkerParse'
+import { computeTreeMatches } from '../../utils/treeSearch'
+import { locatePath } from '../../utils/jsonLocate'
+import { toCsv, downloadCsv } from '../../utils/csv'
+import type { PathSegment } from '../../utils/jsonEdit'
+import { setAtPath, deleteAtPath, valueToCopyText } from '../../utils/jsonEdit'
+import type { ExpansionState, TableView } from './gridModel'
+import { initialExpansion, setExpanded, setExpansionMode, pathToBreadcrumb } from './gridModel'
+import { GridNode, type GridContext } from './GridNode'
 
-// ── Primitive value renderer ──────────────────────────────────────────────────
-function PrimitiveSpan({ val }: { val: unknown }) {
-  if (val === null) return <span className="jtg-null">null</span>
-  if (typeof val === 'boolean') return <span className="jtg-bool">{String(val)}</span>
-  if (typeof val === 'number') return <span className="jtg-number">{String(val)}</span>
-  return <span className="jtg-string">&quot;{String(val)}&quot;</span>
-}
+/**
+ * Parsing every keystroke re-walked the whole document; this lets a burst of
+ * typing settle first. Large payloads then go through the worker so the main
+ * thread keeps up.
+ */
+const PARSE_DEBOUNCE_MS = 250
 
-function CellValue({ val, depth }: { val: unknown; depth: number }) {
-  const [open, setOpen] = useState(false)
-
-  if (val === undefined) return null
-
-  if (val !== null && typeof val === 'object') {
-    const isArr = Array.isArray(val)
-    const size = isArr ? (val as unknown[]).length : Object.keys(val as object).length
-    const label = isArr ? `[${size}]` : `{${size}}`
-
-    if (size === 0) return <span className="jtg-type-tag">{isArr ? '[ ]' : '{ }'}</span>
-
-    return (
-      <div className="jtg-cell-nested">
-        <div className="jtg-cell-nested__head">
-          <button
-            className="jtg-toggle"
-            onClick={() => setOpen((o) => !o)}
-            type="button"
-            aria-expanded={open}
-            title={open ? 'Collapse' : 'Expand'}
-          >
-            {open ? '−' : '+'}
-          </button>
-          <span className="jtg-type-tag">{label}</span>
-        </div>
-        {open && (
-          <div className="jtg-cell-nested__body">
-            <TreeGridNode nodeKey={null} data={val} depth={depth + 1} forceOpen />
-          </div>
-        )}
-      </div>
-    )
-  }
-  return <PrimitiveSpan val={val} />
-}
-
-// ── Tree grid node ─────────────────────────────────────────────────────────────
-interface NodeProps {
-  nodeKey: string | null
+interface ParsedState {
   data: unknown
-  depth: number
-  /** Render only the children (no toggle header row) — used for drill-in cells. */
-  forceOpen?: boolean
+  error: string | null
 }
 
-function TreeGridNode({ nodeKey, data, depth, forceOpen = false }: NodeProps) {
-  const [open, setOpen] = useState(forceOpen || depth < 2)
-
-  // Primitive leaf
-  if (data === null || typeof data !== 'object') {
-    return (
-      <div className="jtg-row">
-        {nodeKey !== null && <div className="jtg-key">{nodeKey}</div>}
-        <div className="jtg-val"><PrimitiveSpan val={data} /></div>
-      </div>
-    )
-  }
-
-  const isArr = Array.isArray(data)
-
-  // Empty object / array
-  if (isArr ? (data as unknown[]).length === 0 : Object.keys(data as object).length === 0) {
-    return (
-      <div className="jtg-row">
-        {nodeKey !== null && <div className="jtg-key">{nodeKey}</div>}
-        <div className="jtg-val jtg-val--type">{isArr ? '[ ]' : '{ }'}</div>
-      </div>
-    )
-  }
-
-  if (isArr) {
-    const arr = data as unknown[]
-    // Detect array-of-objects → render as mini-table
-    const objectItems = arr.filter(
-      (item) => item && typeof item === 'object' && !Array.isArray(item),
-    ) as Record<string, unknown>[]
-    const isObjectArr = objectItems.length === arr.length
-
-    if (isObjectArr) {
-      const columns = Array.from(
-        objectItems.reduce((set, item) => {
-          Object.keys(item).forEach((k) => set.add(k))
-          return set
-        }, new Set<string>()),
-      )
-
-      return (
-        <div className="jtg-block">
-          <div className="jtg-row jtg-row--parent">
-            {nodeKey !== null && <div className="jtg-key">{nodeKey}</div>}
-            <div className="jtg-val">
-              <button className="jtg-toggle" onClick={() => setOpen((o) => !o)} type="button">
-                {open ? '−' : '+'}
-              </button>
-              <span className="jtg-type-tag">[{arr.length}]</span>
-            </div>
-          </div>
-          {open && (
-            <div className="jtg-children">
-              <table className="jtg-table">
-                <thead>
-                  <tr>
-                    <th className="jtg-th jtg-th--index">#</th>
-                    {columns.map((c) => (
-                      <th key={c} className="jtg-th">{c}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {objectItems.map((row, i) => (
-                    <tr key={i} className="jtg-tr">
-                      <td className="jtg-td jtg-td--index">{i + 1}</td>
-                      {columns.map((c) => (
-                        <td key={c} className="jtg-td">
-                          <CellValue val={row[c]} depth={depth + 1} />
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )
-    }
-
-    // Mixed / primitive array
-    return (
-      <div className="jtg-block">
-        <div className="jtg-row jtg-row--parent">
-          {nodeKey !== null && <div className="jtg-key">{nodeKey}</div>}
-          <div className="jtg-val">
-            <button className="jtg-toggle" onClick={() => setOpen((o) => !o)} type="button">
-              {open ? '−' : '+'}
-            </button>
-            <span className="jtg-type-tag">[{arr.length}]</span>
-          </div>
-        </div>
-        {open && (
-          <div className="jtg-children">
-            {arr.map((item, i) => (
-              <TreeGridNode key={i} nodeKey={String(i)} data={item} depth={depth + 1} />
-            ))}
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  // Object
-  const entries = Object.entries(data as Record<string, unknown>)
-
-  return (
-    <div className="jtg-block">
-      <div className="jtg-row jtg-row--parent">
-        {nodeKey !== null && <div className="jtg-key">{nodeKey}</div>}
-        <div className="jtg-val">
-          <button className="jtg-toggle" onClick={() => setOpen((o) => !o)} type="button">
-            {open ? '−' : '+'}
-          </button>
-          <span className="jtg-type-tag">{`{${entries.length}}`}</span>
-        </div>
-      </div>
-      {open && (
-        <div className="jtg-children">
-          {entries.map(([k, v]) => (
-            <TreeGridNode key={k} nodeKey={k} data={v} depth={depth + 1} />
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── Main component ─────────────────────────────────────────────────────────────
 export function GridTab() {
   const { state, dispatch } = useApp()
+  const { addToast } = useToast()
+  const { parse } = useWorkerParse()
+
   const [leftWidth, setLeftWidth] = useState(50)
+  const [parsed, setParsed] = useState<ParsedState>({ data: null, error: null })
+  const [query, setQuery] = useState('')
+  const [expansion, setExpansionState] = useState<ExpansionState>(initialExpansion)
+  const [views, setViews] = useState<Map<string, TableView>>(() => new Map())
+  const [focusedPath, setFocusedPath] = useState<string | null>(null)
 
   const resizeDragging = useRef(false)
   const resizeStartX = useRef(0)
   const resizeStartWidth = useRef(0)
   const containerRef = useRef<HTMLDivElement>(null)
+  const editorApi = useRef<CodeEditorApi | null>(null)
 
   const onResizeMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
@@ -220,12 +66,118 @@ export function GridTab() {
     window.addEventListener('mouseup', onUp)
   }, [leftWidth])
 
-  const parsed = useMemo(() => {
-    if (!state.gridRaw.trim()) return { data: null, error: null }
-    const result = parseJson(state.gridRaw)
-    if (!result.valid) return { data: null, error: result.error }
-    return { data: result.parsed, error: null }
+  // ── Debounced parse ───────────────────────────
+  useEffect(() => {
+    const raw = state.gridRaw
+    if (!raw.trim()) {
+      setParsed({ data: null, error: null })
+      return
+    }
+    let cancelled = false
+    const timer = setTimeout(() => {
+      void parse(raw).then((result) => {
+        if (cancelled) return
+        setParsed(
+          result.success
+            ? { data: result.data ?? null, error: null }
+            : { data: null, error: result.error ?? 'Invalid JSON' }
+        )
+      })
+    }, PARSE_DEBOUNCE_MS)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [state.gridRaw, parse])
+
+  // ── Search ────────────────────────────────────
+  const { matches, expandPaths } = useMemo(
+    () => computeTreeMatches(parsed.data, query),
+    [parsed.data, query]
+  )
+  const matchPaths = useMemo(() => new Set(matches), [matches])
+
+  const search = query.trim() ? { query, matchPaths, expandPaths } : null
+
+  // ── Editing ───────────────────────────────────
+  // Writing back re-serializes the document, so the user's own spacing in the
+  // left pane is replaced by standard formatting. That is the same trade the
+  // Editor tab makes, and there is no way around it without a parser that
+  // preserves positions for writes as well as reads.
+  const applyEdit = useCallback((next: unknown) => {
+    dispatch({ type: 'SET_GRID_RAW', raw: JSON.stringify(next, null, 2) })
+  }, [dispatch])
+
+  const edit = useMemo(() => {
+    if (parsed.data === null) return null
+    return {
+      setValue: (segments: PathSegment[], value: unknown) => applyEdit(setAtPath(parsed.data, segments, value)),
+      remove: (segments: PathSegment[]) => {
+        setFocusedPath(null)
+        applyEdit(deleteAtPath(parsed.data, segments))
+      },
+    }
+  }, [parsed.data, applyEdit])
+
+  // ── Row / cell actions ────────────────────────
+  const handleCopy = useCallback((value: unknown) => {
+    navigator.clipboard.writeText(valueToCopyText(value)).then(
+      () => addToast('Copied to clipboard'),
+      () => addToast('Could not copy to clipboard', 'error')
+    )
+  }, [addToast])
+
+  const handleCopyPath = useCallback((path: string) => {
+    navigator.clipboard.writeText(path).then(
+      () => addToast(`Copied ${path}`),
+      () => addToast('Could not copy to clipboard', 'error')
+    )
+  }, [addToast])
+
+  // GridSync: locate the node in the raw text and select it on the left.
+  const handleFocus = useCallback((path: string, segments: PathSegment[]) => {
+    setFocusedPath(path)
+    const range = locatePath(state.gridRaw, segments)
+    if (range) editorApi.current?.selectRange(range.start, range.end)
   }, [state.gridRaw])
+
+  const handleExportCsv = useCallback((rows: Record<string, unknown>[], columns: string[], path: string) => {
+    if (columns.length === 0) {
+      addToast('Nothing to export — every column is hidden', 'error')
+      return
+    }
+    downloadCsv(toCsv(rows, columns), 'grid.csv')
+    addToast(`Exported ${rows.length} row${rows.length === 1 ? '' : 's'} from ${pathToBreadcrumb(path)}`)
+  }, [addToast])
+
+  const setView = useCallback((path: string, view: TableView) => {
+    setViews((current) => new Map(current).set(path, view))
+  }, [])
+
+  const ctx: GridContext = {
+    expansion,
+    setExpanded: (path, open) => setExpansionState((current) => setExpanded(current, path, open)),
+    search,
+    views,
+    setView,
+    edit,
+    onCopy: handleCopy,
+    onCopyPath: handleCopyPath,
+    onFocus: handleFocus,
+    focusedPath,
+    onExportCsv: handleExportCsv,
+  }
+
+  function handleClear() {
+    dispatch({ type: 'SET_GRID_RAW', raw: '' })
+    setFocusedPath(null)
+    setQuery('')
+    setViews(new Map())
+    setExpansionState(initialExpansion())
+  }
+
+  const hasData = parsed.data !== null
 
   return (
     <div className="grid-tab" ref={containerRef}>
@@ -234,14 +186,8 @@ export function GridTab() {
         <div className="panel__header">
           <span className="panel__label">JSON Input</span>
           <div className="flex-row">
-            <FromEditorButton
-              onPick={(raw) => dispatch({ type: 'SET_GRID_RAW', raw })}
-            />
-            <button
-              className="btn btn-ghost"
-              style={{ fontSize: 11 }}
-              onClick={() => dispatch({ type: 'SET_GRID_RAW', raw: '' })}
-            >
+            <FromEditorButton onPick={(raw) => dispatch({ type: 'SET_GRID_RAW', raw })} />
+            <button className="btn btn-ghost" style={{ fontSize: 11 }} onClick={handleClear}>
               Clear
             </button>
           </div>
@@ -251,6 +197,7 @@ export function GridTab() {
             value={state.gridRaw}
             onChange={(val) => dispatch({ type: 'SET_GRID_RAW', raw: val })}
             placeholder={'{\n  "menu": {\n    "id": "file",\n    "value": "File"\n  }\n}'}
+            apiRef={editorApi}
           />
         </div>
       </div>
@@ -262,7 +209,53 @@ export function GridTab() {
       <div className="grid-tab__right panel">
         <div className="panel__header">
           <span className="panel__label">Grid</span>
+          {hasData && (
+            <div className="flex-row">
+              <button
+                className="btn btn-ghost"
+                style={{ fontSize: 11 }}
+                onClick={() => setExpansionState(setExpansionMode('all'))}
+                title="Expand every node"
+              >
+                Expand All
+              </button>
+              <button
+                className="btn btn-ghost"
+                style={{ fontSize: 11 }}
+                onClick={() => setExpansionState(setExpansionMode('none'))}
+                title="Collapse every node"
+              >
+                Collapse All
+              </button>
+            </div>
+          )}
         </div>
+
+        {hasData && (
+          <div className="tree-search">
+            <span className="tree-search__icon" aria-hidden>⌕</span>
+            <input
+              className="tree-search__input"
+              type="text"
+              value={query}
+              placeholder="Search keys and values…"
+              spellCheck={false}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setQuery('')
+              }}
+            />
+            {query.trim() && (
+              <>
+                <span className="tree-search__count">
+                  {matches.length} match{matches.length === 1 ? '' : 'es'}
+                </span>
+                <button className="tree-search__nav" onClick={() => setQuery('')} title="Clear search" type="button">✕</button>
+              </>
+            )}
+          </div>
+        )}
+
         <div className="panel__body">
           {parsed.error ? (
             <div className="empty-state">
@@ -270,18 +263,32 @@ export function GridTab() {
               <div className="empty-state__title text-error">Invalid JSON</div>
               <div className="text-error mono" style={{ fontSize: 12 }}>{parsed.error}</div>
             </div>
-          ) : parsed.data === null ? (
+          ) : !hasData ? (
             <div className="empty-state">
               <div className="empty-state__icon">▦</div>
               <div className="empty-state__title">Paste JSON to explore</div>
-              <div>Objects and arrays are shown as an interactive tree.</div>
+              <div>Objects and arrays are shown as an interactive grid.</div>
             </div>
           ) : (
             <div className="jtg-root">
-              <TreeGridNode nodeKey={null} data={parsed.data} depth={0} />
+              <GridNode ctx={ctx} nodeKey={null} data={parsed.data} depth={0} path="$" segments={[]} />
             </div>
           )}
         </div>
+
+        {focusedPath && (
+          <div className="jtg-breadcrumb" title="Path of the selected node">
+            <span className="jtg-breadcrumb__label">Path</span>
+            <code className="jtg-breadcrumb__path">{pathToBreadcrumb(focusedPath)}</code>
+            <button
+              type="button"
+              className="jtg-action"
+              title="Copy path"
+              aria-label="Copy path"
+              onClick={() => handleCopyPath(focusedPath)}
+            >⧉</button>
+          </div>
+        )}
       </div>
     </div>
   )

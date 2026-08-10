@@ -67,6 +67,9 @@ export function EditorTab() {
 
   function handleClear() {
     dispatch({ type: 'CLEAR_EDITOR' })
+    // Tree view has nothing to show once the document is empty, so clearing
+    // from it would strand the user on an empty state telling them to switch.
+    setView('code')
   }
 
   function handleDownload() {

@@ -43,6 +43,18 @@ export function CompareTab() {
     }
   }, [hasResults])
 
+  // Tree mode renders nothing without a successful compare, and its button is
+  // disabled in that state — so clearing either side (or breaking the JSON)
+  // would otherwise strand a pane on an empty state with no way back to its
+  // text. Re-arming the auto-switch is deliberately left to "Clear all": doing
+  // it here would yank the user out of the textarea every time a keystroke
+  // produced a successful compare.
+  useEffect(() => {
+    if (hasResults) return
+    setLeftMode('text')
+    setRightMode('text')
+  }, [hasResults])
+
   // Compute diffs for highlighting
   const { leftDiffs, rightDiffs } = useMemo(() => {
     if (!hasResults) return { leftDiffs: null, rightDiffs: null }

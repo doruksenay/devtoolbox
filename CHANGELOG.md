@@ -3,6 +3,18 @@
 ## [Unreleased]
 
 ### Added
+- **Grid View overhaul**: The grid is now something you can work in rather than only look at.
+  - **Search** across keys and values, reusing the tree view's matcher, with matching rows highlighted and their ancestors auto-expanded.
+  - **Expand All / Collapse All**, now that expansion is tracked centrally instead of inside each node.
+  - **Sortable columns** — click a header to cycle ascending → descending → document order. Sorting is type-aware (numbers numerically, strings with natural collation so `item2` precedes `item10`), and blanks always sink to the bottom in both directions. The `#` column keeps showing each row's position in the underlying document.
+  - **Column show/hide** per table, with a count of what is visible.
+  - **CSV export** of the array you are looking at: current sort order, visible columns only, RFC 4180 quoting and a guard against spreadsheet formula injection.
+  - **Editable cells and row removal**, using the same edit contract as the tree view.
+  - **Copy value / copy path** on every row and cell, and a breadcrumb showing the selected node's path.
+  - **Click a cell to reveal it in the JSON on the left** — the raw text is scanned for the node's exact character range, so it works against your own formatting rather than a re-serialized guess.
+  - **Large payloads**: rows are chunked at 100 with a "Show more" button, and parsing is debounced and routed through the existing web worker above 1 MB instead of re-parsing the whole document on every keystroke.
+  - **Mixed arrays** now render as tables when at least 80% of their elements are objects; a single stray `null` no longer demotes a thousand-row response to an indented list. Non-object elements keep their row.
+  - Truncated cells carry a `title`, and a key absent from a row is shown as `—` rather than being indistinguishable from an empty value.
 - **Editable tree view**: In the JSON Editor's tree view, click any value or key to edit it in place. Each row also carries copy, add and remove buttons that appear on hover. Strings are edited as plain text; other types are read back as JSON literals, which is also how a value changes type. Adding an entry appends `null` under a placeholder key (or at the end of an array) and opens its editor straight away, expanding the node if it was collapsed. Removing an array element splices it out, so later indices shift down. Edits are written straight back to the document, so Code view shows them already applied and `Ctrl+Z` undoes them. Renames keep key order and are rejected when the name is empty or already taken. The tree stays read-only in JSON Compare, where copy still works.
 - **Project documentation**: A `README.md` covering the tool catalogue, setup, environment variables, scripts, architecture and contribution steps.
 - **Linting and formatting**: ESLint (typescript-eslint, react-hooks, react-refresh, jsx-a11y) and Prettier with `lint`, `lint:fix`, `format`, `format:check` and `typecheck` scripts.
@@ -11,6 +23,7 @@
 - **Text Cleaner tool**: New utility that decodes HTML entities (`&amp;`, `&#10;`, `&nbsp;`, …) and detects/removes invisible or "problematic" characters — non-breaking spaces, zero-width spaces, BOM, soft hyphens, and more. Shows a live report of everything found in the pasted text, with toggle options for each cleaning pass.
 
 ### Removed
+- **Dead Grid state**: `gridPath` / `SET_GRID_PATH` were declared, reduced and persisted but never dispatched or read, and `gridParsed` / `gridError` were permanently `null` because the Grid parses locally. All three are gone, including from the saved payload.
 - **Five tools retired**: XML Compare, Convert (XML ↔ JSON), SOAP / WSDL, Base64 and URL Encoder have been removed along with their state, reducers, icons and styles. The toolbox is now 12 focused tools.
 - **YAML ↔ JSON tool retired**: Removed along with its state, reducer, icon and the now-unused shared mode-toggle styles. With it gone the *Transform* sidebar group is empty, so the group is dropped and JSON Compare moves under *Edit & View*.
 
@@ -27,6 +40,7 @@
 - **Editor search UX**: The in-editor search panel (JSON & XML editors) now appears at the top instead of the bottom, shows a live match count next to the query, and highlights matches more prominently.
 
 ### Fixed
+- **Clearing from a tree view**: Clearing the JSON Editor now returns to Code view instead of leaving an empty tree telling you to switch. In JSON Compare, a pane whose results disappear — because either side was cleared or its JSON stopped parsing — falls back to text mode, so its content stays reachable; previously it was stranded on an empty state with the tree button disabled.
 - **Startup without Supabase**: The app no longer crashes when `VITE_SUPABASE_*` variables are missing; account features are simply disabled and local preferences still persist.
 - **End-to-end tests**: Updated selectors that still targeted the removed horizontal tab bar so the Playwright suite passes again.
 

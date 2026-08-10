@@ -6,12 +6,7 @@ export function gridReducer(state: AppState, action: AppAction): AppState | null
       return {
         ...state,
         gridRaw: action.raw,
-        gridParsed: null,
-        gridError: null,
       }
-
-    case 'SET_GRID_PATH':
-      return { ...state, gridPath: action.path }
 
     default:
       return null

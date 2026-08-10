@@ -57,7 +57,6 @@ export function rootReducer(state: AppState, action: AppAction): AppState {
         compareRight: s.compareRight ?? state.compareRight,
         xmlRaw: s.xmlRaw ?? state.xmlRaw,
         gridRaw: s.gridRaw ?? state.gridRaw,
-        gridPath: s.gridPath ?? state.gridPath,
         queryRaw: s.queryRaw ?? state.queryRaw,
         queryExpression: s.queryExpression ?? state.queryExpression,
         taxAmount: s.taxAmount ?? state.taxAmount,

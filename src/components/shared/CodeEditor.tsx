@@ -12,12 +12,20 @@ import { codeSearch } from './codeSearch'
 import type { EditorSyntaxTheme } from '../../utils/editorThemes'
 import { EDITOR_THEMES } from '../../utils/editorThemes'
 
+/** Imperative handle for callers that need to drive the editor's selection. */
+export interface CodeEditorApi {
+  /** Selects `[from, to)` and scrolls it into view without stealing focus. */
+  selectRange: (from: number, to: number) => void
+}
+
 interface Props {
   value: string
   onChange: (val: string) => void
   readOnly?: boolean
   theme?: 'dark' | 'light'
   syntaxTheme?: EditorSyntaxTheme
+  /** Populated with a {@link CodeEditorApi} while the editor is mounted. */
+  apiRef?: React.MutableRefObject<CodeEditorApi | null>
 }
 
 const lightTheme = EditorView.theme({
@@ -59,7 +67,7 @@ const darkThemeOverride = EditorView.theme({
   },
 })
 
-export function CodeEditor({ value, onChange, readOnly = false, theme = 'dark', syntaxTheme = 'default' }: Props) {
+export function CodeEditor({ value, onChange, readOnly = false, theme = 'dark', syntaxTheme = 'default', apiRef }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const onChangeRef = useRef(onChange)
@@ -128,6 +136,27 @@ export function CodeEditor({ value, onChange, readOnly = false, theme = 'dark', 
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [readOnly, theme, syntaxTheme])
+
+  // The handle reads viewRef lazily, so it stays valid across the view being
+  // torn down and rebuilt when the theme changes.
+  useEffect(() => {
+    if (!apiRef) return
+    apiRef.current = {
+      selectRange(from, to) {
+        const view = viewRef.current
+        if (!view) return
+        const length = view.state.doc.length
+        const start = Math.max(0, Math.min(from, length))
+        const end = Math.max(start, Math.min(to, length))
+        // Deliberately no focus() call: revealing a value should not pull the
+        // caret out of whatever the user was doing.
+        view.dispatch({ selection: { anchor: start, head: end }, scrollIntoView: true })
+      },
+    }
+    return () => {
+      apiRef.current = null
+    }
+  }, [apiRef])
 
   // Sync external value changes
   useEffect(() => {
