@@ -237,7 +237,10 @@ function NestedCell({ ctx, val, depth, path, segments }: { ctx: GridContext; val
       </div>
       {open && (
         <div className="jtg-cell-nested__body">
-          <GridNode ctx={ctx} nodeKey={null} data={val} depth={depth + 1} path={path} segments={segments} />
+          {/* Only the body: the head above is this node's parent row, so going
+              through GridNode would draw a second toggle, badge and action set
+              for the same path. */}
+          <NodeChildren ctx={ctx} data={val as object} depth={depth + 1} path={path} segments={segments} />
         </div>
       )}
     </div>
@@ -534,6 +537,43 @@ function ChildList({ ctx, entries, depth, path, segments, isArray }: {
   )
 }
 
+/**
+ * The children of a container, without the parent row that owns the toggle.
+ * Shared by GridNode and by a drilled-into table cell, which draws its own head.
+ */
+function NodeChildren({ ctx, data, depth, path, segments }: {
+  ctx: GridContext
+  data: object
+  depth: number
+  path: string
+  segments: PathSegment[]
+}) {
+  if (Array.isArray(data)) {
+    return shouldRenderAsTable(data) ? (
+      <ArrayTable ctx={ctx} arr={data} depth={depth} path={path} segments={segments} />
+    ) : (
+      <ChildList
+        ctx={ctx}
+        entries={data.map((v, i) => [String(i), v] as [string, unknown])}
+        depth={depth}
+        path={path}
+        segments={segments}
+        isArray
+      />
+    )
+  }
+  return (
+    <ChildList
+      ctx={ctx}
+      entries={Object.entries(data as Record<string, unknown>)}
+      depth={depth}
+      path={path}
+      segments={segments}
+      isArray={false}
+    />
+  )
+}
+
 export function GridNode({ ctx, nodeKey, data, depth, path, segments }: NodeProps) {
   const open = isExpanded(ctx.expansion, path, depth, ctx.search?.expandPaths)
   const toggle = () => ctx.setExpanded(path, !open)
@@ -587,43 +627,15 @@ export function GridNode({ ctx, nodeKey, data, depth, path, segments }: NodeProp
     )
   }
 
-  if (isArr) {
-    const arr = data as unknown[]
-    return (
-      <div className="jtg-block">
-        <ParentRow
-          ctx={ctx} nodeKey={nodeKey} data={data} path={path} segments={segments}
-          open={open} onToggle={toggle} badge={`[${arr.length}]`}
-        />
-        {open && (
-          shouldRenderAsTable(arr) ? (
-            <ArrayTable ctx={ctx} arr={arr} depth={depth} path={path} segments={segments} />
-          ) : (
-            <ChildList
-              ctx={ctx}
-              entries={arr.map((v, i) => [String(i), v] as [string, unknown])}
-              depth={depth}
-              path={path}
-              segments={segments}
-              isArray
-            />
-          )
-        )}
-      </div>
-    )
-  }
-
-  const entries = Object.entries(data as Record<string, unknown>)
   return (
     <div className="jtg-block">
       <ParentRow
         ctx={ctx} nodeKey={nodeKey} data={data} path={path} segments={segments}
-        open={open} onToggle={toggle} badge={`{${entries.length}}`}
+        open={open} onToggle={toggle}
+        badge={isArr ? `[${size}]` : `{${size}}`}
       />
       {open && (
-        <ChildList
-          ctx={ctx} entries={entries} depth={depth} path={path} segments={segments} isArray={false}
-        />
+        <NodeChildren ctx={ctx} data={data as object} depth={depth} path={path} segments={segments} />
       )}
     </div>
   )
