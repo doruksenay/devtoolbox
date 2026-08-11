@@ -142,16 +142,27 @@ describe('TreeView expand and collapse', () => {
     expect(screen.getByText('"deep"')).toBeInTheDocument()
   })
 
-  it('pages long arrays and loads more on demand', () => {
-    const many = Array.from({ length: 150 }, (_, i) => `item-${i}`)
-    renderWithProviders(<TreeView data={many} />)
+  it('mounts only the rows in view and drops the paging control', () => {
+    // Long arrays used to be cut off at 100 entries behind a "Show more"
+    // button, which took 500 clicks to walk a 50k-item document. Rows are
+    // windowed instead: the list is continuous, but only what fits on screen
+    // (plus overscan) is in the DOM, so document size no longer costs anything.
+    const many = Array.from({ length: 5000 }, (_, i) => `item-${i}`)
+    const { container } = renderWithProviders(<TreeView data={many} />)
 
-    expect(screen.getByText('"item-99"')).toBeInTheDocument()
-    expect(screen.queryByText('"item-100"')).not.toBeInTheDocument()
+    expect(screen.getByText('"item-0"')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Show more/ })).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: /Show more \(50 remaining\)/ }))
+    // Far-off rows are deliberately absent — that is the win, not a bug.
+    expect(screen.queryByText('"item-4999"')).not.toBeInTheDocument()
 
-    expect(screen.getByText('"item-149"')).toBeInTheDocument()
+    const mounted = container.querySelectorAll('.tree-view__row-slot').length
+    expect(mounted).toBeGreaterThan(0)
+    expect(mounted).toBeLessThan(200)
+
+    // The scrollbar must still describe the whole document.
+    const sizer = container.querySelector<HTMLElement>('.tree-view__sizer')
+    expect(Number.parseInt(sizer!.style.height, 10)).toBeGreaterThan(5000 * 20)
   })
 })
 

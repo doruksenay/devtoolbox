@@ -11,13 +11,20 @@ import {
   deleteAtPath,
   appendChildAtPath,
   segmentsEqual,
-  segmentsStartWith,
   parseEditedValue,
   valueToEditText,
   valueToCopyText,
 } from '../../utils/jsonEdit'
 import { useAppSelector } from '../../context/AppContext'
 import { useToast } from '../Toast/ToastProvider'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { flattenTree, expandAncestors, findRowIndex, pathFromSegments, type TreeRow } from './treeRows'
+import {
+  initialExpansion,
+  setExpanded,
+  setExpansionMode,
+  type ExpansionState,
+} from '../../utils/expansion'
 
 interface SearchContext {
   query: string
@@ -45,23 +52,6 @@ interface EditContext {
   pending: PendingEdit | null
   clearPending: () => void
 }
-
-interface TreeNodeProps {
-  nodeKey: string | null
-  data: unknown
-  depth: number
-  defaultExpanded?: boolean
-  forceOpen?: boolean
-  path?: string
-  segments: PathSegment[]
-  diffs?: Map<string, DiffType> | null
-  activeDiffPath?: string
-  search?: SearchContext | null
-  edit?: EditContext | null
-  onCopy: (value: unknown) => void
-}
-
-const MAX_AUTO_EXPAND_DEPTH = 2
 
 function getType(val: unknown): string {
   if (val === null) return 'null'
@@ -276,147 +266,180 @@ function NodeKey({
   )
 }
 
-const CHUNK_SIZE = 100
+/** The text and colour class a scalar renders with. */
+function describeLeaf(data: unknown): { display: string; className: string } {
+  switch (getType(data)) {
+    case 'string':
+      return { display: `"${String(data)}"`, className: 'tree-value--string' }
+    case 'number':
+      return { display: String(data), className: 'tree-value--number' }
+    case 'boolean':
+      return { display: String(data), className: 'tree-value--boolean' }
+    case 'null':
+      return { display: 'null', className: 'tree-value--null' }
+    default:
+      return { display: String(data), className: 'tree-value--string' }
+  }
+}
 
-function CollapsibleNode({
-  nodeKey, data, depth, forceOpen, path = '$', segments, diffs, activeDiffPath, search, edit, onCopy,
-}: TreeNodeProps) {
-  const [open, setOpen] = useState(forceOpen !== undefined ? forceOpen : depth < MAX_AUTO_EXPAND_DEPTH)
-  const [visibleCount, setVisibleCount] = useState(CHUNK_SIZE)
+interface TreeRowViewProps {
+  row: TreeRow
+  diffs?: Map<string, DiffType> | null
+  activeDiffPath?: string
+  search?: SearchContext | null
+  edit?: EditContext | null
+  onCopy: (value: unknown) => void
+  onToggle: (path: string, open: boolean) => void
+}
 
-  // Auto-expand this node when the active diff path falls inside its subtree
-  useEffect(() => {
-    if (!activeDiffPath) return
-    if (
-      activeDiffPath === path ||
-      activeDiffPath.startsWith(path + '.') ||
-      activeDiffPath.startsWith(path + '[')
-    ) {
-      setOpen(true)
-    }
-  }, [activeDiffPath, path])
+/**
+ * One line of the tree.
+ *
+ * The tree used to render itself recursively, each node owning its own open
+ * state. That made the visible rows impossible to enumerate without rendering
+ * them, which is exactly what windowing needs to do. Rows are now produced by
+ * `flattenTree` and drawn independently, so indentation comes from the row's
+ * depth rather than from being nested inside its parent's DOM.
+ */
+function TreeRowView({ row, diffs, activeDiffPath, search, edit, onCopy, onToggle }: TreeRowViewProps) {
+  const { path, segments, nodeKey, data, kind, isArray, count, depth, expanded } = row
+  const indent = { '--tree-depth': depth } as React.CSSProperties
 
-  // Auto-expand this node when a search match lives inside its subtree
-  useEffect(() => {
-    if (search?.expandPaths.has(path)) setOpen(true)
-  }, [search, path])
+  // The closing bracket is its own row and carries no affordances.
+  if (kind === 'branch-end') {
+    return (
+      <div className="tree-row" style={indent}>
+        <div className="tree-node">
+          <span className="tree-node__bracket">{isArray ? ']' : '}'}</span>
+        </div>
+      </div>
+    )
+  }
 
-  // Auto-expand so a freshly added entry is visible even when it landed inside
-  // a node that was collapsed — otherwise its editor would open out of sight.
-  const pending = edit?.pending
-  useEffect(() => {
-    if (pending && segmentsStartWith(segments, pending.segments)) setOpen(true)
-  }, [pending, segments])
-
-  const isArray = Array.isArray(data)
-  const entries = useMemo(() => isArray
-    ? (data as unknown[]).map((v, i) => [String(i), v] as [string, unknown])
-    : Object.entries(data as Record<string, unknown>), [data, isArray])
-  const count = entries.length
-  const openBracket  = isArray ? '[' : '{'
-  const closeBracket = isArray ? ']' : '}'
   const diffClass = getDiffClass(diffs, path)
-  const containsDiffClass = getContainsDiffClass(diffs, path)
   const isActive = activeDiffPath === path
   const isSearchMatch = search?.matchPaths.has(path) ?? false
   const isActiveSearch = search?.activePath === path
+  const stateClass =
+    `${diffClass}` +
+    `${isActive ? ' tree-node--active-diff' : ''}` +
+    `${isSearchMatch ? ' tree-node--search-match' : ''}` +
+    `${isActiveSearch ? ' tree-node--search-active' : ''}`
+  const diffPath = diffClass ? path : undefined
+  const searchPath = isSearchMatch ? path : undefined
 
-  const visibleEntries = count > CHUNK_SIZE ? entries.slice(0, visibleCount) : entries
-  const hasMore = visibleCount < count
+  if (kind === 'branch') {
+    const openBracket = isArray ? '[' : '{'
+    const closeBracket = isArray ? ']' : '}'
+    const containsDiffClass = getContainsDiffClass(diffs, path)
+    return (
+      <div className="tree-row" style={indent}>
+        <div className={`tree-node${stateClass}`} data-diff-path={diffPath} data-search-path={searchPath}>
+          <div className="tree-node__row">
+            <button
+              className="tree-node__toggle"
+              onClick={() => onToggle(path, !expanded)}
+              type="button"
+              aria-expanded={expanded}
+              aria-label={expanded ? 'Collapse node' : 'Expand node'}
+            >
+              <span className={`tree-node__caret tree-node__caret--${expanded ? 'open' : 'closed'}`}>▾</span>
+            </button>
+            {nodeKey !== null && (
+              <NodeKey
+                nodeKey={nodeKey}
+                segments={segments}
+                className="tree-node__key"
+                search={search}
+                edit={edit}
+              />
+            )}
+            {expanded ? (
+              <span className="tree-node__bracket">{openBracket}</span>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className={`tree-node__count-badge tree-node__count-badge--${isArray ? 'array' : 'object'}`}
+                  onClick={() => onToggle(path, true)}
+                  aria-label="Expand node"
+                >
+                  {openBracket} … {count} {isArray ? (count === 1 ? 'item' : 'items') : (count === 1 ? 'prop' : 'props')} {closeBracket}
+                </button>
+                {containsDiffClass && (
+                  <span className={`tree-node__diff-pill ${containsDiffClass.trim()}`} title="Contains differences">⇄</span>
+                )}
+              </>
+            )}
+            <NodeActions
+              value={data}
+              onCopy={onCopy}
+              onAdd={edit ? () => {
+                // Open the node so the entry that is about to be appended, and
+                // the editor that opens on it, are actually on screen.
+                onToggle(path, true)
+                edit.addChild(segments)
+              } : undefined}
+              onRemove={edit && segments.length > 0 ? () => edit.remove(segments) : undefined}
+            />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-  const dataSearchPath = isSearchMatch ? path : undefined
+  if (kind === 'empty') {
+    return (
+      <div className="tree-row" style={indent}>
+        <div className={`tree-leaf${stateClass}`} data-diff-path={diffPath} data-search-path={searchPath}>
+          {nodeKey !== null && (
+            <NodeKey
+              nodeKey={nodeKey}
+              segments={segments}
+              className="tree-leaf__key"
+              search={search}
+              edit={edit}
+            />
+          )}
+          <span className="tree-node__bracket">{isArray ? '[]' : '{}'}</span>
+          <NodeActions
+            value={data}
+            onCopy={onCopy}
+            onAdd={edit ? () => edit.addChild(segments) : undefined}
+            onRemove={edit && segments.length > 0 ? () => edit.remove(segments) : undefined}
+          />
+        </div>
+      </div>
+    )
+  }
 
+  const { display, className } = describeLeaf(data)
   return (
-    <div
-      className={`tree-node${diffClass}${isActive ? ' tree-node--active-diff' : ''}${isSearchMatch ? ' tree-node--search-match' : ''}${isActiveSearch ? ' tree-node--search-active' : ''}`}
-      data-diff-path={diffClass ? path : undefined}
-      data-search-path={dataSearchPath}
-    >
-      <div className="tree-node__row">
-        <button
-          className="tree-node__toggle"
-          onClick={() => setOpen(!open)}
-          type="button"
-          aria-expanded={open}
-          aria-label={open ? 'Collapse node' : 'Expand node'}
-        >
-          <span className={`tree-node__caret tree-node__caret--${open ? 'open' : 'closed'}`}>▾</span>
-        </button>
+    <div className="tree-row" style={indent}>
+      <div className={`tree-leaf${stateClass}`} data-diff-path={diffPath} data-search-path={searchPath}>
         {nodeKey !== null && (
           <NodeKey
             nodeKey={nodeKey}
             segments={segments}
-            className="tree-node__key"
+            className="tree-leaf__key"
             search={search}
             edit={edit}
           />
         )}
-        {open ? (
-          <span className="tree-node__bracket">{openBracket}</span>
-        ) : (
-          <>
-            <button
-              type="button"
-              className={`tree-node__count-badge tree-node__count-badge--${isArray ? 'array' : 'object'}`}
-              onClick={() => setOpen(true)}
-              aria-label="Expand node"
-            >
-              {openBracket} … {count} {isArray ? (count === 1 ? 'item' : 'items') : (count === 1 ? 'prop' : 'props')} {closeBracket}
-            </button>
-            {containsDiffClass && (
-              <span className={`tree-node__diff-pill ${containsDiffClass.trim()}`} title="Contains differences">⇄</span>
-            )}
-          </>
-        )}
+        <LeafValue
+          data={data}
+          className={className}
+          display={display}
+          segments={segments}
+          search={search}
+          edit={edit}
+        />
         <NodeActions
           value={data}
           onCopy={onCopy}
-          onAdd={edit ? () => {
-            // Reveal the new entry: open the node, and make sure the chunked
-            // list is long enough to reach the position it was appended at.
-            setOpen(true)
-            setVisibleCount((c) => Math.max(c, count + 1))
-            edit.addChild(segments)
-          } : undefined}
           onRemove={edit && segments.length > 0 ? () => edit.remove(segments) : undefined}
         />
       </div>
-
-      {open && (
-        <>
-          <div className="tree-node__children">
-            {visibleEntries.map(([k, v]) => {
-              const childPath = isArray ? `${path}[${k}]` : `${path}.${k}`
-              return (
-                <TreeNodeComponent
-                  key={k}
-                  nodeKey={isArray ? null : k}
-                  data={v}
-                  depth={depth + 1}
-                  forceOpen={forceOpen}
-                  path={childPath}
-                  segments={[...segments, isArray ? Number(k) : k]}
-                  diffs={diffs}
-                  activeDiffPath={activeDiffPath}
-                  search={search}
-                  edit={edit}
-                  onCopy={onCopy}
-                />
-              )
-            })}
-            {hasMore && (
-              <button
-                className="btn btn-ghost tree-node__load-more"
-                onClick={() => setVisibleCount((c) => c + CHUNK_SIZE)}
-                type="button"
-              >
-                Show more ({count - visibleCount} remaining)
-              </button>
-            )}
-          </div>
-          <span className="tree-node__bracket">{closeBracket}</span>
-        </>
-      )}
     </div>
   )
 }
@@ -544,137 +567,6 @@ function LeafValue({
   )
 }
 
-function LeafNode({
-  nodeKey, data, path = '$', segments, diffs, activeDiffPath, search, edit, onCopy,
-}: {
-  nodeKey: string | null
-  data: unknown
-  path?: string
-  segments: PathSegment[]
-  diffs?: Map<string, DiffType> | null
-  activeDiffPath?: string
-  search?: SearchContext | null
-  edit?: EditContext | null
-  onCopy: (value: unknown) => void
-}) {
-  const type = getType(data)
-  let display: string
-  let className: string
-
-  switch (type) {
-    case 'string':
-      display = `"${String(data)}"`
-      className = 'tree-value--string'
-      break
-    case 'number':
-      display = String(data)
-      className = 'tree-value--number'
-      break
-    case 'boolean':
-      display = String(data)
-      className = 'tree-value--boolean'
-      break
-    case 'null':
-      display = 'null'
-      className = 'tree-value--null'
-      break
-    default:
-      display = String(data)
-      className = 'tree-value--string'
-  }
-
-  const diffClass = getDiffClass(diffs, path)
-  const isActive = activeDiffPath === path
-  const isSearchMatch = search?.matchPaths.has(path) ?? false
-  const isActiveSearch = search?.activePath === path
-
-  return (
-    <div
-      className={`tree-leaf${diffClass}${isActive ? ' tree-node--active-diff' : ''}${isSearchMatch ? ' tree-node--search-match' : ''}${isActiveSearch ? ' tree-node--search-active' : ''}`}
-      data-diff-path={diffClass ? path : undefined}
-      data-search-path={isSearchMatch ? path : undefined}
-    >
-      {nodeKey !== null && (
-        <NodeKey
-          nodeKey={nodeKey}
-          segments={segments}
-          className="tree-leaf__key"
-          search={search}
-          edit={edit}
-        />
-      )}
-      <LeafValue
-        data={data}
-        className={className}
-        display={display}
-        segments={segments}
-        search={search}
-        edit={edit}
-      />
-      <NodeActions
-        value={data}
-        onCopy={onCopy}
-        onRemove={edit && segments.length > 0 ? () => edit.remove(segments) : undefined}
-      />
-    </div>
-  )
-}
-
-function TreeNodeComponent({
-  nodeKey, data, depth, forceOpen, path = '$', segments, diffs, activeDiffPath, search, edit, onCopy,
-}: TreeNodeProps) {
-  const type = getType(data)
-
-  if (type === 'object' || type === 'array') {
-    const obj = data as Record<string, unknown> | unknown[]
-    const isEmpty = Array.isArray(obj) ? obj.length === 0 : Object.keys(obj).length === 0
-    if (isEmpty) {
-      const diffClass = getDiffClass(diffs, path)
-      const isActive = activeDiffPath === path
-      const isSearchMatch = search?.matchPaths.has(path) ?? false
-      const isActiveSearch = search?.activePath === path
-      return (
-        <div
-          className={`tree-leaf${diffClass}${isActive ? ' tree-node--active-diff' : ''}${isSearchMatch ? ' tree-node--search-match' : ''}${isActiveSearch ? ' tree-node--search-active' : ''}`}
-          data-diff-path={diffClass ? path : undefined}
-          data-search-path={isSearchMatch ? path : undefined}
-        >
-          {nodeKey !== null && (
-            <NodeKey
-              nodeKey={nodeKey}
-              segments={segments}
-              className="tree-leaf__key"
-              search={search}
-              edit={edit}
-            />
-          )}
-          <span className="tree-node__bracket">{Array.isArray(obj) ? '[]' : '{}'}</span>
-          <NodeActions
-            value={data}
-            onCopy={onCopy}
-            onAdd={edit ? () => edit.addChild(segments) : undefined}
-            onRemove={edit && segments.length > 0 ? () => edit.remove(segments) : undefined}
-          />
-        </div>
-      )
-    }
-    return (
-      <CollapsibleNode
-        nodeKey={nodeKey} data={data} depth={depth} forceOpen={forceOpen} path={path}
-        segments={segments} diffs={diffs} activeDiffPath={activeDiffPath} search={search}
-        edit={edit} onCopy={onCopy}
-      />
-    )
-  }
-
-  return (
-    <LeafNode
-      nodeKey={nodeKey} data={data} path={path} segments={segments} diffs={diffs}
-      activeDiffPath={activeDiffPath} search={search} edit={edit} onCopy={onCopy}
-    />
-  )
-}
-
 interface TreeViewProps {
   data: unknown
   forceOpen?: boolean
@@ -690,7 +582,8 @@ interface TreeViewProps {
   onChange?: (next: unknown) => void
 }
 
-const SCROLL_TO_MATCH_DELAY_MS = 60
+/** Matches the 12.5px/1.7 line height rows settle at; real sizes are measured. */
+const ESTIMATED_ROW_HEIGHT = 21
 
 function TreeViewImpl({ data, forceOpen, diffs, activeDiffPath, syntaxTheme, enableSearch = true, onChange }: TreeViewProps) {
   const editorSyntaxTheme = useAppSelector((state) => state.editorSyntaxTheme)
@@ -705,6 +598,21 @@ function TreeViewImpl({ data, forceOpen, diffs, activeDiffPath, syntaxTheme, ena
   const [pending, setPending] = useState<PendingEdit | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
+  // Which nodes are open now lives here rather than inside each node, because
+  // the flat row list has to be derivable without rendering anything.
+  const [expansion, setExpansion] = useState<ExpansionState>(initialExpansion)
+
+  // Expand All / Collapse All arrive as this prop. It used to seed each node's
+  // own state on mount, so it only took effect because callers remounted the
+  // tree with a changing `key`; as a mode it works either way.
+  useEffect(() => {
+    setExpansion(setExpansionMode(forceOpen === undefined ? 'auto' : forceOpen ? 'all' : 'none'))
+  }, [forceOpen])
+
+  const handleToggle = useCallback((path: string, open: boolean) => {
+    setExpansion((current) => setExpanded(current, path, open))
+  }, [])
+
   const { matches, expandPaths } = useMemo(
     () => computeTreeMatches(data, query),
     [data, query]
@@ -717,20 +625,45 @@ function TreeViewImpl({ data, forceOpen, diffs, activeDiffPath, syntaxTheme, ena
   const safeIndex = totalMatches > 0 ? Math.min(matchIndex, totalMatches - 1) : 0
   const activePath = totalMatches > 0 ? matches[safeIndex] : undefined
 
+  const search: SearchContext | null = query.trim()
+    ? { query, matchPaths, expandPaths, activePath }
+    : null
+
+  // Search wins over the stored state rather than being written into it, so
+  // clearing the query puts the tree back the way the user left it.
+  const rows = useMemo(
+    () => flattenTree(data, expansion, search?.expandPaths ?? null),
+    [data, expansion, search?.expandPaths],
+  )
+
+  // Read by effects that must not re-run every time the row list is rebuilt.
+  const rowsRef = useRef(rows)
+  rowsRef.current = rows
+
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => containerRef.current,
+    estimateSize: () => ESTIMATED_ROW_HEIGHT,
+    overscan: 12,
+    // Until the pane has been measured there is no height to work from, and a
+    // zero-height viewport yields zero rows. Assume a typical pane so the first
+    // paint has content; the real size replaces this as soon as it is known.
+    initialRect: { width: 800, height: 600 },
+  })
+
   // Reset the active match whenever the query (and thus the match set) changes
   useEffect(() => {
     setMatchIndex(0)
   }, [query])
 
-  // Scroll the active match into view once nodes have expanded
+  // Scroll the active match into view. The row is usually not mounted — that is
+  // the point of windowing — so this asks the virtualizer for the index rather
+  // than looking for an element.
   useEffect(() => {
     if (!activePath) return
-    const timer = setTimeout(() => {
-      const el = containerRef.current?.querySelector(`[data-search-path="${CSS.escape(activePath)}"]`)
-      if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
-    }, SCROLL_TO_MATCH_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [activePath])
+    const index = findRowIndex(rowsRef.current, activePath)
+    if (index >= 0) virtualizer.scrollToIndex(index, { align: 'center' })
+  }, [activePath, virtualizer])
 
   const handleCopy = useCallback((value: unknown) => {
     navigator.clipboard.writeText(valueToCopyText(value)).then(
@@ -772,9 +705,20 @@ function TreeViewImpl({ data, forceOpen, diffs, activeDiffPath, syntaxTheme, ena
     }
   }, [onChange, data, addToast, pending])
 
-  const search: SearchContext | null = query.trim()
-    ? { query, matchPaths, expandPaths, activePath }
-    : null
+  // Reveal the diff the Compare view is pointing at. `expandAncestors` stops
+  // short of the node itself, which still has to open when it is a container.
+  useEffect(() => {
+    if (!activeDiffPath) return
+    setExpansion((current) => setExpanded(expandAncestors(current, activeDiffPath), activeDiffPath, true))
+  }, [activeDiffPath])
+
+  // A freshly added entry may have landed inside a collapsed node; its editor
+  // opens by itself, so it has to be on screen.
+  useEffect(() => {
+    if (!pending) return
+    const path = pathFromSegments(pending.segments)
+    setExpansion((current) => setExpanded(expandAncestors(current, path), path, true))
+  }, [pending])
 
   function gotoMatch(delta: number) {
     if (totalMatches === 0) return
@@ -841,19 +785,31 @@ function TreeViewImpl({ data, forceOpen, diffs, activeDiffPath, syntaxTheme, ena
         </div>
       )}
       <div className={`tree-view${edit ? ' tree-view--editable' : ''}`} ref={containerRef}>
-        <TreeNodeComponent
-          nodeKey={null}
-          data={data}
-          depth={0}
-          forceOpen={forceOpen}
-          path="$"
-          segments={[]}
-          diffs={diffs}
-          activeDiffPath={activeDiffPath}
-          search={search}
-          edit={edit}
-          onCopy={handleCopy}
-        />
+        {/* Only the rows in view are mounted. The sizer holds the full scroll
+            height so the scrollbar still describes the whole document. */}
+        <div className="tree-view__sizer" style={{ height: virtualizer.getTotalSize() }}>
+          {virtualizer.getVirtualItems().map((item) => (
+            <div
+              key={rows[item.index].key}
+              className="tree-view__row-slot"
+              data-index={item.index}
+              // Rows are not all one height: an open editor or a wrapped value
+              // is taller, so each one reports its real size back.
+              ref={virtualizer.measureElement}
+              style={{ transform: `translateY(${item.start}px)` }}
+            >
+              <TreeRowView
+                row={rows[item.index]}
+                diffs={diffs}
+                activeDiffPath={activeDiffPath}
+                search={search}
+                edit={edit}
+                onCopy={handleCopy}
+                onToggle={handleToggle}
+              />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

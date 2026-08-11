@@ -31,6 +31,7 @@
     "@codemirror/view": "^6.41.1",
     "@supabase/supabase-js": "^2.49.4",
     "@tanstack/react-table": "^8.20.5",
+    "@tanstack/react-virtual": "^3.14.9",
     "@types/js-yaml": "^4.0.9",
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",

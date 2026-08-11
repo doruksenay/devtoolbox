@@ -28,3 +28,6 @@ test-results/
 
 # TypeScript build info
 *.tsbuildinfo
+
+# Local-only reference captures for the tree rendering refactor
+e2e/__screens__/

@@ -275,17 +275,39 @@
   background: var(--accent-bg);
 }
 
-.tree-node__children {
-  padding-left: 20px;
-  border-left: 1px solid var(--border-subtle);
-  margin-left: 6px;
+/* Holds the full scroll height of the document while only the rows in view are
+   mounted, so the scrollbar still reflects how much there is to scroll. */
+.tree-view__sizer {
+  position: relative;
+  width: 100%;
 }
 
-.tree-node__load-more {
-  font-size: 11px;
-  padding: 2px 8px;
-  margin-top: 2px;
-  color: var(--accent);
+/* Rows are positioned rather than stacked, since the ones above them are not
+   in the DOM. `max-content` keeps a long value from being clipped: the row can
+   outgrow the pane and the container scrolls sideways as it did before. */
+.tree-view__row-slot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+}
+
+/* Rows are drawn from a flat list, so a row's depth no longer follows from
+   being nested inside its parent. It indents itself instead — 27px per level,
+   matching the 6px margin + 1px border + 20px padding the nesting used to add.
+   The guide lines came from that border, so they are painted here: one line per
+   ancestor level, clipped to the indent this row actually has. */
+.tree-row {
+  padding-left: calc(var(--tree-depth) * 27px);
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--border-subtle) 0 1px,
+    transparent 1px 27px
+  );
+  background-size: calc(var(--tree-depth) * 27px) 100%;
+  background-repeat: no-repeat;
+  background-position-x: 6px;
 }
 
 .tree-leaf {
